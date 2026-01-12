@@ -88,10 +88,13 @@ const Container = styled.div`
   .contentingresocobro {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     gap: 20px;
-    height: calc(100% - 10rem);
+    /* ensure the area can scroll if viewport is small while keeping some top spacing */
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    padding-top: 2rem;
     .contentverticket {
       align-self: flex-end;
       cursor: pointer;

@@ -1,6 +1,7 @@
 import { supabase } from "../supabase/supabase.config";
 const tabla = "permisos";
 export async function MostrarPermisos(p) {
+  if (!p?.id_usuario) return null;
   const { data } = await supabase
     .from(tabla)
     .select(`*, modulos(*)`)
@@ -8,6 +9,7 @@ export async function MostrarPermisos(p) {
   return data;
 }
 export async function MostrarPermisosConfiguracion(p) {
+  if (!p?.id_usuario) return null;
   const { data } = await supabase
     .from(tabla)
     .select(`*, modulos!inner(*)`)
@@ -27,6 +29,7 @@ export async function InsertarPermisos(p) {
 }
 
 export async function EliminarPermisos(p) {
+  if (!p?.id_usuario) return null;
   const { error } = await supabase
     .from(tabla)
     .delete()
@@ -37,6 +40,7 @@ export async function EliminarPermisos(p) {
 }
 
 export async function MostrarPermisosGlobales(p) {
+  if (!p?.id_usuario) return null;
   const { data } = await supabase
     .from(tabla)
     .select(`*, modulos(*)`)

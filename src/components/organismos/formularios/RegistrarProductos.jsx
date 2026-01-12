@@ -14,6 +14,7 @@ import {
   Btngenerarcodigo,
   useAlmacenesStore,
   ConvertirMinusculas,
+  useBarcodeScanner,
 } from "../../../index";
 import { useForm } from "react-hook-form";
 import { useEmpresaStore } from "../../../store/EmpresaStore";
@@ -290,6 +291,15 @@ export function RegistrarProductos({
     }
   }, []);
   //#endregion validar_accion
+
+  // barcode scanner: populate codigo de barras when Enter is pressed (allow in inputs)
+  useBarcodeScanner((code) => {
+    try {
+      setRandomCodebarras(String(code));
+    } catch (err) {
+      console.error('barcode to codigo_barras error', err);
+    }
+  }, { allowInInputs: true });
 
   return (
     <Container>

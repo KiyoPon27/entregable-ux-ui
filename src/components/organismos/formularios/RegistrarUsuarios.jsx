@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import {
   InputText,
@@ -17,6 +18,7 @@ import { SelectList } from "../../ui/lists/SelectList";
 import { BarLoader } from "react-spinners";
 import { PermisosUser } from "../UsuariosDesign/PermisosUser";
 import { useRolesStore } from "../../../store/RolesStore";
+import { usePermisosStore } from "../../../store/PermisosStore";
 export function RegistrarUsuarios({ accion, dataSelect, onClose }) {
   const queryClient = useQueryClient();
   const {
@@ -30,6 +32,14 @@ export function RegistrarUsuarios({ accion, dataSelect, onClose }) {
   const { mostrarSucursales, sucursalesItemSelect, selectSucursal } =
     useSucursalesStore();
   const { rolesItemSelect } = useRolesStore();
+  const { mostrarPermisos } = usePermisosStore();
+
+  useEffect(() => {
+    if (accion === "Editar" && itemSelect?.id_usuario) {
+      mostrarPermisos({ id_usuario: itemSelect.id_usuario });
+    }
+  }, [accion, itemSelect?.id_usuario]);
+
   const { data: dataSucursales, isLoading: isloadingSucursales } = useQuery({
     queryKey: ["mostrar sucursales", { id_empresa: dataempresa?.id }],
     queryFn: () => mostrarSucursales({ id_empresa: dataempresa?.id }),

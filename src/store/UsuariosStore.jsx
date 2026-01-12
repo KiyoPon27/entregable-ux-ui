@@ -12,7 +12,7 @@ import { supabase } from "../supabase/supabase.config";
 const tabla = "usuarios";
 export const useUsuariosStore = create((set) => ({
   refetchs: null,
-  datausuarios: [],
+  datausuarios: null,
   itemSelect: null,
   setItemSelect: (p) => set({ itemSelect: p }),
   mostrarusuarios: async (p) => {
@@ -44,6 +44,11 @@ export const useUsuariosStore = create((set) => ({
   insertarUsuario: async (p) => {
     const selectModules = usePermisosStore.getState().selectedModules || [];
     console.log("Módulos seleccionados:", selectModules);
+
+    if (!Array.isArray(selectModules) || selectModules.length === 0) {
+      throw new Error("No hay módulos seleccionados");
+    }
+
     const data = await InsertarCredencialesUser({
       email: p.email,
       pass: p.pass,
@@ -62,17 +67,16 @@ export const useUsuariosStore = create((set) => ({
       id_caja: p.id_caja,
     });
 
-    if (Array.isArray(selectModules) && selectModules.length > 0) {
-      selectModules.forEach(async (idModule) => {
-        let p = {
+    // Insert permisos in parallel
+    await Promise.all(
+      selectModules.map((idModule) => {
+        const perm = {
           id_usuario: dataUserNew?.id,
           idmodulo: idModule,
         };
-        await InsertarPermisos(p);
-      });
-    } else {
-      throw new Error("No hay módulos seleccionados");
-    }
+        return InsertarPermisos(perm);
+      })
+    );
   },
   editarUsuarios: async (p) => {
     await EditarUsuarios(p);

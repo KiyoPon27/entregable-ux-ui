@@ -252,7 +252,7 @@ export const IngresoCobro = forwardRef((props, ref) => {
     calcularVueltoYRestante();
   }, [precioVenta, tipocobro, valoresPago]);
   return (
-    <Container>
+    <Container className={tipocobro === "Mixto" ? "mixto" : ""}>
       {mutation.isPending ? (
         <span>guardando...🐖</span>
       ) : (
@@ -386,7 +386,9 @@ export const IngresoCobro = forwardRef((props, ref) => {
 const Container = styled.div`
   position: relative;
   box-sizing: border-box;
-  width: 400px;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 1.5rem;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 2px 2px 15px 0px #e2e2e2;
@@ -395,10 +397,10 @@ const Container = styled.div`
   flex-direction: column;
   background-color: #ffffff;
   color: #000;
-  min-height: 100%;
+  min-height: auto;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
 
   input {
     color: #000 !important;
@@ -408,9 +410,11 @@ const Container = styled.div`
   &:after {
     content: "";
     position: absolute;
-    left: 5px;
+    left: 10px;
+    right: 10px;
     height: 6px;
-    width: 380px;
+    width: calc(100% - 20px);
+    max-width: calc(100% - 20px);
   }
   &:before {
     top: -5px;
@@ -466,6 +470,41 @@ const Container = styled.div`
     input {
       font-size: 40px;
     }
+  }
+
+  /* Styles applied only when payment type is Mixto */
+  &.mixto {
+    .area2 {
+      max-height: 260px;
+      overflow-y: auto;
+      width: 100%;
+      padding-right: 12px;
+    }
+    .area2 input {
+      font-size: 30px;
+    }
+    /* thinner scrollbar for mixto list */
+    .area2::-webkit-scrollbar {
+      width: 8px;
+    }
+    .area2::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+    }
+  }
+
+  /* smaller screens: reduce font sizes and spacing to fit more content */
+  @media (max-width: 420px) {
+    font-size: 16px;
+    padding: 14px;
+    .area2 input {
+      font-size: 32px;
+    }
+  }
+  @media (max-height: 700px) {
+    max-height: calc(100vh - 5rem);
+    padding: 12px;
+    font-size: 18px;
   }
   .area3 {
     display: flex;

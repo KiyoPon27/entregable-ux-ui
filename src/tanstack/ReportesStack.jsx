@@ -25,7 +25,7 @@ export const useMostrarVentasDashboardQuery = () => {
         _fecha_inicio: fechaInicio,
         _fecha_fin: fechaFin,
       }),
-    enabled: !!dataempresa,
+    enabled: !!dataempresa?.id && !!fechaInicio && !!fechaFin,
   });
 };
 export const useMostrarCantidadDetalleVentaDashboardQuery = () => {
@@ -48,7 +48,7 @@ export const useMostrarCantidadDetalleVentaDashboardQuery = () => {
         _fecha_inicio: fechaInicio,
         _fecha_fin: fechaFin,
       }),
-    enabled: !!dataempresa,
+    enabled: !!dataempresa?.id && !!fechaInicio && !!fechaFin,
   });
 };
 export const useMostrarCantidadDetalleVentaPeriodoAnteriorDashboardQuery =
@@ -72,7 +72,10 @@ export const useMostrarCantidadDetalleVentaPeriodoAnteriorDashboardQuery =
           _fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
           _fecha_fin: fechasAnteriores?.fechaAnteriorFin,
         }),
-      enabled: !!dataempresa,
+      enabled:
+        !!dataempresa?.id &&
+        !!fechasAnteriores?.fechaAnteriorInicio &&
+        !!fechasAnteriores?.fechaAnteriorFin,
     });
   };
 export const useMostrarVentasDashboardPeriodoAnteriorQuery = () => {
@@ -97,7 +100,10 @@ export const useMostrarVentasDashboardPeriodoAnteriorQuery = () => {
         _fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
         _fecha_fin: fechasAnteriores?.fechaAnteriorFin,
       }),
-    enabled: !!dataempresa,
+    enabled:
+      !!dataempresa?.id &&
+      !!fechasAnteriores?.fechaAnteriorInicio &&
+      !!fechasAnteriores?.fechaAnteriorFin,
     refetchOnWindowFocus: false,
   });
 };
@@ -122,7 +128,7 @@ export const useGananciasDetalleVentaQuery = () => {
         _fecha_inicio: fechaInicio,
         _fecha_fin: fechaFin,
       }),
-    enabled: !!dataempresa,
+    enabled: !!dataempresa?.id && !!fechaInicio && !!fechaFin,
     refetchOnWindowFocus: false,
   });
 };
@@ -144,6 +150,7 @@ export const useReporteInventarioValoradoQuery = () => {
         sucursal_id: sucursalesItemSelect?.id,
         almacen_id: almacenSelectItem?.id,
       }),
+    enabled: !!sucursalesItemSelect?.id && !!almacenSelectItem?.id,
     refetchOnWindowFocus: false,
   });
 };

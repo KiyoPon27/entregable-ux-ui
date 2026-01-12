@@ -16,11 +16,11 @@ import { NieveComponente } from "../organismos/NieveComponente";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast, Toaster } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CardModos } from "../organismos/LoginDesign/CardModos";
 import { VolverBtn } from "../moleculas/VolverBtn";
 export function LoginTemplate() {
-  const [stateModos, setStateModos] = useState(true);
+  const [stateModos, setStateModos] = useState(false);
   const [stateModo, setStateModo] = useState("empleado");
   const { loginGoogle, loginEmail, crearUserYLogin } = useAuthStore();
 
@@ -56,13 +56,29 @@ export function LoginTemplate() {
     const correoCompleto = response.toLowerCase() + gmail;
     mutateTester({ email: correoCompleto, password: "123456" });
   };
+
+  // Prevent browser back from returning to previous pages/screens
+  useEffect(() => {
+    // push a dummy history entry so Back stays on this page
+    try {
+      window.history.pushState(null, "", window.location.href);
+      const onPop = () => {
+        window.history.pushState(null, "", window.location.href);
+      };
+      window.addEventListener("popstate", onPop);
+      return () => window.removeEventListener("popstate", onPop);
+    } catch (e) {
+      // ignore in non-browser environments
+    }
+  }, []);
+
   return (
     <Container>
       <Toaster />
       <div className="card">
         <ContentLogo>
           <img src={v.logo} />
-          <span>ada369 - POS VENTAS</span>
+          <span>L'T' Sanchez - POS VENTAS</span>
         </ContentLogo>
         <Title $paddingbottom="40px">Ingresar Modo</Title>
         {stateModos && (
@@ -92,7 +108,8 @@ export function LoginTemplate() {
         {stateModo === "empleado"
           ? stateModos === false && (
               <PanelModo>
-                <VolverBtn funcion={() => setStateModos(!stateModos)} />
+                {/* comentar de esta forma abajo para quitar el boton volver*/}
+                {/* <VolverBtn funcion={() => setStateModos(!stateModos)} /> */}
                 <span>Modo empleado</span>
                 <form onSubmit={handleSubmit(manejadorEmailSesion)}>
                   <InputText2>

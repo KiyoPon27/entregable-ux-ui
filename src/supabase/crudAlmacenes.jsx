@@ -21,7 +21,7 @@ export async function MostrarAlmacenXSucursal(p) {
     .from(tabla)
     .select()
     .eq("id_sucursal", p.id_sucursal)
-    .maybeSingle();
+    ;
   return data;
 }
 export async function MostrarAlmacenesXEmpresa(p) {

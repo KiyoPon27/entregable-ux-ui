@@ -1,6 +1,6 @@
 import Swal from "sweetalert2";
 import { supabase } from "../index";
-import { EliminarPermisos, InsertarPermisos } from "./crudPermisos";
+import { EliminarPermisos, InsertarPermisos, MostrarPermisos } from "./crudPermisos";
 import { usePermisosStore } from "../store/PermisosStore";
 const tabla = "usuarios";
 export async function MostrarUsuarios(p) {
@@ -56,23 +56,36 @@ export async function EliminarUsuarioAsignado(p) {
   }
 }
 export async function EditarUsuarios(p) {
-  //console.log("p editar usuarios",p)
+  // actualizar datos del usuario primero
   const { error } = await supabase.from(tabla).update(p).eq("id", p.id);
+
+  // obtener módulos seleccionados desde el store (si hay)
+  let selectModules = usePermisosStore.getState().selectedModules || [];
+
+  // si no hay módulos seleccionados en el UI, traer los permisos actuales desde la BD
+  if (!Array.isArray(selectModules) || selectModules.length === 0) {
+    try {
+      const actuales = await MostrarPermisos({ id_usuario: p.id });
+      selectModules = Array.isArray(actuales) ? actuales.map((it) => it.idmodulo) : [];
+    } catch (err) {
+      // si falla al obtener permisos actuales, dejamos selectModules como vacío
+      selectModules = [];
+    }
+  }
+
+  // eliminar permisos existentes y volver a insertar los que correspondan
   await EliminarPermisos({ id_usuario: p.id });
-  const selectModules = usePermisosStore.getState().selectedModules || [];
-  const id_usuario = p.id
+
   if (Array.isArray(selectModules) && selectModules.length > 0) {
-    selectModules.forEach(async (idModule) => {
-      let pp = {
-        id_usuario: id_usuario,
+    for (const idModule of selectModules) {
+      const pp = {
+        id_usuario: p.id,
         idmodulo: idModule,
       };
-      console.log("p modulos",pp)
       await InsertarPermisos(pp);
-    });
-  } else {
-    throw new Error("No hay módulos seleccionados");
+    }
   }
+
   if (error) {
     throw new Error(error.message);
   }
