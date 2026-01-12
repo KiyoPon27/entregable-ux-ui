@@ -36,6 +36,6 @@ export const useMostrarAperturasCajaPorUsuarioQuery = () => {
       mostrarCierreCajaPorUsuario({
         id_usuario: datausuarios?.id,
       }),
-    enabled: !!datausuarios,
+    enabled: !!datausuarios?.id,
   });
 };

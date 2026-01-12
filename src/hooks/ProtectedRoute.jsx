@@ -17,20 +17,20 @@ export const ProtectedRoute = ({ children, accessBy }) => {
   } = useQuery({
     queryKey: ["mostrar permisos globales", datausuarios?.id],
     queryFn: () => mostrarPermisosGlobales({ id_usuario: datausuarios?.id }),
-    enabled: !!datausuarios,
+    enabled: !!datausuarios?.id,
   });
   if(isLoadingPermisosGlobales){
-     return <span>cargando permisos...</span>
+    return <span>cargando permisos...</span>
   }
   const hasPermission = dataPermisosGlobales?.some(
     (item) => item.modulos?.link === location.pathname
   );
- 
+
   if (accessBy === "non-authenticated") {
     if (!user) {
       return children;
     } else {
-      return <Navigate to="/" />;
+      return <Navigate to="/" replace />;
     }
   } else if (accessBy === "authenticated") {
     if (user) {
@@ -41,5 +41,5 @@ export const ProtectedRoute = ({ children, accessBy }) => {
       return children;
     }
   }
-  return <Navigate to="/login" />;
+  return <Navigate to="/login" replace />;
 };

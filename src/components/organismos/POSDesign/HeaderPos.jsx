@@ -10,6 +10,7 @@ import {
   useEmpresaStore,
   useAlmacenesStore,
   useDetalleVentasStore,
+  useBarcodeScanner,
 } from "../../../index";
 import { v } from "../../../styles/variables";
 import { Device } from "../../../styles/breakpoints";
@@ -64,7 +65,7 @@ export function HeaderPos() {
     }
   }
 
-  async function insertarventas() {
+  async function insertarventas(opts = {}) {
     if (idventa === 0) {
       const pventas = {
         fecha: fechaactual,
@@ -82,7 +83,12 @@ export function HeaderPos() {
       await insertarDVentas(idventa);
     }
     setBuscador("");
-    buscadorRef.current.focus();
+    // if caller requests no focus (e.g. barcode scanner flow), don't focus the buscador
+    if (!opts?.noFocus) {
+      try {
+        buscadorRef.current.focus();
+      } catch (e) {}
+    }
     setCantidadInput(1);
   }
   async function insertarDVentas(idventa) {
@@ -99,7 +105,42 @@ export function HeaderPos() {
       _id_almacen: almacenSelectItem?.id,
     };
     console.log("pDetalleVentas", pDetalleVentas);
-    await insertarDetalleVentas(pDetalleVentas);
+    try {
+      await insertarDetalleVentas(pDetalleVentas);
+    } catch (error) {
+      console.error("Error insertar detalle venta:", error);
+      const msg = error?.message || "";
+      const isFK = msg.toLowerCase().includes("foreign key") || msg.toLowerCase().includes("violates foreign key");
+      if (isFK) {
+        // probable: the venta id was deleted (incomplete sales removed). Create a new venta and retry.
+        try {
+          const pventas = {
+            fecha: fechaactual,
+            id_usuario: datausuarios?.id,
+            id_sucursal: dataCierreCaja?.caja?.id_sucursal,
+            id_empresa: dataempresa?.id,
+            id_cierre_caja: dataCierreCaja?.id,
+          };
+          const nuevo = await insertarVentas(pventas);
+          const nuevoId = nuevo?.id;
+          if (nuevoId) {
+            // update detalle with new venta id and retry
+            pDetalleVentas._id_venta = nuevoId;
+            await insertarDetalleVentas(pDetalleVentas);
+            // ensure query state reflects new detalle
+            queryClient.invalidateQueries(["mostrar detalle venta"]);
+            return;
+          }
+        } catch (err2) {
+          console.error("Error recreando venta y reintentando detalle:", err2);
+          toast.error(err2?.message || "Error al crear venta");
+          throw err2;
+        }
+      }
+      // if not FK or after failing to recover, rethrow
+      toast.error(error?.message || "Error al insertar detalle");
+      throw error;
+    }
   }
   const { mutate: mutationInsertarVentas } = useMutation({
     mutationKey: ["insertar ventas"],
@@ -125,6 +166,25 @@ export function HeaderPos() {
     buscadorRef.current.focus();
     mutate()
   }, []);
+
+  // global barcode scanner: when a code is read, try to find the product and add it
+  useBarcodeScanner((code) => {
+    try {
+      const productoEncontrado = dataProductos?.find(
+        (p) => String(p.codigo_barras) === String(code)
+      );
+      if (productoEncontrado) {
+        selectProductos(productoEncontrado);
+        // add product without forcing focus back to buscador
+        mutationInsertarVentas({ noFocus: true });
+        setBuscador("");
+      } else {
+        toast.error("Producto no encontrado");
+      }
+    } catch (err) {
+      console.error("barcode handler error", err);
+    }
+  });
   useEffect(() => {
     let timeout;
     const texto = buscador.trim();

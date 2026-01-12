@@ -47,8 +47,8 @@ export const useMostrarAlmacenesXSucursalInventarioQuery = () => {
     ],
     queryFn: () =>
       mostrarAlmacenesXSucursal({
-        id_sucursal: sucursalesItemSelect.id,
+        id_sucursal: sucursalesItemSelect?.id,
       }),
-    enabled: !!sucursalesItemSelect,
+    enabled: !!sucursalesItemSelect?.id,
   });
 };

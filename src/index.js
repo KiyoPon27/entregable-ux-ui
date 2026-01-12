@@ -54,6 +54,7 @@ export * from './context/AuthContent';
 export * from './hooks/Generarcodigo';
 export * from './hooks/Layout';
 export * from './hooks/ProtectedRoute';
+export * from './hooks/useBarcodeScanner';
 export * from './main';
 export * from './pages/Categorias';
 export * from './pages/ClientesProveedores';

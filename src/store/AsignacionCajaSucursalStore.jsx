@@ -20,16 +20,13 @@ export const useAsignacionCajaSucursalStore = create((set) => ({
     set({ selectItem: p });
   },
 
-  dataSucursalesAsignadas: null,
+  dataSucursalesAsignadas: [],
   sucursalesItemSelectAsignadas: null,
   mostrarSucursalAsignadas: async (p) => {
-    const { data } = await supabase
-      .from(tabla)
-      .select(`*, sucursales(*), caja(*)`)
-      .eq("id_usuario", p.id_usuario);
-    set({ dataSucursalesAsignadas: data });
-    set({ sucursalesItemSelectAsignadas: data && data[0] });
-    return data;
+    const response = await MostrarSucursalCajaAsignada(p);
+    set({ dataSucursalesAsignadas: response });
+    set({ sucursalesItemSelectAsignadas: response && response[0] });
+    return response;
   },
   datausuariosAsignados: [],
 

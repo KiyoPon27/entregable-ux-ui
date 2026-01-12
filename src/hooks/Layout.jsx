@@ -52,7 +52,7 @@ export function Layout({ children }) {
   } = useQuery({
     queryKey: ["mostrar empresa", datausuarios?.id],
     queryFn: () => mostrarempresa({ _id_usuario: datausuarios?.id }),
-    enabled: !!datausuarios,
+    enabled: !!datausuarios?.id,
     refetchOnWindowFocus: false,
   });
 

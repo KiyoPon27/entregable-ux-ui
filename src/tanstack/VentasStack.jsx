@@ -20,6 +20,12 @@ export const useEliminarVentasIncompletasMutate = () => {
       toast.error(error.message);
     },
     onSuccess: () => {
+      // clear any stale sale id left in the store after deleting pending sales
+      try {
+        useVentasStore.setState({ idventa: 0 });
+      } catch (err) {
+        // ignore
+      }
       queryClient.invalidateQueries(["mostrar detalle venta"]);
     },
   });

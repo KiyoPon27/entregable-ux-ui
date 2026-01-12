@@ -12,7 +12,7 @@ export const useMostrarSucursalesQuery = () => {
       mostrarSucursales({
         id_empresa: dataempresa?.id,
       }),
-    enabled: !!dataempresa,
+    enabled: !!dataempresa?.id,
   });
 };
 // export const useInsertarMovStockMutation = () => {

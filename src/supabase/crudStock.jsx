@@ -21,7 +21,7 @@ export async function MostrarStockXAlmacenYProducto(p) {
     .select()
     .eq("id_almacen", p.id_almacen)
     .eq("id_producto", p.id_producto)
-    .maybeSingle();
+    ;
   return data;
 }
 export async function MostrarStockXAlmacenesYProducto(p) {

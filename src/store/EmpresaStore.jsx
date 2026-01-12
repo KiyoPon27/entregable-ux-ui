@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { EditarEmpresa, EditarMonedaEmpresa, InsertarEmpresa, MostrarEmpresaXidsuario } from "../index";
 export const useEmpresaStore = create((set) => ({
-  dataempresa: [],
+  dataempresa: null,
   mostrarempresa: async (p) => {
     const response = await MostrarEmpresaXidsuario(p);
     set({ dataempresa: response });
