@@ -52,11 +52,21 @@ public class AuthController {
     // REGISTRO TEMPORAL (Solo para que puedas crear tu primer usuario real con
     // contraseña encriptada)
     // POST: http://localhost:8080/api/auth/register-temp
+// REGISTRO TEMPORAL (Modificado para diagnóstico)
     @PostMapping("/register-temp")
     public ResponseEntity<?> registrarUsuarioTemporal(@RequestBody Usuario usuario) {
-        // Encriptamos la contraseña antes de guardar
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
-        usuarioRepository.save(usuario);
-        return ResponseEntity.ok("Usuario creado con éxito");
+        try {
+            // Encriptamos la contraseña antes de guardar
+            usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+            usuarioRepository.save(usuario);
+            return ResponseEntity.ok("Usuario creado con éxito");
+        } catch (Exception e) {
+            // ESTO ES LO QUE NECESITAMOS: Imprimir el error real en la consola
+            e.printStackTrace(); 
+            // Y devolverlo a Postman para leerlo
+// Obtener la causa original del error
+Throwable causa = e.getCause();
+String mensajeCausa = (causa != null) ? causa.getMessage() : "Desconocida";
+return ResponseEntity.status(500).body("Error: " + e.getMessage() + " \n >>> CAUSA REAL: " + mensajeCausa);        }
     }
 }
