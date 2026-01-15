@@ -21,8 +21,8 @@ function isTypingInInput() {
 }
 
 function processBuffer() {
-  if (!_buffer.length) return;
-  const code = _buffer;
+  if (!(_buffer && _buffer.length)) return;
+  const code = _buffer || "";
   _buffer = "";
   _lastTime = 0;
   const typingNow = isTypingInInput();
@@ -63,7 +63,7 @@ function handleKeydown(e) {
   if (typing && !hasAllowInInputs) return;
 
   if (key === "Enter") {
-    if (_buffer.length) {
+    if (_buffer && _buffer.length) {
       processBuffer();
       // prevent default only if we are processing for at least one listener
       e.preventDefault();
@@ -72,11 +72,11 @@ function handleKeydown(e) {
   }
 
   // Only consider printable single-character keys; only process on Enter
-  if (key.length === 1) {
+  if (typeof key === "string" && key.length === 1) {
     if (_lastTime && now - _lastTime > INTERKEY_MAX) {
       _buffer = ""; // too slow — start new
     }
-    _buffer += key;
+    _buffer = (_buffer || "") + key;
     _lastTime = now;
   }
 }

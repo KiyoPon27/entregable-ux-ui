@@ -57,10 +57,10 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings("deprecation") // Suprimir warning de deprecated para mantener compatibilidad con versiones actuales de Spring Security
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(passwordEncoder());
         authenticationProvider.setUserDetailsService(userDetailsService);
-        authenticationProvider.setPasswordEncoder(passwordEncoder());
         return authenticationProvider;
     }
 

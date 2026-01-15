@@ -8,10 +8,12 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "productos")
 public class Producto {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String nombre;
 
     @Column(name = "precio_venta")
@@ -32,11 +34,13 @@ public class Producto {
     @Column(name = "id_empresa")
     private Long idEmpresa;
 
-    @Column(name = "sevende_por")
-    private String seVendePor;
+    // EXACTAMENTE como está en tu BD: "sevende_por"
+    @Column(name = "sevende_por") 
+    private String sevendePor; 
 
+    // TINYINT(1) se mapea a Boolean (true/false)
     @Column(name = "maneja_inventarios")
-    private Boolean manejaInventarios;
+    private Boolean manejaInventarios; 
 
     @Column(name = "maneja_multiprecios")
     private Boolean manejaMultiprecios;
