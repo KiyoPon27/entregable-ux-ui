@@ -34,8 +34,5 @@ export const useAuthStore = create((set) => ({
     })
     return data.user
   },
-  // obtenerIdAuthSupabase: async () => {
-  //     const response = await ObtenerIdAuthSupabase();
-  //     return response;
-  //   },
+  
 }));

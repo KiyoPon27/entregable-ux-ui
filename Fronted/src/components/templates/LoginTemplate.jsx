@@ -80,7 +80,7 @@ export function LoginTemplate() {
           <img src={v.logo} />
           <span>L'T' Sanchez - POS VENTAS</span>
         </ContentLogo>
-        <Title $paddingbottom="40px">Ingresar Modo</Title>
+        <Title $paddingbottom="40px">BIENVENIDO</Title>
         {stateModos && (
           <ContentModos>
             <CardModos
@@ -110,9 +110,11 @@ export function LoginTemplate() {
               <PanelModo>
                 {/* comentar de esta forma abajo para quitar el boton volver*/}
                 {/* <VolverBtn funcion={() => setStateModos(!stateModos)} /> */}
-                <span>Modo empleado</span>
-                <form onSubmit={handleSubmit(manejadorEmailSesion)}>
-                  <InputText2>
+                
+              <form onSubmit={handleSubmit(manejadorEmailSesion)}>
+                
+                <InputText2>
+                  <span>Usuario:</span>
                     <input
                       className="form__field"
                       placeholder="email"
@@ -121,6 +123,7 @@ export function LoginTemplate() {
                     />
                   </InputText2>
                   <InputText2>
+                  <span>Contraseña:</span>
                     <input
                       className="form__field"
                       placeholder="contraseña"
