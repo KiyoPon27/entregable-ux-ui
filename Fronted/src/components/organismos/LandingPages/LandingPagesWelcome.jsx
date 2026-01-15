@@ -35,7 +35,7 @@ export const LandingPagesWelcome = () => {
       <ContentSection>
         <SubContentSection>
           <LeftSection className="left-section">
-            <h1>POS VENTAS CON REACT.JS {datausuarios?.id} </h1>
+            <h1>Bienvenido al sistema  {datausuarios?.nombres} </h1>
             <Step>
               <IconPlaceholder>
                 <img src="https://i.ibb.co/h19LCXP/aprendiendo.png" />
@@ -72,8 +72,7 @@ export const LandingPagesWelcome = () => {
             </Step>
             
             <div style={{ display: "flex", gap: "10px" }}>
-            <BtnLink url={"https://codigo369.com/detallecurso/24"} color={"#fff"} bgcolor={"#ff6a00"} titulo={"inscribete aquí"} />
-              <BtnLink url={"https://t.me/ada369react"} color={"#2f2f2f"} bgcolor={"#ffffff"} titulo={"+ grupo telegram"} />
+            
             </div>
           </LeftSection>
           <RightSection className="right-section">
@@ -141,7 +140,7 @@ export const LandingPagesWelcome = () => {
           </FooterItem>
           <FooterItem>
             <FooterIcon>
-              <img src="https://i.ibb.co/4fDChm8/nalga-1.png" />
+              <img src="https://i.ibb.co/JFKQ6KKr/Mysql.png" alt="Mysql" border="1"/>
             </FooterIcon>
             <FooterText>
               <FooterTextTitle>BACKEND</FooterTextTitle>
@@ -369,8 +368,8 @@ const FooterItem = styled.div`
 
 const FooterIcon = styled.div`
   width: 60px;
-  height: 60px;
-  background-color: #fcece4;
+  height: 20px;
+  //background-color: #fcece4;
   border-radius: 50%;
   img {
     width: 100%;
