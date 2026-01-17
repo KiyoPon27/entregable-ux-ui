@@ -1,12 +1,11 @@
 import { create } from "zustand";
-import axios from "axios";
-const API_BASE = "http://localhost:8080/api";
+import api from "../api/api"; // Usa tu instancia configurada
 
 export const useAuthStore = create((set) => ({
   loginGoogle: async () => {
     // Redirect to backend OAuth endpoint (backend must implement OAuth flow)
     try {
-      window.location.href = `${API_BASE}/auth/oauth/google`;
+      window.location.href = `http://localhost:8080/api/auth/oauth/google`;
     } catch (e) {
       throw new Error("No se pudo iniciar login con Google");
     }
@@ -25,19 +24,29 @@ export const useAuthStore = create((set) => ({
   },
   loginEmail: async (p) => {
     try {
-      const resp = await axios.post(`${API_BASE}/auth/login`, {
-        email: p.email,
+      // Ajuste para coincidir con el DTO LoginRequest del backend (correo, password)
+      const resp = await api.post(`/auth/login`, {
+        correo: p.email,
         password: p.password,
       });
-      const token = resp?.data?.token;
+
+      // El backend devuelve AuthResponse { accessToken, idUsuario, nombre, rol }
+      const token = resp.data.accessToken; 
+      
       if (!token) throw new Error("Respuesta inválida del servidor");
+      
       localStorage.setItem("token", token);
+      
+      // Opcional: guardar datos del usuario
+      localStorage.setItem("user_id", resp.data.idUsuario);
+      localStorage.setItem("user_rol", resp.data.rol);
+
       // Redirect to home/dashboard
       window.location.href = "/";
       return resp.data;
     } catch (err) {
       const status = err?.response?.status;
-      if (status === 401) {
+      if (status === 401 || status === 403) {
         throw new Error("Correo o contraseña incorrectos");
       }
       if (status === 500) {

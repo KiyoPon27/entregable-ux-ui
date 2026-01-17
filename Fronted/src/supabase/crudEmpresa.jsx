@@ -14,8 +14,9 @@ export async function MostrarEmpresaXidsuario(p) {
   try {
     console.log("🔍 Buscando empresa con parámetro:", p);
     // Usar el idUsuario para obtener la empresa
+    const idUsuario = p?.id_usuario || p?._id_usuario || Number(localStorage.getItem("user_id"));
     const response = await api.get("/empresas/mostrar", {
-      params: { idUsuario: p._id_usuario }
+      params: { idUsuario }
     });
     console.log("✅ Empresa encontrada:", response.data);
     return response.data;

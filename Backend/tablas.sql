@@ -1,0 +1,379 @@
+/*
+  MIGRACIÓN DE POS SUPABASE A MYSQL
+  PROYECTO: TIENDA PRODUCTOS CHINOS
+  VERSIÓN FUSIONADA Y LIMPIA
+*/
+drop DATABASE LT_Sanchez;
+CREATE DATABASE IF NOT EXISTS LT_Sanchez;
+USE LT_Sanchez;
+
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- 1. TABLA EMPRESA
+CREATE TABLE empresa (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  id_fiscal VARCHAR(255) DEFAULT NULL,
+  direccion_fiscal VARCHAR(255) DEFAULT NULL,
+  simbolo_moneda VARCHAR(10) DEFAULT '$',
+  logo TEXT DEFAULT NULL,
+  id_auth VARCHAR(255) NOT NULL UNIQUE,
+  id_usuario BIGINT,
+  iso VARCHAR(10) DEFAULT 'PE',
+  pais VARCHAR(100) DEFAULT 'Peru',
+  currency VARCHAR(10) DEFAULT 'PEN',
+  impuesto VARCHAR(50) DEFAULT 'IGV',
+  valor_impuesto DECIMAL(15,2) DEFAULT 18.00,
+  nombre_moneda VARCHAR(100) DEFAULT NULL,
+  correo VARCHAR(255) DEFAULT '',
+  pie_pagina_ticket VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (id)
+);
+
+-- 2. TABLA ROLES
+CREATE TABLE roles (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  PRIMARY KEY (id)
+);
+
+-- 3. TABLA TIPO_COMPROBANTES
+CREATE TABLE tipo_comprobantes (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  destino VARCHAR(50),
+  PRIMARY KEY (id)
+);
+
+-- 4. TABLA MODULOS
+CREATE TABLE modulos (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  marcado BOOLEAN DEFAULT FALSE, -- Replaces 'check'
+  descripcion TEXT DEFAULT NULL,
+  icono VARCHAR(255) DEFAULT NULL,
+  enlace VARCHAR(255) DEFAULT NULL, -- Replaces 'link'
+  etiquetas VARCHAR(255) DEFAULT '#configuracion',
+  PRIMARY KEY (id)
+);
+
+-- 5. TABLA SUCURSALES
+CREATE TABLE sucursales (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255),
+  direccion_fiscal VARCHAR(255),
+  id_empresa BIGINT,
+  eliminar BOOLEAN DEFAULT TRUE, -- Replaces 'delete'
+  PRIMARY KEY (id),
+  CONSTRAINT sucursales_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
+);
+
+-- 6. TABLA ALMACEN
+CREATE TABLE almacen (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_sucursal BIGINT NOT NULL,
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  eliminar BOOLEAN DEFAULT TRUE, -- Replaces 'delete'
+  nombre VARCHAR(255),
+  defecto BOOLEAN DEFAULT TRUE, -- Replaces 'default'
+  PRIMARY KEY (id),
+  CONSTRAINT almacen_id_sucursal_fkey FOREIGN KEY (id_sucursal) REFERENCES sucursales(id)
+);
+
+-- 7. TABLA CAJA
+CREATE TABLE caja (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  descripcion VARCHAR(255) NOT NULL,
+  id_sucursal BIGINT,
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  eliminar BOOLEAN DEFAULT TRUE, -- Replaces 'delete'
+  imprimir BOOLEAN DEFAULT FALSE, -- Replaces 'print'
+  PRIMARY KEY (id),
+  CONSTRAINT caja_id_sucursal_fkey FOREIGN KEY (id_sucursal) REFERENCES sucursales(id)
+);
+
+-- 8. TABLA CATEGORIAS
+CREATE TABLE categorias (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  color VARCHAR(50),
+  icono VARCHAR(255) DEFAULT '-',
+  id_empresa BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT categorias_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
+);
+
+-- 9. TABLA TIPODOCUMENTO
+CREATE TABLE tipodocumento (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL DEFAULT '',
+  id_empresa BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT tipodocumento_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
+);
+
+-- 10. TABLA USUARIOS
+CREATE TABLE usuarios (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombres VARCHAR(255) NOT NULL,
+  id_tipodocumento BIGINT,
+  nro_doc VARCHAR(50) DEFAULT '-',
+  telefono VARCHAR(50) DEFAULT '-',
+  id_rol BIGINT,
+  correo VARCHAR(255) DEFAULT '-',
+  password VARCHAR(255) NOT NULL,
+  fecharegistro DATETIME DEFAULT CURRENT_TIMESTAMP,
+  estado VARCHAR(50) DEFAULT 'ACTIVO',
+  id_auth VARCHAR(255) UNIQUE,
+  tema VARCHAR(50) DEFAULT 'light',
+  PRIMARY KEY (id),
+  CONSTRAINT usuarios_id_rol_fkey FOREIGN KEY (id_rol) REFERENCES roles(id)
+);
+
+-- Añadir la FK de empresa a usuarios
+ALTER TABLE empresa ADD CONSTRAINT empresa_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id);
+
+-- 11. TABLA ASIGNACION_SUCURSAL
+CREATE TABLE asignacion_sucursal (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_sucursal BIGINT NOT NULL,
+  id_usuario BIGINT,
+  id_caja BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT asignacion_sucursal_id_caja_fkey FOREIGN KEY (id_caja) REFERENCES caja(id),
+  CONSTRAINT asignacion_sucursal_id_sucursal_fkey FOREIGN KEY (id_sucursal) REFERENCES sucursales(id),
+  CONSTRAINT asignacion_sucursal_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+);
+
+-- 12. TABLA CIERRECAJA
+CREATE TABLE cierrecaja (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  fechainicio DATETIME DEFAULT CURRENT_TIMESTAMP,
+  fechacierre DATETIME DEFAULT CURRENT_TIMESTAMP,
+  id_usuario BIGINT,
+  total_efectivo_calculado DECIMAL(15,2) DEFAULT 0,
+  total_efectivo_real DECIMAL(15,2) DEFAULT 0,
+  estado BIGINT DEFAULT 0,
+  diferencia_efectivo DECIMAL(15,2) DEFAULT 0,
+  id_caja BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT cierrecaja_id_caja_fkey FOREIGN KEY (id_caja) REFERENCES caja(id),
+  CONSTRAINT cierrecaja_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+);
+
+-- 13. TABLA CLIENTES_PROVEEDORES
+CREATE TABLE clientes_proveedores (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombres VARCHAR(255) NOT NULL,
+  id_empresa BIGINT,
+  direccion VARCHAR(500) DEFAULT '-',
+  telefono VARCHAR(50) DEFAULT '-',
+  email VARCHAR(255) DEFAULT '-',
+  identificador_nacional VARCHAR(50) DEFAULT '-',
+  identificador_fiscal VARCHAR(50) DEFAULT '-',
+  tipo VARCHAR(50) DEFAULT '-',
+  estado VARCHAR(50) DEFAULT 'activo',
+  fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT clientes_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
+);
+
+-- 14. TABLA PRODUCTOS
+CREATE TABLE productos (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  precio_venta DECIMAL(15,2) DEFAULT 0,
+  precio_compra DECIMAL(15,2) DEFAULT 0,
+  id_categoria BIGINT,
+  codigo_barras VARCHAR(255),
+  codigo_interno VARCHAR(255),
+  id_empresa BIGINT,
+  sevende_por VARCHAR(50) DEFAULT 'unidad',
+  maneja_inventarios BOOLEAN DEFAULT FALSE,
+  maneja_multiprecios BOOLEAN DEFAULT FALSE,
+  PRIMARY KEY (id),
+  CONSTRAINT productos_id_categoria_fkey FOREIGN KEY (id_categoria) REFERENCES categorias(id),
+  CONSTRAINT productos_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
+);
+
+-- 15. TABLA VENTAS
+CREATE TABLE ventas (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  monto_total DECIMAL(15,2) DEFAULT 0,
+  total_impuestos DECIMAL(15,2) DEFAULT 0,
+  id_usuario BIGINT,
+  saldo DECIMAL(15,2) DEFAULT 0,
+  pago_con DECIMAL(15,2) DEFAULT 0,
+  referencia_tarjeta VARCHAR(255) DEFAULT '-',
+  vuelto DECIMAL(15,2) DEFAULT 0,
+  cantidad_productos BIGINT DEFAULT 0,
+  sub_total DECIMAL(15,2) DEFAULT 0,
+  id_cliente BIGINT,
+  id_sucursal BIGINT,
+  id_empresa BIGINT,
+  estado VARCHAR(50) DEFAULT 'pendiente',
+  valor_impuesto DECIMAL(15,2) DEFAULT 0,
+  id_cierre_caja BIGINT,
+  nro_comprobante VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT ventas_id_cliente_fkey FOREIGN KEY (id_cliente) REFERENCES clientes_proveedores(id),
+  CONSTRAINT ventas_id_cierre_caja_fkey FOREIGN KEY (id_cierre_caja) REFERENCES cierrecaja(id),
+  CONSTRAINT ventas_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+);
+
+-- 16. TABLA DETALLE_VENTA
+CREATE TABLE detalle_venta (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_venta BIGINT NOT NULL,
+  cantidad DECIMAL(15,2) DEFAULT 1,
+  precio_venta DECIMAL(15,2),
+  total DECIMAL(15,2),
+  descripcion TEXT,
+  id_producto BIGINT,
+  precio_compra DECIMAL(15,2),
+  id_sucursal BIGINT,
+  estado VARCHAR(50) DEFAULT 'nueva',
+  id_almacen BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT detalle_venta_id_sucursal_fkey FOREIGN KEY (id_sucursal) REFERENCES sucursales(id),
+  CONSTRAINT detalle_venta_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id),
+  CONSTRAINT detalle_venta_id_venta_fkey FOREIGN KEY (id_venta) REFERENCES ventas(id)
+);
+
+-- 17. TABLA IMPRESORAS
+CREATE TABLE impresoras (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_caja BIGINT NOT NULL,
+  nombre_pc VARCHAR(255) DEFAULT '-', -- Replaces 'pc_name'
+  ip_local VARCHAR(255) DEFAULT '-',
+  estado BOOLEAN DEFAULT FALSE,       -- Replaces 'state'
+  nombre VARCHAR(255) DEFAULT '-',    -- Replaces 'name'
+  PRIMARY KEY (id),
+  CONSTRAINT impresoras_id_caja_fkey FOREIGN KEY (id_caja) REFERENCES caja(id)
+);
+
+-- 18. TABLA KARDEX
+CREATE TABLE kardex (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  fecha DATE NOT NULL,
+  motivo VARCHAR(255),
+  cantidad DECIMAL(15,2),
+  id_producto BIGINT,
+  id_usuario BIGINT,
+  tipo VARCHAR(50),
+  estado VARCHAR(50),
+  total DECIMAL(15,2),
+  costo DECIMAL(15,2),
+  habia DECIMAL(15,2),
+  hay DECIMAL(15,2),
+  PRIMARY KEY (id),
+  CONSTRAINT kardex_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id),
+  CONSTRAINT kardex_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+);
+
+-- 19. TABLA METODOS_PAGO
+CREATE TABLE metodos_pago (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  id_empresa BIGINT,
+  icono VARCHAR(255) DEFAULT '-',
+  ver_nombre BOOLEAN DEFAULT TRUE,
+  eliminar_actualizar BOOLEAN DEFAULT FALSE, -- Replaces 'delete_update'
+  PRIMARY KEY (id),
+  CONSTRAINT metodos_pago_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
+);
+
+-- 20. TABLA MOVIMIENTOS_CAJA
+CREATE TABLE movimientos_caja (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  fecha_movimiento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  tipo_movimiento VARCHAR(50),
+  monto DECIMAL(15,2) DEFAULT 0,
+  id_metodo_pago BIGINT,
+  descripcion VARCHAR(500) DEFAULT '-',
+  id_usuario BIGINT,
+  id_cierre_caja BIGINT,
+  id_ventas BIGINT,
+  vuelto DECIMAL(15,2) DEFAULT 0,
+  PRIMARY KEY (id),
+  CONSTRAINT movimientos_caja_id_cierre_caja_fkey FOREIGN KEY (id_cierre_caja) REFERENCES cierrecaja(id),
+  CONSTRAINT movimientos_caja_id_metodo_pago_fkey FOREIGN KEY (id_metodo_pago) REFERENCES metodos_pago(id),
+  CONSTRAINT movimientos_caja_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
+  CONSTRAINT movimientos_caja_id_ventas_fkey FOREIGN KEY (id_ventas) REFERENCES ventas(id)
+);
+
+-- 21. TABLA MOVIMIENTOS_STOCK
+CREATE TABLE movimientos_stock (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_almacen BIGINT NOT NULL,
+  id_producto BIGINT,
+  tipo_movimiento VARCHAR(50),
+  cantidad DECIMAL(15,2),
+  fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+  detalle VARCHAR(500) DEFAULT '-',
+  origen VARCHAR(255) DEFAULT '-',
+  PRIMARY KEY (id),
+  CONSTRAINT movimientos_stock_id_almacen_fkey FOREIGN KEY (id_almacen) REFERENCES almacen(id),
+  CONSTRAINT movimientos_stock_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id)
+);
+
+-- 22. TABLA MULTIPRECIOS
+CREATE TABLE multiprecios (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  precio_venta DECIMAL(15,2) NOT NULL,
+  id_producto BIGINT,
+  cantidad DECIMAL(15,2),
+  PRIMARY KEY (id),
+  CONSTRAINT multiprecios_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id)
+);
+
+-- 23. TABLA PERMISOS
+CREATE TABLE permisos (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_usuario BIGINT NOT NULL,
+  idmodulo BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT permisos_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
+  CONSTRAINT permisos_idmodulo_fkey FOREIGN KEY (idmodulo) REFERENCES modulos(id)
+);
+
+-- 24. TABLA PERMISOS_DEFAULT
+CREATE TABLE permisos_default (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_rol BIGINT NOT NULL,
+  id_modulo BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT permisos_default_id_modulo_fkey FOREIGN KEY (id_modulo) REFERENCES modulos(id),
+  CONSTRAINT permisos_default_id_rol_fkey FOREIGN KEY (id_rol) REFERENCES roles(id)
+);
+
+-- 25. TABLA SERIALIZACION_COMPROBANTES
+CREATE TABLE serializacion_comprobantes (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_tipo_comprobante BIGINT NOT NULL,
+  serie VARCHAR(50),
+  cantidad_numeros BIGINT,
+  correlativo BIGINT,
+  sucursal_id BIGINT,
+  por_defecto BOOLEAN DEFAULT FALSE, -- Replaces 'por_default'
+  PRIMARY KEY (id),
+  CONSTRAINT serial_comprobantes_id_tipo_fkey FOREIGN KEY (id_tipo_comprobante) REFERENCES tipo_comprobantes(id),
+  CONSTRAINT serial_comprobantes_sucursal_id_fkey FOREIGN KEY (sucursal_id) REFERENCES sucursales(id)
+);
+
+-- 26. TABLA STOCK
+CREATE TABLE stock (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_almacen BIGINT NOT NULL,
+  id_producto BIGINT,
+  stock DECIMAL(15,2) DEFAULT 0,
+  stock_minimo DECIMAL(15,2) DEFAULT 0,
+  ubicacion VARCHAR(255) DEFAULT '-',
+  PRIMARY KEY (id),
+  CONSTRAINT stock_id_almacen_fkey FOREIGN KEY (id_almacen) REFERENCES almacen(id),
+  CONSTRAINT stock_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id)
+);
+
+SET FOREIGN_KEY_CHECKS = 1;

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import {
-  BuscarProductos,MostrarProductos,EliminarProductos,InsertarProductos,EditarProductos, Generarcodigo
+  Generarcodigo
 } from "../index";
 import api from "../api/api";
 
@@ -16,55 +16,100 @@ export const useProductosStore = create((set, get) => ({
   },
   parametros: {},
   mostrarProductos: async (p) => {
-    const response = await MostrarProductos(p);
-    set({ parametros: p });
-    set({ dataProductos: response });
-    set({ productosItemSelect: response[0] });
-    set({refetchs:p.refetchs})
-    return response;
+    try {
+        if(!p.id_empresa) return;
+        const response = await api.get(`/productos/empresa/${p.id_empresa}`);
+        set({ parametros: p });
+        set({ dataProductos: response.data });
+        set({ productosItemSelect: response.data[0] || null });
+        set({refetchs:p.refetchs})
+        return response.data;
+    } catch (e) {
+        console.error("Error showing productos", e);
+        return [];
+    }
   },
   selectProductos: (p) => {
-   
     set({ productosItemSelect: p });
-
   },
   resetProductosItemSelect: () => {
     set({ productosItemSelect: null });
   },
   insertarProductos: async (p) => {
-  const response=  await InsertarProductos(p);
-    const { mostrarProductos } = get();
-    const { parametros } = get();
-    set(mostrarProductos(parametros));
-    return response;
+    try {
+        // Adaptar payload desde nombres con underscore a modelo Java
+        const producto = {
+          nombre: p._nombre ?? p.nombre,
+          precioVenta: Number(p._precio_venta ?? p.precio_venta ?? 0),
+          precioCompra: Number(p._precio_compra ?? p.precio_compra ?? 0),
+          categoria: (p._id_categoria ?? p.id_categoria) ? { id: (p._id_categoria ?? p.id_categoria) } : undefined,
+          codigoBarras: p._codigo_barras ?? p.codigo_barras ?? null,
+          codigoInterno: p._codigo_interno ?? p.codigo_interno ?? null,
+          empresa: (p._id_empresa ?? p.id_empresa) ? { id: (p._id_empresa ?? p.id_empresa) } : undefined,
+          seVendePor: (p._sevende_por ?? p.sevende_por ?? 'UNIDAD').toUpperCase(),
+          manejaInventarios: Boolean(p._maneja_inventarios ?? p.maneja_inventarios ?? false),
+          manejaMultiprecios: Boolean(p._maneja_multiprecios ?? p.maneja_multiprecios ?? false),
+        };
+        const response = await api.post("/productos", producto);
+        const { mostrarProductos, parametros } = get();
+        await mostrarProductos(parametros);
+        return response.data?.id;
+    } catch (e) {
+        console.error("Error inserting producto", e);
+        throw e; 
+    }
   },
   eliminarProductos: async (p) => {
-    await EliminarProductos(p);
-    const { mostrarProductos } = get();
-    const { parametros } = get();
-    set(mostrarProductos(parametros));
+    try {
+        await api.delete(`/productos/${p.id}`);
+        const { mostrarProductos, parametros } = get();
+        await mostrarProductos(parametros);
+    } catch (e) {
+        console.error("Error deleting producto", e);
+    }
   },
   editarProductos: async (p) => {
-    await EditarProductos(p);
-    const { mostrarProductos } = get();
-    const { parametros } = get();
-    set(mostrarProductos(parametros));
+    try {
+        const id = p._id ?? p.id;
+        const producto = {
+          nombre: p._nombre ?? p.nombre,
+          precioVenta: Number(p._precio_venta ?? p.precio_venta ?? 0),
+          precioCompra: Number(p._precio_compra ?? p.precio_compra ?? 0),
+          categoria: (p._id_categoria ?? p.id_categoria) ? { id: (p._id_categoria ?? p.id_categoria) } : undefined,
+          codigoBarras: p._codigo_barras ?? p.codigo_barras ?? null,
+          codigoInterno: p._codigo_interno ?? p.codigo_interno ?? null,
+          empresa: (p._id_empresa ?? p.id_empresa) ? { id: (p._id_empresa ?? p.id_empresa) } : undefined,
+          seVendePor: (p._sevende_por ?? p.sevende_por ?? 'UNIDAD').toUpperCase(),
+          manejaInventarios: Boolean(p._maneja_inventarios ?? p.maneja_inventarios ?? false),
+          manejaMultiprecios: Boolean(p._maneja_multiprecios ?? p.maneja_multiprecios ?? false),
+        };
+        await api.put(`/productos/${id}`, producto);
+        const { mostrarProductos, parametros } = get();
+        await mostrarProductos(parametros);
+    } catch (e) {
+        console.error("Error editing producto", e);
+    }
   },
   buscarProductos: async (p) => {
-    const response = await BuscarProductos(p);
-    set({ dataProductos: response });
-    return response;
+    try {
+        const query = p.buscador ?? p.descripcion ?? "";
+        const response = await api.get(`/productos/buscar/${p.id_empresa}?q=${encodeURIComponent(query)}`);
+        set({ dataProductos: response.data });
+        return response.data;
+    } catch (e) {
+        console.error("Error searching productos", e);
+        return [];
+    }
   },
   codigogenerado:0,
   generarCodigo:()=>{
   const response=  Generarcodigo({id:2})
   set({codigogenerado:response})
-  
- 
   },
   editarPreciosProductos: async (p) => {
     try {
-      await api.put(`/productos/editar/${p.id}`, p);
+      // Assuming a specific endpoint or just reusing generic update
+      await api.put(`/productos/${p.id}`, p);
     } catch (error) {
       throw new Error(error.response?.data?.message || error.message || "Error al editar precio");
     }

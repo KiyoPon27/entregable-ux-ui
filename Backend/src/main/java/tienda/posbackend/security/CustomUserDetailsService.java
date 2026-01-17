@@ -5,7 +5,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import tienda.posbackend.models.Usuario;
+import tienda.posbackend.entities.Usuario;
 import tienda.posbackend.repositories.UsuarioRepository;
 
 import java.util.ArrayList;
@@ -17,14 +17,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     private UsuarioRepository repository;
 
     @Override
-    public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
-        Usuario usuario = repository.findByCorreo(correo)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con correo: " + correo));
-
-        // Aquí convertimos TU usuario al formato que entiende Spring Security
-        // "new ArrayList<>()" son los roles, luego los configuraremos mejor si es
-        // necesario
-        return new org.springframework.security.core.userdetails.User(usuario.getCorreo(), usuario.getPassword(),
-                new ArrayList<>());
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // En nuestro caso el "username" es el correo
+        Usuario user = repository.findByCorreo(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con correo: " + username));
+        
+        // Aquí podríamos mapear los roles y permisos si fuera necesario.
+        // Por ahora, devolvemos un usuario de Spring Security básico.
+        return new org.springframework.security.core.userdetails.User(
+                user.getCorreo(), 
+                user.getPassword(), 
+                new ArrayList<>() // roles vacíos por ahora
+        );
     }
 }

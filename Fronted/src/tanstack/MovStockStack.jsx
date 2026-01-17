@@ -53,7 +53,8 @@ export const useInsertarMovStockMutation = () => {
         origen: "inventario",
       };
       const pStock = {
-        _id: dataStock?.id,
+        id_almacen: almacenSelectItem?.id,
+        id_producto: productosItemSelect?.id,
         cantidad: parseFloat(data.cantidad),
       };
       const pProductos = {

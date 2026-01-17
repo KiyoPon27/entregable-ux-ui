@@ -2,21 +2,21 @@ import api from "../api/api";
 
 export async function InsertarProductos(p) {
   try {
+    // Adaptar al modelo Java (empresa y categoria anidadas)
     const producto = {
       nombre: p._nombre,
-      precioVenta: parseFloat(p._precio_venta),
-      precioCompra: parseFloat(p._precio_compra),
-      idCategoria: p._id_categoria,
+      precioVenta: Number(p._precio_venta),
+      precioCompra: Number(p._precio_compra),
+      categoria: p._id_categoria ? { id: p._id_categoria } : undefined,
       codigoBarras: p._codigo_barras || null,
       codigoInterno: p._codigo_interno || null,
-      idEmpresa: p._id_empresa,
-      sevendePor: p._sevende_por || 'unidad',
+      empresa: p._id_empresa ? { id: p._id_empresa } : undefined,
+      seVendePor: (p._sevende_por || 'UNIDAD').toUpperCase(),
       manejaInventarios: p._maneja_inventarios === 1 || p._maneja_inventarios === true,
-      manejaMultiprecios: p._maneja_multiprecios === 1 || p._maneja_multiprecios === true
+      manejaMultiprecios: p._maneja_multiprecios === 1 || p._maneja_multiprecios === true,
     };
-    
-    const response = await api.post("/productos/insertar", producto);
-    console.log(response.data);
+
+    const response = await api.post("/productos", producto);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data || error.message || "Error al insertar producto");
@@ -25,7 +25,7 @@ export async function InsertarProductos(p) {
 
 export async function MostrarProductos(p) {
   try {
-    const response = await api.get(`/productos/mostrar/${p.id_empresa}`);
+    const response = await api.get(`/productos/empresa/${p.id_empresa}`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || "Error al mostrar productos");
@@ -34,15 +34,10 @@ export async function MostrarProductos(p) {
 
 export async function BuscarProductos(p) {
   try {
-    const response = await api.get("/productos/buscar", {
-      params: { 
-        idEmpresa: p.id_empresa,
-        buscador: p.buscador
-      }
-    });
+    const q = encodeURIComponent(p.buscador || "");
+    const response = await api.get(`/productos/buscar/${p.id_empresa}?q=${q}`);
     return response.data || [];
   } catch (error) {
-    // Si no encuentra, retornar array vacío en lugar de error
     if (error.response?.status === 404) {
       return [];
     }
@@ -52,7 +47,7 @@ export async function BuscarProductos(p) {
 
 export async function EliminarProductos(p) {
   try {
-    await api.delete(`/productos/eliminar/${p.id}`);
+    await api.delete(`/productos/${p.id}`);
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || "Error al eliminar producto");
   }
@@ -62,18 +57,18 @@ export async function EditarProductos(p) {
   try {
     const producto = {
       nombre: p._nombre,
-      precioVenta: parseFloat(p._precio_venta),
-      precioCompra: parseFloat(p._precio_compra),
-      idCategoria: p._id_categoria,
+      precioVenta: Number(p._precio_venta),
+      precioCompra: Number(p._precio_compra),
+      categoria: p._id_categoria ? { id: p._id_categoria } : undefined,
       codigoBarras: p._codigo_barras || null,
       codigoInterno: p._codigo_interno || null,
-      idEmpresa: p._id_empresa,
-      sevendePor: p._sevende_por || 'unidad',
+      empresa: p._id_empresa ? { id: p._id_empresa } : undefined,
+      seVendePor: (p._sevende_por || 'UNIDAD').toUpperCase(),
       manejaInventarios: p._maneja_inventarios === 1 || p._maneja_inventarios === true,
-      manejaMultiprecios: p._maneja_multiprecios === 1 || p._maneja_multiprecios === true
+      manejaMultiprecios: p._maneja_multiprecios === 1 || p._maneja_multiprecios === true,
     };
-    
-    await api.put(`/productos/editar/${p._id}`, producto);
+
+    await api.put(`/productos/${p._id}`, producto);
   } catch (error) {
     throw new Error(error.response?.data || error.message || "Error al editar producto");
   }
@@ -81,8 +76,7 @@ export async function EditarProductos(p) {
 
 export async function MostrarUltimoProducto(p) {
   try {
-    const response = await api.get(`/productos/mostrar/${p.id_empresa}`);
-    // Retornar el último producto (mayor ID)
+    const response = await api.get(`/productos/empresa/${p.id_empresa}`);
     const productos = response.data;
     if (productos && productos.length > 0) {
       return productos[productos.length - 1];

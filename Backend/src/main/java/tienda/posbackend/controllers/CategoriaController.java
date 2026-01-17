@@ -3,55 +3,60 @@ package tienda.posbackend.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tienda.posbackend.models.Categoria;
-import tienda.posbackend.services.CategoriaService;
+import tienda.posbackend.entities.Categoria;
+import tienda.posbackend.entities.Empresa;
+import tienda.posbackend.repositories.CategoriaRepository;
+import tienda.posbackend.repositories.EmpresaRepository;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/categorias")
+@CrossOrigin(origins = "*")
 public class CategoriaController {
 
     @Autowired
-    private CategoriaService service;
+    private CategoriaRepository categoriaRepository;
 
-    // Mostrar categorías por empresa
-    @GetMapping("/mostrar/{idEmpresa}")
-    public List<Categoria> mostrar(@PathVariable Long idEmpresa) {
-        return service.mostrarCategorias(idEmpresa);
+    @Autowired
+    private EmpresaRepository empresaRepository;
+
+    @GetMapping("/empresa/{empresaId}")
+    public List<Categoria> listarPorEmpresa(@PathVariable Long empresaId) {
+        return categoriaRepository.findByEmpresaId(empresaId);
+    }
+    
+    @GetMapping("/buscar/{empresaId}")
+    public List<Categoria> buscar(@PathVariable Long empresaId, @RequestParam String q) {
+        return categoriaRepository.buscarPorNombre(empresaId, q);
     }
 
-    // Insertar categoría
-    @PostMapping("/insertar")
-    public ResponseEntity<?> insertar(@RequestBody Categoria categoria) {
-        try {
-            Long id = service.insertarCategoria(categoria);
-            return ResponseEntity.ok("Categoría insertada con ID: " + id);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+    @PostMapping
+    public ResponseEntity<Categoria> crear(@RequestBody Categoria categoria) {
+        // Asegurar que la relación empresa se establezca correctamente si viene solo el ID
+        if (categoria.getEmpresa() != null && categoria.getEmpresa().getId() != null) {
+            Empresa empresa = empresaRepository.findById(categoria.getEmpresa().getId())
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+            categoria.setEmpresa(empresa);
         }
+        return ResponseEntity.ok(categoriaRepository.save(categoria));
     }
 
-    // Editar categoría
-    @PutMapping("/editar/{id}")
-    public ResponseEntity<?> editar(
-            @PathVariable Long id, 
-            @RequestParam String nombre, 
-            @RequestParam Long idEmpresa, 
-            @RequestParam(required = false) String color,
-            @RequestParam(required = false) String icono) {
-        try {
-            service.editarCategoria(id, nombre, idEmpresa, color, icono);
-            return ResponseEntity.ok("Categoría actualizada");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @PutMapping("/{id}")
+    public ResponseEntity<Categoria> editar(@PathVariable Long id, @RequestBody Categoria categoriaDetails) {
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Categoria no encontrada"));
+        
+        categoria.setNombre(categoriaDetails.getNombre());
+        categoria.setColor(categoriaDetails.getColor());
+        categoria.setIcono(categoriaDetails.getIcono());
+        
+        return ResponseEntity.ok(categoriaRepository.save(categoria));
     }
 
-    // Eliminar categoría
-    @DeleteMapping("/eliminar/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        service.eliminarCategoria(id);
-        return ResponseEntity.ok("Categoría eliminada");
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        categoriaRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }
