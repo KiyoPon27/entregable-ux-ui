@@ -20,55 +20,27 @@ export function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stateMenu, setStateMenu] = useState(false);
 
-  const { mostrarusuarios } = useUsuariosStore();
   const { mostrarempresa } = useEmpresaStore();
-    const { user } = UserAuth(); // Accedemos al contexto
-  const id_auth = user?.id; // Obtenemos el id_auth del usuario autenticado
-  const { mostrarSucursalCajaAsignada } = useAsignacionCajaSucursalStore();
+  const { user } = UserAuth(); // Usuario del AuthContext
 
-
-  const {
-    data: datausuarios,
-    isLoading: isLoadingUsuarios,
-    error: errorUsuarios,
-    refetch: refetchUsuarios,
-  } = useQuery({
-    queryKey: ["mostrar usuarios"],
-    queryFn: () => mostrarusuarios({ id_auth: id_auth }),
-    refetchOnWindowFocus: false,
-    enabled: !!id_auth,
-  });
-
-  const {
-    data: dataSucursales,
-    isLoading: isLoadingSucursales,
-    error: errorSucursales,
-  } = useMostrarSucursalAsignadasQuery();
-
+  // Cargar empresa directamente con el ID del usuario
   const {
     data: dataEmpresa,
     isLoading: isLoadingEmpresa,
     error: errorEmpresa,
   } = useQuery({
-    queryKey: ["mostrar empresa", datausuarios?.id],
-    queryFn: () => mostrarempresa({ _id_usuario: datausuarios?.id }),
-    enabled: !!datausuarios?.id,
+    queryKey: ["mostrar empresa", user?.id],
+    queryFn: () => mostrarempresa({ _id_usuario: user?.id }),
+    enabled: !!user?.id,
     refetchOnWindowFocus: false,
   });
 
-  // Consolidación de isLoading y error
-  const isLoading =
-    isLoadingUsuarios || isLoadingSucursales || isLoadingEmpresa;
-  const error = errorUsuarios || errorSucursales || errorEmpresa;
-
-  //  if (datausuarios == null) {
-  //    refetchUsuarios();
-  //  }
-  if (isLoading) {
+  if (isLoadingEmpresa) {
     return <Spinner1 />;
   }
-  if (error) {
-    return <span>error layout...{error.message} </span>;
+  
+  if (errorEmpresa) {
+    return <span>Error al cargar empresa</span>;
   }
   return (
     <Container className={sidebarOpen ? "active" : ""}>

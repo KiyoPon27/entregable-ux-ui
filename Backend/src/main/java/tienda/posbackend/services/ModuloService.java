@@ -172,8 +172,8 @@ public class ModuloService {
             moduloExistente.setIcono(moduloActualizado.getIcono());
         }
 
-        if (moduloActualizado.getRuta() != null) {
-            moduloExistente.setRuta(moduloActualizado.getRuta());
+        if (moduloActualizado.getLink() != null) {
+            moduloExistente.setLink(moduloActualizado.getLink());
         }
 
         if (moduloActualizado.getEtiquetas() != null) {

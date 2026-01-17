@@ -34,9 +34,14 @@ public class CategoriaController {
 
     // Editar categoría
     @PutMapping("/editar/{id}")
-    public ResponseEntity<?> editar(@PathVariable Long id, @RequestParam String nombre, @RequestParam Long idEmpresa, @RequestParam(required = false) String color) {
+    public ResponseEntity<?> editar(
+            @PathVariable Long id, 
+            @RequestParam String nombre, 
+            @RequestParam Long idEmpresa, 
+            @RequestParam(required = false) String color,
+            @RequestParam(required = false) String icono) {
         try {
-            service.editarCategoria(id, nombre, idEmpresa, color);
+            service.editarCategoria(id, nombre, idEmpresa, color, icono);
             return ResponseEntity.ok("Categoría actualizada");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

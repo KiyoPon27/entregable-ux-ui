@@ -1,123 +1,106 @@
 import Swal from "sweetalert2";
-import { supabase } from "../index";
-const tabla = "categorias";
+import api from "../api/api";
+
 export async function InsertarCategorias(p, file) {
-  const { error, data } = await supabase.rpc("insertarcategorias", p);
-  if (error) {
+  try {
+    const response = await api.post("/categorias/insertar", {
+      nombre: p._nombre,
+      color: p._color,
+      icono: p._icono || '-',
+      idEmpresa: p._id_empresa
+    });
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Éxito!",
+      text: "Categoría creada correctamente",
+      timer: 1500,
+      showConfirmButton: false
+    });
+    
+    return response.data;
+  } catch (error) {
     Swal.fire({
       icon: "error",
-      title: "Oops...categorias",
-      text: error.message,
+      title: "Error al crear categoría",
+      text: error.response?.data || error.message,
     });
-    return;
-  }
-  const img = file.size;
-  if (img != undefined) {
-    const nuevo_id = data;
-    const urlImagen = await subirImagen(nuevo_id, file);
-    const piconoeditar = {
-      icono: urlImagen.publicUrl,
-      id: nuevo_id,
-    };
-    await EditarIconoCategorias(piconoeditar);
   }
 }
-
-async function subirImagen(idcategoria, file) {
-  const ruta = "categorias/" + idcategoria;
-  const { data, error } = await supabase.storage
-    .from("imagenes")
-    .upload(ruta, file, {
-      cacheControl: "0",
-      upsert: true,
-    });
-  if (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: error.message,
-    });
-    return;
-  }
-  if (data) {
-    const { data: urlimagen } = await supabase.storage
-      .from("imagenes")
-      .getPublicUrl(ruta);
-    return urlimagen;
-  }
-}
-async function EditarIconoCategorias(p) {
-  const { error } = await supabase.from("categorias").update(p).eq("id", p.id);
-  if (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: error.message,
-    });
-    return;
-  }
-}
-
 
 export async function MostrarCategorias(p) {
-  const { data } = await supabase
-    .from(tabla)
-    .select()
-    .eq("id_empresa", p.id_empresa)
-    .order("id", { ascending: false });
-  return data;
+  try {
+    const response = await api.get(`/categorias/mostrar/${p.id_empresa}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al mostrar categorías:", error);
+    return [];
+  }
 }
-export async function BuscarCategorias(p) {
-  const { data } = await supabase
-    .from(tabla)
-    .select()
-    .eq("id_empresa", p.id_empresa)
-    .ilike("nombre", "%" + p.descripcion + "%");
 
-  return data;
-}
-export async function EliminarCategorias(p) {
-  const { error } = await supabase.from(tabla).delete().eq("id", p.id);
-  if (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: error.message,
-    });
-    return;
-  }
-  if (p.icono != "-") {
-    const ruta = "categorias/" + p.id;
-    await supabase.storage.from("imagenes").remove([ruta]);
-  }
-}
-export async function EditarCategorias(p, fileold, filenew) {
-  const { error } = await supabase.rpc("editarcategorias", p);
-  if (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: error.message,
-    });
-    return;
-  }
-  if (filenew != "-" && filenew.size != undefined) {
-    if (fileold != "-") {
-      await EditarIconoStorage(p._id, filenew);
-    } else {
-      const dataImagen = await subirImagen(p._id, filenew);
-      const piconoeditar = {
-        icono: dataImagen.publicUrl,
-        id: p._id,
-      };
-      await EditarIconoCategorias(piconoeditar);
+export async function BuscarCategorias(p) {
+  try {
+    // El backend no tiene endpoint de búsqueda, así que filtramos en frontend
+    const response = await api.get(`/categorias/mostrar/${p.id_empresa}`);
+    const categorias = response.data;
+    
+    // Filtrar por nombre si hay descripción
+    if (p.descripcion) {
+      return categorias.filter(cat => 
+        cat.nombre.toLowerCase().includes(p.descripcion.toLowerCase())
+      );
     }
+    
+    return categorias;
+  } catch (error) {
+    console.error("Error al buscar categorías:", error);
+    return [];
   }
 }
-export async function EditarIconoStorage(id, file) {
-  const ruta = "categorias/" + id;
-  await supabase.storage.from("imagenes").update(ruta, file, {
-    cacheControl: "0",
-    upsert: true,
-  });
+
+export async function EliminarCategorias(p) {
+  try {
+    await api.delete(`/categorias/eliminar/${p.id}`);
+    Swal.fire({
+      icon: "success",
+      title: "¡Eliminado!",
+      text: "Categoría eliminada correctamente",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error al eliminar",
+      text: error.response?.data || error.message,
+    });
+  }
+}
+
+export async function EditarCategorias(p, fileold, filenew) {
+  try {
+    // El backend espera params en la URL, no body
+    await api.put(`/categorias/editar/${p._id}`, null, {
+      params: {
+        nombre: p._nombre,
+        idEmpresa: p._id_empresa,
+        color: p._color || null,
+        icono: p._icono || null
+      }
+    });
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Actualizado!",
+      text: "Categoría actualizada correctamente",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error al editar",
+      text: error.response?.data || error.message,
+    });
+  }
 }

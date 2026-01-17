@@ -40,6 +40,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Activar CORS
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Permitir Login y Registro sin token
+                        .requestMatchers("/api/modulos/**").permitAll() // Permitir acceso a módulos (temporal)
+                        .requestMatchers("/api/empresas/**").permitAll() // Permitir acceso a empresas (temporal)
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated() // Todo lo demás requiere Token
                 )

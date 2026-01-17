@@ -16,6 +16,7 @@ export function Productos() {
   const { mostrarProductos, buscarProductos, buscador,setRefetch } =
     useProductosStore();
   const { dataempresa } = useEmpresaStore();
+  
   const {
     data: productos,
     isLoading: isLoadingProductos,

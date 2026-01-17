@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import {
-  BuscarProductos,MostrarProductos,EliminarProductos,InsertarProductos,EditarProductos, Generarcodigo,
-  supabase
+  BuscarProductos,MostrarProductos,EliminarProductos,InsertarProductos,EditarProductos, Generarcodigo
 } from "../index";
-const tabla ="productos"
+import api from "../api/api";
+
 export const useProductosStore = create((set, get) => ({
   refetchs:null,
   buscador: "",
@@ -63,9 +63,10 @@ export const useProductosStore = create((set, get) => ({
  
   },
   editarPreciosProductos: async (p) => {
-    const { error } = await supabase.from(tabla).update(p).eq("id", p.id);
-    if (error) {
-      throw new Error(error.message);
+    try {
+      await api.put(`/productos/editar/${p.id}`, p);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message || "Error al editar precio");
     }
   },
 }));

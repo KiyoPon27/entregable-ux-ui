@@ -31,7 +31,7 @@ public class CategoriaService {
 
     // Equivalente a 'editarcategorias'
     @SuppressWarnings("null") // Suprimir warnings de null safety para evitar falsos positivos en análisis estático
-    public void editarCategoria(Long id, String nombre, Long idEmpresa, String color) throws Exception {
+    public void editarCategoria(Long id, String nombre, Long idEmpresa, String color, String icono) throws Exception {
         // Validación: nombre único por empresa, excepto el mismo id    
         Optional<Categoria> duplicado = repository.findByNombreAndIdEmpresa(nombre, idEmpresa);
         if (duplicado.isPresent() && !duplicado.get().getId().equals(id)) {
@@ -42,6 +42,9 @@ public class CategoriaService {
         if (categoria.isPresent()) {
             categoria.get().setNombre(nombre);
             categoria.get().setColor(color);
+            if (icono != null) {
+                categoria.get().setIcono(icono);
+            }
             repository.save(categoria.get());
         } else {
             throw new Exception("Categoría no encontrada");

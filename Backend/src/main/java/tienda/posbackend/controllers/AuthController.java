@@ -69,4 +69,55 @@ Throwable causa = e.getCause();
 String mensajeCausa = (causa != null) ? causa.getMessage() : "Desconocida";
 return ResponseEntity.status(500).body("Error: " + e.getMessage() + " \n >>> CAUSA REAL: " + mensajeCausa);        }
     }
+
+    // ENDPOINT DE DIAGNÓSTICO 1: Generar hash BCrypt para una contraseña
+    // GET: http://localhost:8080/api/auth/generate-hash?password=123
+    @GetMapping("/generate-hash")
+    public ResponseEntity<?> generarHash(@RequestParam String password) {
+        String hash = passwordEncoder.encode(password);
+        return ResponseEntity.ok("Hash BCrypt para '" + password + "':\n" + hash);
+    }
+
+    // ENDPOINT DE DIAGNÓSTICO 2: Verificar si un usuario existe y su hash
+    // GET: http://localhost:8080/api/auth/check-user?email=admin@tienda.com
+    @GetMapping("/check-user")
+    public ResponseEntity<?> verificarUsuario(@RequestParam String email) {
+        var usuario = usuarioRepository.findByCorreo(email);
+        if (usuario.isPresent()) {
+            Usuario u = usuario.get();
+            return ResponseEntity.ok(
+                "✅ Usuario encontrado:\n" +
+                "ID: " + u.getId() + "\n" +
+                "Nombre: " + u.getNombres() + "\n" +
+                "Correo: " + u.getCorreo() + "\n" +
+                "Estado: " + u.getEstado() + "\n" +
+                "Hash actual: " + u.getPassword()
+            );
+        } else {
+            return ResponseEntity.status(404).body("❌ Usuario NO encontrado con email: " + email);
+        }
+    }
+
+    // ENDPOINT PARA OBTENER DATOS DEL USUARIO AUTENTICADO
+    // GET: http://localhost:8080/api/auth/me
+    @GetMapping("/me")
+    public ResponseEntity<?> obtenerUsuarioActual(@RequestHeader("Authorization") String token) {
+        try {
+            // Extraer el email del token (quitar "Bearer ")
+            String jwt = token.substring(7);
+            String email = jwtUtil.extractUsername(jwt);
+            
+            var usuario = usuarioRepository.findByCorreo(email);
+            if (usuario.isPresent()) {
+                Usuario u = usuario.get();
+                // No devolver el password por seguridad
+                u.setPassword(null);
+                return ResponseEntity.ok(u);
+            } else {
+                return ResponseEntity.status(404).body("Usuario no encontrado");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Token inválido: " + e.getMessage());
+        }
+    }
 }

@@ -57,11 +57,11 @@ public class Modulo {
     private String icono;
 
     /**
-     * Campo: ruta
+     * Campo: link
      * - Ruta de navegación del módulo (ej: "/ventas", "/productos")
      */
     @Column(length = 255)
-    private String ruta;
+    private String link;
 
     /**
      * Campo: etiquetas

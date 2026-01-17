@@ -24,6 +24,19 @@ export function ConfiguracionesTemplate() {
       };
     }
   }, []);
+  
+  // Validación: Si no hay permisos, mostrar mensaje
+  if (!dataPermisosConfiguracion || dataPermisosConfiguracion.length === 0) {
+    return (
+      <Container>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#fff' }}>
+          <h2>No tienes permisos de configuración asignados</h2>
+          <p>Contacta con el administrador para obtener acceso</p>
+        </div>
+      </Container>
+    );
+  }
+  
   return (
     <Container>
       <div id="cards">

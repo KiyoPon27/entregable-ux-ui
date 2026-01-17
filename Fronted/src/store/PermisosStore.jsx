@@ -57,8 +57,16 @@ export const usePermisosStore = create((set, get) => ({
   },
   dataPermisosConfiguracion: [],
   mostrarPermisosConfiguracion: async (p) => {
-    const response = await MostrarPermisosConfiguracion(p);
-    set({ dataPermisosConfiguracion: response });
-    return response;
+    try {
+      const response = await MostrarPermisosConfiguracion(p);
+      // Si no hay respuesta, usar array vacío
+      const data = response || [];
+      set({ dataPermisosConfiguracion: data });
+      return data;
+    } catch (error) {
+      console.error("Error en mostrarPermisosConfiguracion:", error);
+      set({ dataPermisosConfiguracion: [] });
+      return [];
+    }
   },
 }));
