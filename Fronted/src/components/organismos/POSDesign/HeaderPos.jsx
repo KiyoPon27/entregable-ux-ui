@@ -97,10 +97,10 @@ export function HeaderPos() {
     const pDetalleVentas = {
       _id_venta: idventa,
       _cantidad: parseFloat(cantidadInput) || 1,
-      _precio_venta: productosItemSelect.precio_venta,
+      _precio_venta: productosItemSelect.precioVenta,
       _descripcion: productosItemSelect.nombre,
       _id_producto: productosItemSelect.id,
-      _precio_compra: productosItemSelect.precio_compra,
+      _precio_compra: productosItemSelect.precioCompra,
       _id_sucursal: dataCierreCaja?.caja?.id_sucursal,
       _id_almacen: almacenSelectItem?.id,
     };
@@ -171,7 +171,7 @@ export function HeaderPos() {
   useBarcodeScanner((code) => {
     try {
       const productoEncontrado = dataProductos?.find(
-        (p) => String(p.codigo_barras) === String(code)
+        (p) => String(p.codigoBarras) === String(code)
       );
       if (productoEncontrado) {
         selectProductos(productoEncontrado);
@@ -193,7 +193,7 @@ export function HeaderPos() {
       setStateListaproductos(false);
       timeout = setTimeout(() => {
         const productoEncontrado = dataProductos?.find(
-          (p) => p.codigo_barras === texto
+          (p) => p.codigoBarras === texto
         );
         if (productoEncontrado) {
           selectProductos(productoEncontrado);

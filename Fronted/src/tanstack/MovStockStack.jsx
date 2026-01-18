@@ -60,10 +60,10 @@ export const useInsertarMovStockMutation = () => {
       const pProductos = {
         id: productosItemSelect?.id,
         precio_compra: parseFloat(
-          (productosItemSelect?.precio_compra + data.precio_compra) / 2
+          (productosItemSelect?.precioCompra + data.precio_compra) / 2
         ),
         precio_venta: parseFloat(
-          (productosItemSelect?.precio_venta + data.precio_venta) / 2
+          (productosItemSelect?.precioVenta + data.precio_venta) / 2
         ),
       };
       console.log("pMovimientoStock",pMovimientoStock)

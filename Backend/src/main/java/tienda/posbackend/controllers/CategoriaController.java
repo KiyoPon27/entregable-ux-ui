@@ -1,12 +1,11 @@
 package tienda.posbackend.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.entities.Categoria;
-import tienda.posbackend.entities.Empresa;
-import tienda.posbackend.repositories.CategoriaRepository;
-import tienda.posbackend.repositories.EmpresaRepository;
+import tienda.posbackend.services.CategoriaService;
 
 import java.util.List;
 
@@ -16,47 +15,33 @@ import java.util.List;
 public class CategoriaController {
 
     @Autowired
-    private CategoriaRepository categoriaRepository;
-
-    @Autowired
-    private EmpresaRepository empresaRepository;
+    private CategoriaService categoriaService;
 
     @GetMapping("/empresa/{empresaId}")
-    public List<Categoria> listarPorEmpresa(@PathVariable Long empresaId) {
-        return categoriaRepository.findByEmpresaId(empresaId);
+    public ResponseEntity<List<Categoria>> listarPorEmpresa(@PathVariable Long empresaId) {
+        return ResponseEntity.ok(categoriaService.listarPorEmpresa(empresaId));
     }
     
     @GetMapping("/buscar/{empresaId}")
-    public List<Categoria> buscar(@PathVariable Long empresaId, @RequestParam String q) {
-        return categoriaRepository.buscarPorNombre(empresaId, q);
+    public ResponseEntity<List<Categoria>> buscar(@PathVariable Long empresaId, @RequestParam String q) {
+        return ResponseEntity.ok(categoriaService.buscarPorNombre(empresaId, q));
     }
 
     @PostMapping
     public ResponseEntity<Categoria> crear(@RequestBody Categoria categoria) {
-        // Asegurar que la relación empresa se establezca correctamente si viene solo el ID
-        if (categoria.getEmpresa() != null && categoria.getEmpresa().getId() != null) {
-            Empresa empresa = empresaRepository.findById(categoria.getEmpresa().getId())
-                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-            categoria.setEmpresa(empresa);
-        }
-        return ResponseEntity.ok(categoriaRepository.save(categoria));
+        Categoria nuevaCategoria = categoriaService.crear(categoria);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevaCategoria);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Categoria> editar(@PathVariable Long id, @RequestBody Categoria categoriaDetails) {
-        Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Categoria no encontrada"));
-        
-        categoria.setNombre(categoriaDetails.getNombre());
-        categoria.setColor(categoriaDetails.getColor());
-        categoria.setIcono(categoriaDetails.getIcono());
-        
-        return ResponseEntity.ok(categoriaRepository.save(categoria));
+        Categoria categoriaActualizada = categoriaService.editar(id, categoriaDetails);
+        return ResponseEntity.ok(categoriaActualizada);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        categoriaRepository.deleteById(id);
-        return ResponseEntity.ok().build();
+        categoriaService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }

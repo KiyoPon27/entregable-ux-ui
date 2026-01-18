@@ -17,8 +17,8 @@ export function ClientesProveedores() {
         dataempresa: dataempresa?.id,
         tipo:
           location.pathname === "/configuracion/clientes"
-            ? "cliente"
-            : "proveedor",
+            ? "CLIENTE"
+            : "PROVEEDOR",
       },
     ],
     queryFn: () =>
@@ -26,8 +26,8 @@ export function ClientesProveedores() {
         id_empresa: dataempresa?.id,
         tipo:
           location.pathname === "/configuracion/clientes"
-            ? "cliente"
-            : "proveedor",
+            ? "CLIENTE"
+            : "PROVEEDOR",
       }),
     enabled: !!dataempresa,
     refetchOnWindowFocus: false,
@@ -41,8 +41,8 @@ export function ClientesProveedores() {
         dataempresa: dataempresa?.id,
         tipo:
           location.pathname === "/configuracion/clientes"
-            ? "cliente"
-            : "proveedor",
+            ? "CLIENTE"
+            : "PROVEEDOR",
         buscador: buscador,
       },
     ],
@@ -51,8 +51,8 @@ export function ClientesProveedores() {
         id_empresa: dataempresa?.id,
         tipo:
           location.pathname === "/configuracion/clientes"
-            ? "cliente"
-            : "proveedor",
+            ? "CLIENTE"
+            : "PROVEEDOR",
         buscador: buscador,
       }),
     enabled: !!dataempresa,

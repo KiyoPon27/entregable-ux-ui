@@ -37,10 +37,15 @@ export function RegistrarClientesProveedores({
       identificador_fiscal: dataSelect?.identificador_fiscal || "",
     },
   });
+  const [errorBackend, setErrorBackend] = useState("");
+  
   const { isPending, mutate: doInsertar } = useMutation({
     mutationFn: insertar,
     mutationKey: "insertar clientes proveedores mutation",
-    onError: (err) => console.log("El error", err.message),
+    onError: (err) => {
+      console.log("El error", err.message);
+      setErrorBackend(err.message || "Error al guardar");
+    },
     onSuccess: () => cerrarFormulario(),
   });
   const handlesub = (data) => {
@@ -51,9 +56,11 @@ export function RegistrarClientesProveedores({
     setIsExploding(true);
   };
   async function insertar(data) {
+    setErrorBackend(""); // Limpiar error anterior
+    
     if (accion === "Editar") {
       const p = {
-        _id: dataSelect.id,
+        id: dataSelect.id, // Cambiado de _id a id
         _nombres: ConvertirCapitalize(data.nombres),
         _id_empresa: dataempresa?.id,
         _direccion: data.direccion,
@@ -61,7 +68,7 @@ export function RegistrarClientesProveedores({
         _email: data.email,
         _identificador_nacional: data.identificador_nacional,
         _identificador_fiscal: data.identificador_fiscal,
-        _tipo: tipo,
+        _tipo: tipo.toUpperCase(), // Convertir a mayúsculas
       };
       await editarCliPro(p);
     } else {
@@ -73,7 +80,7 @@ export function RegistrarClientesProveedores({
         _email: data.email,
         _identificador_nacional: data.identificador_nacional,
         _identificador_fiscal: data.identificador_fiscal,
-        _tipo: tipo,
+        _tipo: tipo.toUpperCase(), // Convertir a mayúsculas
       };
 
       await insertarCliPro(p);
@@ -105,6 +112,18 @@ export function RegistrarClientesProveedores({
           </div>
 
           <form className="formulario" onSubmit={handleSubmit(handlesub)}>
+            {errorBackend && (
+              <div style={{
+                padding: '10px',
+                backgroundColor: '#fee',
+                border: '1px solid #f66',
+                borderRadius: '5px',
+                color: '#c33',
+                marginBottom: '15px'
+              }}>
+                ❌ {errorBackend}
+              </div>
+            )}
             <section className="form-subcontainer">
               <article>
                 <InputText icono={<v.iconoflechaderecha />}>

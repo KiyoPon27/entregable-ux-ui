@@ -1,5 +1,6 @@
 package tienda.posbackend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public class Almacen {
 
     @ManyToOne
     @JoinColumn(name = "id_sucursal")
+    @JsonIgnoreProperties({"empresa"})
     private Sucursal sucursal;
 
     @Column(name = "fecha_creacion")

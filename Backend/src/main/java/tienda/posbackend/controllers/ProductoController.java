@@ -31,6 +31,13 @@ public class ProductoController {
         return productoRepository.findByEmpresaId(empresaId);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Producto> obtenerPorId(@PathVariable Long id) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        return ResponseEntity.ok(producto);
+    }
+
     @GetMapping("/buscar/{empresaId}")
     public List<Producto> buscar(@PathVariable Long empresaId, @RequestParam String q) {
         return productoRepository.buscarProductos(empresaId, q);
@@ -48,6 +55,17 @@ public class ProductoController {
                     .orElseThrow(() -> new RuntimeException("Categoria no encontrada"));
             producto.setCategoria(categoria);
         }
+        
+        // Valores por defecto si no se proporcionan
+        if (producto.getSeVendePor() == null) {
+            producto.setSeVendePor("unidad");
+        }
+        if (producto.getManejaInventarios() == null) {
+            producto.setManejaInventarios(true);
+        }
+        if (producto.getManejaMultiprecios() == null) {
+            producto.setManejaMultiprecios(false);
+        }
 
         return ResponseEntity.ok(productoRepository.save(producto));
     }
@@ -62,9 +80,11 @@ public class ProductoController {
         producto.setPrecioCompra(details.getPrecioCompra());
         producto.setCodigoBarras(details.getCodigoBarras());
         producto.setCodigoInterno(details.getCodigoInterno());
-        producto.setSeVendePor(details.getSeVendePor());
-        producto.setManejaInventarios(details.getManejaInventarios());
-        producto.setManejaMultiprecios(details.getManejaMultiprecios());
+        
+        // Valores con defaults si vienen null
+        producto.setSeVendePor(details.getSeVendePor() != null ? details.getSeVendePor() : "unidad");
+        producto.setManejaInventarios(details.getManejaInventarios() != null ? details.getManejaInventarios() : true);
+        producto.setManejaMultiprecios(details.getManejaMultiprecios() != null ? details.getManejaMultiprecios() : false);
         
         if (details.getCategoria() != null && details.getCategoria().getId() != null) {
              Categoria categoria = categoriaRepository.findById(details.getCategoria().getId())

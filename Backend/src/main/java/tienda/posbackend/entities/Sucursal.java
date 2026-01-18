@@ -1,5 +1,6 @@
 package tienda.posbackend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,6 +19,7 @@ public class Sucursal {
 
     @ManyToOne
     @JoinColumn(name = "id_empresa")
+    @JsonIgnoreProperties({"usuario"})
     private Empresa empresa;
 
     private Boolean eliminar;

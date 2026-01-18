@@ -23,7 +23,7 @@ export function ClientesProveedoresTemplate() {
   const [isExploding, setIsExploding] = useState(false);
   const location = useLocation()
   function nuevoRegistro() {
-    const tipo= location.pathname==="/configuracion/clientes"?"cliente":"proveedor"
+    const tipo= location.pathname==="/configuracion/clientes"?"CLIENTE":"PROVEEDOR"
     setTipo(tipo)
     SetopenRegistro(!openRegistro);
     setAccion("Nuevo");
