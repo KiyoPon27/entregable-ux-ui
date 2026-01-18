@@ -21,6 +21,7 @@ import { Impresoras } from "../pages/Impresoras";
 import { Usuarios } from "../pages/Usuarios";
 import { Almacenes } from "../pages/Almacenes";
 import { Inventario } from "../pages/Inventario";
+import { MovimientosStock } from "../pages/MovimientosStock";
 import { ConfiguracionTicket } from "../pages/ConfiguracionTicket";
 import { MiPerfil } from "../pages/MiPerfil";
 import { SerializacionComprobantes } from "../pages/SerializacionComprobantes";
@@ -68,6 +69,16 @@ export function MyRoutes() {
           <Layout>
             <ProtectedRoute accessBy="authenticated">
               <Inventario />
+            </ProtectedRoute>
+          </Layout>
+        }
+      />
+      <Route
+        path="/movimientos-stock"
+        element={
+          <Layout>
+            <ProtectedRoute accessBy="authenticated">
+              <MovimientosStock />
             </ProtectedRoute>
           </Layout>
         }

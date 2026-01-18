@@ -274,23 +274,32 @@ export function RegistrarProductos({
       generarCodigoInterno();
     } else {
       selectCategoria({
-        id:dataSelect.id_categoria,
-        nombre:dataSelect.categoria
+        id:dataSelect.categoria?.id,
+        nombre:dataSelect.categoria?.nombre
       })
-      setRandomCodeinterno(dataSelect.codigo_interno);
-      setRandomCodebarras(dataSelect.codigo_barras);
-      dataSelect.sevende_por === "UNIDAD"
+      setRandomCodeinterno(dataSelect.codigoInterno);
+      setRandomCodebarras(dataSelect.codigoBarras);
+      dataSelect.seVendePor === "UNIDAD"
         ? handleCheckboxChange(1)
         : handleCheckboxChange(0);
-      dataSelect.maneja_inventarios
+      dataSelect.manejaInventarios
         ? setStateInventarios(true)
         : setStateInventarios(false);
-      dataSelect.maneja_inventarios
+      dataSelect.manejaInventarios
         ? setStateEnabledStock(true)
         : setStateEnabledStock(false);
     }
   }, []);
   //#endregion validar_accion
+
+  // Cargar datos de stock cuando se edita y se obtiene la información del almacén
+  useEffect(() => {
+    if (accion === "Editar" && dataStockXAlmacenYProducto) {
+      setStock(dataStockXAlmacenYProducto.stock || "");
+      setStockMinimo(dataStockXAlmacenYProducto.stock_minimo || "");
+      setUbicacion(dataStockXAlmacenYProducto.ubicacion || "");
+    }
+  }, [dataStockXAlmacenYProducto, accion]);
 
   // barcode scanner: populate codigo de barras when Enter is pressed (allow in inputs)
   useBarcodeScanner((code) => {
@@ -348,7 +357,7 @@ export function RegistrarProductos({
                   <input
                     step="0.01"
                     className="form__field"
-                    defaultValue={dataSelect.precio_venta}
+                    defaultValue={dataSelect.precioVenta}
                     type="number"
                     placeholder="precio venta"
                     {...register("precio_venta")}
@@ -361,7 +370,7 @@ export function RegistrarProductos({
                   <input
                     step="0.01"
                     className="form__field"
-                    defaultValue={dataSelect.precio_compra}
+                    defaultValue={dataSelect.precioCompra}
                     type="number"
                     placeholder="precio compra"
                     {...register("precio_compra")}
@@ -468,18 +477,11 @@ export function RegistrarProductos({
                       <input
                         disabled={!!dataStockXAlmacenYProducto}
                         className="form__field"
-                        value={
-                          accion === "Editar"
-                            ? dataStockXAlmacenYProducto
-                              ? dataStockXAlmacenYProducto?.stock
-                              : stock
-                            : stock
-                        }
+                        defaultValue={dataStockXAlmacenYProducto?.stock || stock}
                         step="0.01"
                         type="number"
                         placeholder="stock"
                         {...register("stock")}
-                        onChange={(e) => setStock(e.target.value)}
                       />
                       <label className="form__label">stock</label>
                     </InputText>
@@ -489,18 +491,11 @@ export function RegistrarProductos({
                       <input
                         disabled={!!dataStockXAlmacenYProducto}
                         className="form__field"
-                        value={
-                          accion === "Editar"
-                            ? dataStockXAlmacenYProducto
-                              ? dataStockXAlmacenYProducto?.stock_minimo
-                              : stockMinimo
-                            : stockMinimo
-                        }
+                        defaultValue={dataStockXAlmacenYProducto?.stock_minimo || stockMinimo}
                         step="0.01"
                         type="number"
                         placeholder="stock minimo"
                         {...register("stock_minimo")}
-                        onChange={(e) => setStockMinimo(e.target.value)}
                       />
                       <label className="form__label">stock minimo</label>
                     </InputText>
@@ -510,17 +505,10 @@ export function RegistrarProductos({
                       <input
                         disabled={!!dataStockXAlmacenYProducto}
                         className="form__field"
-                        value={
-                          accion === "Editar"
-                            ? dataStockXAlmacenYProducto
-                              ? dataStockXAlmacenYProducto?.ubicacion
-                              : ubicacion
-                            : ubicacion
-                        }
+                        defaultValue={dataStockXAlmacenYProducto?.ubicacion || ubicacion}
                         type="text"
                         placeholder="ubicacion"
                         {...register("ubicacion")}
-                        onChange={(e) => setUbicacion(e.target.value)}
                       />
                       <label className="form__label">Ubicacion</label>
                     </InputText>

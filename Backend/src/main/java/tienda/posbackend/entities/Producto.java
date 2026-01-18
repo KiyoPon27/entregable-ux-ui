@@ -1,5 +1,6 @@
 package tienda.posbackend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -23,6 +24,7 @@ public class Producto {
 
     @ManyToOne
     @JoinColumn(name = "id_categoria")
+    @JsonIgnoreProperties({"empresa"})
     private Categoria categoria;
 
     @Column(name = "codigo_barras")
@@ -33,6 +35,7 @@ public class Producto {
 
     @ManyToOne
     @JoinColumn(name = "id_empresa")
+    @JsonIgnoreProperties({"usuario"})
     private Empresa empresa;
 
     @Column(name = "sevende_por")

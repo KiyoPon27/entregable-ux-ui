@@ -120,7 +120,7 @@ export function TablaInventarios({
       },
     },
     {
-      accessorKey: "tipo_movimiento",
+      accessorKey: "tipoMovimiento",
       header: "Tipo",
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,

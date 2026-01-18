@@ -76,7 +76,7 @@ export function TablaProductos({
       },
     },
     {
-      accessorKey: "p_venta",
+      accessorKey: "precioVenta",
       header: "P. venta",
       cell: (info) => (
         <td data-title="P. venta" className="ContentCell">
@@ -91,7 +91,7 @@ export function TablaProductos({
       },
     },
     {
-      accessorKey: "p_compra",
+      accessorKey: "precioCompra",
       header: "P. compra",
       cell: (info) => (
         <td data-title="P. compra" className="ContentCell">
@@ -106,7 +106,7 @@ export function TablaProductos({
       },
     },
     {
-      accessorKey: "sevende_por",
+      accessorKey: "seVendePor",
       header: "Se vende por",
       cell: (info) => (
         <td data-title="Se vende por" className="ContentCell">
@@ -121,11 +121,11 @@ export function TablaProductos({
       },
     },
     {
-      accessorKey: "maneja_inventarios",
+      accessorKey: "manejaInventarios",
       header: "Inventarios",
       cell: (info) => (
         <td data-title="Inventarios" className="ContentCell">
-          <Checkbox1 isChecked={info.getValue()}/>
+          <Checkbox1 isChecked={info.getValue()} onChange={() => {}} disabled={true}/>
         </td>
       ),
       enableColumnFilter: true,

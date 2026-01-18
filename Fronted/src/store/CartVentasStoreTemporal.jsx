@@ -11,7 +11,7 @@ const initialState = {
 };
 function calcularTotal(items) {
   return items.reduce(
-    (total, item) => total + item._precio_venta * item._cantidad,
+    (total, item) => total + (item.precioVenta ?? item._precio_venta ?? 0) * item._cantidad,
     0
   );
 }

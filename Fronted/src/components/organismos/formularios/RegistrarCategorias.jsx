@@ -37,7 +37,14 @@ export function RegistrarCategorias({
     mutationFn: insertar,
     mutationKey: "insertar categorias",
     onError: (err) => console.log("El error", err.message),
-    onSuccess: () => cerrarFormulario(),
+    onSuccess: (result) => {
+      // Solo cerrar si la operación fue exitosa
+      if (result?.success) {
+        cerrarFormulario();
+      }
+      // Si hay error (duplicate o not_found), el modal permanece abierto
+      // Los mensajes ya se muestran en el store con SweetAlert2
+    },
   });
   const handlesub = (data) => {
     doInsertar(data);
@@ -47,24 +54,28 @@ export function RegistrarCategorias({
     setIsExploding(true);
   };
   async function insertar(data) {
+    let result;
+    
     if (accion === "Editar") {
       const p = {
-        _nombre: ConvertirCapitalize(data.descripcion),
-        _id_empresa: dataempresa.id,
-        _color: currentColor,
-        _id: dataSelect.id,
+        nombre: ConvertirCapitalize(data.descripcion),
+        id_empresa: dataempresa.id,
+        color: currentColor,
+        id: dataSelect.id,
       };
-      await editarCategoria(p, dataSelect.icono, file);
+      result = await editarCategoria(p, dataSelect.icono, file);
     } else {
       const p = {
-        _nombre: ConvertirCapitalize(data.descripcion),
-        _color: currentColor,
-        _icono: "-",
-        _id_empresa: dataempresa.id,
+        nombre: ConvertirCapitalize(data.descripcion),
+        color: currentColor,
+        icono: "-",
+        id_empresa: dataempresa.id,
       };
-
-      await insertarCategorias(p, file);
+      result = await insertarCategorias(p, file);
     }
+    
+    // Retornar el resultado para que onSuccess pueda evaluarlo
+    return result;
   }
   function abrirImagenes() {
     ref.current.click();

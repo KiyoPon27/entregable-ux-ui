@@ -49,16 +49,16 @@ export function RegistrarInventario() {
     reset,
   } = useForm({
     defaultValues: {
-      precio_compra: productosItemSelect?.precio_compra,
-      precio_venta: productosItemSelect?.precio_venta,
+      precio_compra: productosItemSelect?.precioCompra,
+      precio_venta: productosItemSelect?.precioVenta,
     },
   });
   useEffect(() => {
     if (productosItemSelect) {
       reset({
         cantidad: "", // o 0
-        precio_compra: productosItemSelect.precio_compra || 0,
-        precio_venta: productosItemSelect.precio_venta || 0,
+        precio_compra: productosItemSelect.precioCompra || 0,
+        precio_venta: productosItemSelect.precioVenta || 0,
       });
     }
   }, [productosItemSelect]);
@@ -150,7 +150,7 @@ export function RegistrarInventario() {
               />
             </ContainerSelector>
           </section>
-          {productosItemSelect?.maneja_inventarios ? (
+          {productosItemSelect?.manejaInventarios ? (
             <form className="formulario" onSubmit={handleSubmit(mutate)}>
               <section className="form-subcontainer">
                 <article>

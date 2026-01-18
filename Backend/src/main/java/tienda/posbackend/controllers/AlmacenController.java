@@ -25,6 +25,24 @@ public class AlmacenController {
         return almacenRepository.findByEmpresaId(idEmpresa);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Almacen> obtenerPorId(@PathVariable Long id) {
+        Almacen almacen = almacenRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Almacen no encontrado"));
+        return ResponseEntity.ok(almacen);
+    }
+
+    @GetMapping("/buscar/{idEmpresa}")
+    public List<Almacen> buscar(@PathVariable Long idEmpresa, @RequestParam(required = false, defaultValue = "") String q) {
+        List<Almacen> almacenes = almacenRepository.findByEmpresaId(idEmpresa);
+        if (q == null || q.trim().isEmpty()) {
+            return almacenes;
+        }
+        return almacenes.stream()
+                .filter(a -> a.getNombre().toLowerCase().contains(q.toLowerCase()))
+                .toList();
+    }
+
     @PostMapping
     public ResponseEntity<Almacen> crear(@RequestBody Almacen almacen) {
         return ResponseEntity.ok(almacenRepository.save(almacen));
