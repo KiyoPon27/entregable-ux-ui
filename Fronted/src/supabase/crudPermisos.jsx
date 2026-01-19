@@ -3,9 +3,7 @@ import api from "../api/api";
 export async function MostrarPermisos(p) {
   if (!p?.id_usuario) return [];
   try {
-    const response = await api.get(`/permisos/mostrar`, {
-      params: { idUsuario: p.id_usuario }
-    });
+    const response = await api.get(`/permisos/usuario/${p.id_usuario}`);
     return response.data || [];
   } catch (error) {
     console.error("Error al mostrar permisos:", error);
@@ -37,7 +35,14 @@ export async function MostrarPermisosConfiguracion(p) {
 export async function MostrarPermisosDefault() {
   try {
     const response = await api.get(`/permisos/default`);
-    return response.data || [];
+    // Backend devuelve: [{id, rol: {id, nombre}, modulo: {id, nombre, ...}}]
+    // Transformar a formato esperado: [{id, id_rol, id_modulo}]
+    const data = response.data || [];
+    return data.map(p => ({
+      id: p.id,
+      id_rol: p.rol?.id,
+      id_modulo: p.modulo?.id
+    }));
   } catch (error) {
     console.error("Error al mostrar permisos default:", error);
     return [];
@@ -46,18 +51,24 @@ export async function MostrarPermisosDefault() {
 
 export async function InsertarPermisos(p) {
   try {
-    await api.post(`/permisos/insertar`, p);
+    const permiso = {
+      id_usuario: p.id_usuario,
+      idmodulo: p.idmodulo
+    };
+    await api.post(`/permisos`, permiso);
   } catch (error) {
-    throw new Error(error.response?.data || error.message || "Error al insertar permisos");
+    console.error("Error al insertar permiso:", error);
+    throw new Error(error.response?.data?.message || error.message || "Error al insertar permisos");
   }
 }
 
 export async function EliminarPermisos(p) {
   if (!p?.id_usuario) return null;
   try {
-    await api.delete(`/permisos/eliminar/${p.id_usuario}`);
+    await api.delete(`/permisos/usuario/${p.id_usuario}`);
   } catch (error) {
-    throw new Error(error.response?.data || error.message || "Error al eliminar permisos");
+    console.error("Error al eliminar permisos:", error);
+    throw new Error(error.response?.data?.message || error.message || "Error al eliminar permisos");
   }
 }
 

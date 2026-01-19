@@ -113,11 +113,28 @@ export const useCategoriasStore = create((set, get) => ({
           return { success: false, error: "not_found" };
         }
         
-        // Otros errores
+        // Manejar error 400 (tiene productos asociados)
+        if (e.response?.status === 400) {
+          const mensaje = e.response?.data?.message || "No se puede eliminar la categoría";
+          
+          Swal.fire({
+            icon: "warning",
+            title: "No se puede eliminar",
+            text: mensaje,
+            confirmButtonColor: "#d33",
+            html: `<p>${mensaje}</p><p style="margin-top: 10px; font-size: 14px; color: #666;">Elimina o reasigna los productos a otra categoría primero.</p>`
+          });
+          
+          return { success: false, error: "has_products" };
+        }
+        
+        // Manejar error 500 u otros errores del servidor
+        const mensaje = e.response?.data?.message || e.response?.data || "Error al eliminar la categoría";
+        
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: e.response?.data?.message || "No se pudo eliminar la categoría",
+          text: mensaje,
           confirmButtonColor: "#d33"
         });
         return { success: false, error: "general" };

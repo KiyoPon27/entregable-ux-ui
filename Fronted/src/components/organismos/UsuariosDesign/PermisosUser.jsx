@@ -35,38 +35,55 @@ export const PermisosUser = () => {
       queryKey: ["mostrar permisos default"],
       queryFn: mostrarPermisosDefault,
     });
-  const { isLoading: isLoadingPermisosUser } = useQuery({
+  const { isLoading: isLoadingPermisosUser, data: permisosUsuario } = useQuery({
     queryKey: [
       "mostrar permisos por usuario",
-      { id_usuario: itemSelect?.id_usuario },
+      { id_usuario: itemSelect?.id },
     ],
-    queryFn: () => mostrarPermisos({ id_usuario: itemSelect?.id_usuario }),
-    enabled: !!itemSelect,
+    queryFn: () => {
+      console.log("🔍 Cargando permisos para usuario ID:", itemSelect?.id);
+      return mostrarPermisos({ id_usuario: itemSelect?.id });
+    },
+    enabled: !!itemSelect && accion === "Editar",
   });
   const mutation = useMutation({
     mutationKey: ["actualizar permisos"],
     mutationFn: () => actualizarPermisos(),
   });
+  
+  // Efecto principal para manejar permisos según el modo
   useEffect(() => {
     if (accion === "Nuevo") {
-      const permisosPorRol =
-        dataPermisosDefault
-          ?.filter((permiso) => permiso.id_rol === rolesItemSelect?.id)
+      // Modo nuevo: aplicar permisos por rol si hay un rol seleccionado
+      if (rolesItemSelect?.id && dataPermisosDefault) {
+        const permisosPorRol = dataPermisosDefault
+          .filter((permiso) => permiso.id_rol === rolesItemSelect.id)
           .map((permiso) => permiso.id_modulo) || [];
-      setSelectedModules(permisosPorRol);
-    }else{
-       setRolesItemSelect({
+        setSelectedModules(permisosPorRol);
+      } else {
+        // Si no hay rol seleccionado, limpiar permisos
+        setSelectedModules([]);
+      }
+    } else if (accion === "Editar") {
+      // Modo edición: cargar rol del usuario
+      if (itemSelect?.id_rol && itemSelect?.rol && !rolesItemSelect) {
+        setRolesItemSelect({
           id: itemSelect.id_rol,
           nombre: itemSelect.rol,
-       });
+        });
+      }
+      
+      // Cargar permisos del usuario
+      if (permisosUsuario && permisosUsuario.length > 0) {
+        const modulosIds = permisosUsuario.map((p) => p.modulo?.id).filter(Boolean);
+        console.log("📋 Permisos del usuario:", modulosIds);
+        setSelectedModules(modulosIds);
+      } else if (permisosUsuario && permisosUsuario.length === 0) {
+        // Si no tiene permisos, limpiar
+        setSelectedModules([]);
+      }
     }
-  }, []);
-  useEffect(() => {
-    if (accion !== "Nuevo" && datapermisos) {
-      const permisosUsuario = datapermisos.map((p) => p.idmodulo);
-      setSelectedModules(permisosUsuario);
-    }
-  }, [accion, datapermisos]);
+  }, [rolesItemSelect, dataPermisosDefault, accion, permisosUsuario, itemSelect]);
   const isLoading =
     isLoadingModulos ||
    
@@ -85,11 +102,7 @@ export const PermisosUser = () => {
       />
       <List>
         {datamodulos?.map((module, index) => {
-          const isChecked = itemSelect
-            ? datapermisos?.some(
-                (p) => String(p.idmodulo) === String(module.id)
-              )
-            : selectedModules.includes(module.id);
+          const isChecked = selectedModules.includes(module.id);
           return (
             <ListItem key={module.id}>
               <Check

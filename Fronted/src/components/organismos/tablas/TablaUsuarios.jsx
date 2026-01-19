@@ -1,8 +1,7 @@
 import styled from "styled-components";
 import {
   ContentAccionesTabla,
-  useCategoriasStore,
-  Paginacion,ImagenContent, Icono,
+  Paginacion,
   useUsuariosStore
 } from "../../../index";
 import Swal from "sweetalert2";
@@ -17,22 +16,23 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
-import { useAsignacionCajaSucursalStore } from "../../../store/AsignacionCajaSucursalStore";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEliminarUsuarioMutation } from "../../../tanstack/UsuariosStack";
+
 export function TablaUsuarios({
   data,
   SetopenRegistro,
   setdataSelect,
   setAccion,
 }) {
-  if (data==null) return;
-  const [pagina, setPagina] = useState(1);
-  const [datas, setData] = useState(data);
-  const [columnFilters, setColumnFilters] = useState([]);
-   const queryClient = useQueryClient()
-  const { eliminarUsuarioAsignado } = useUsuariosStore();
-  function eliminar(p) {
+  if (data == null || data.length === 0) return <div>No hay usuarios registrados</div>;
   
+  const [pagina, setPagina] = useState(1);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const queryClient = useQueryClient();
+  const eliminarMutation = useEliminarUsuarioMutation();
+
+  function eliminar(p) {
     Swal.fire({
       title: "¿Estás seguro(a)(e)?",
       text: "Una vez eliminado, ¡no podrá recuperar este registro!",
@@ -43,115 +43,78 @@ export function TablaUsuarios({
       confirmButtonText: "Si, eliminar",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await eliminarUsuarioAsignado({ id: p.id_usuario });
-        queryClient.invalidateQueries(["mostrar usuarios asignados"])
+        eliminarMutation.mutate({ id: p.id });
       }
     });
   }
+  
   function editar(data) {
-    if (data.nombre === "General") {
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Este registro no se permite modificar ya que es valor por defecto.",
-        footer: '<a href="">...</a>',
-      });
-      return;
-    }
     SetopenRegistro(true);
     setdataSelect(data);
     setAccion("Editar");
   }
+  
   const columns = [
-   
-   
     {
-      accessorKey: "usuario",
-      header: "Usuario",
+      accessorKey: "nombres",
+      header: "Nombres",
       cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
     },
     {
-      accessorKey: "email",
-      header: "Email",
+      accessorKey: "correo",
+      header: "Correo",
       cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
     },
     {
-      accessorKey: "sucursal",
-      header: "Sucursal",
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
+      accessorKey: "nroDoc",
+      header: "N° Documento",
+      cell: (info) => <span>{info.getValue() || "-"}</span>,
     },
     {
-      accessorKey: "caja",
-      header: "Caja",
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
+      accessorKey: "telefono",
+      header: "Teléfono",
+      cell: (info) => <span>{info.getValue() || "-"}</span>,
     },
     {
-      accessorKey: "rol",
+      accessorKey: "rol.nombre",
       header: "Rol",
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
+      cell: (info) => <span>{info.row.original.rol?.nombre || "Sin rol"}</span>,
     },
     {
-      accessorKey: "estadouser",
-      header: "Estado",
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
+      accessorKey: "tipoDocumento.nombre",
+      header: "Tipo Doc",
+      cell: (info) => <span>{info.row.original.tipoDocumento?.nombre || "-"}</span>,
     },
-
+    {
+      accessorKey: "estado",
+      header: "Estado",
+      cell: (info) => (
+        <span style={{ 
+          color: info.getValue() === "ACTIVO" ? "green" : "red",
+          fontWeight: "bold"
+        }}>
+          {info.getValue()}
+        </span>
+      ),
+    },
     {
       accessorKey: "acciones",
       header: "",
       enableSorting: false,
-      cell: (info) => (
-        <td data-title="Acciones" className="ContentCell">
-          <ContentAccionesTabla
-            funcionEditar={() => editar(info.row.original)}
-            funcionEliminar={() => eliminar(info.row.original)}
-          />
-        </td>
-      ),
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
+      cell: (info) => {
+        const esSuperAdmin = info.row.original.id === 1;
+        return (
+          <td data-title="Acciones" className="ContentCell">
+            <ContentAccionesTabla
+              funcionEditar={() => editar(info.row.original)}
+              funcionEliminar={esSuperAdmin ? null : () => eliminar(info.row.original)}
+            />
+          </td>
+        );
       },
     },
   ];
+  
   const table = useReactTable({
     data,
     columns,
@@ -163,20 +126,8 @@ export function TablaUsuarios({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     columnResizeMode: "onChange",
-    meta: {
-      updateData: (rowIndex, columnId, value) =>
-        setData((prev) =>
-          prev.map((row, index) =>
-            index === rowIndex
-              ? {
-                  ...prev[rowIndex],
-                  [columnId]: value,
-                }
-              : row
-          )
-        ),
-    },
   });
+  
   return (
     <>
       <Container>
@@ -201,73 +152,59 @@ export function TablaUsuarios({
                         desc: " 🔽",
                       }[header.column.getIsSorted()]
                     }
-                    <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      className={`resizer ${
-                        header.column.getIsResizing() ? "isResizing" : ""
-                      }`}
-                    />
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(item=>(
-              
-                <tr key={item.id}>
-                  {item.getVisibleCells().map(cell => (
-                  
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    
-                  ))}
-                </tr>
-             
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} data-title={cell.column.columnDef.header}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
             ))}
           </tbody>
         </table>
-        <Paginacion
-          table={table}
-          irinicio={() => table.setPageIndex(0)}
-          pagina={table.getState().pagination.pageIndex + 1}
-          setPagina={setPagina}
-          maximo={table.getPageCount()}
-        />
       </Container>
+      <Paginacion
+        table={table}
+        pagina={pagina}
+        setPagina={setPagina}
+        totalPaginas={table.getPageCount()}
+      />
     </>
   );
 }
+
 const Container = styled.div`
   position: relative;
-
   margin: 5% 3%;
+  
   @media (min-width: ${v.bpbart}) {
     margin: 2%;
   }
   @media (min-width: ${v.bphomer}) {
     margin: 2em auto;
-    /* max-width: ${v.bphomer}; */
   }
+  
   .responsive-table {
     width: 100%;
     margin-bottom: 1.5em;
     border-spacing: 0;
+    
     @media (min-width: ${v.bpbart}) {
       font-size: 0.9em;
     }
     @media (min-width: ${v.bpmarge}) {
       font-size: 1em;
     }
+    
     thead {
-      
       position: absolute;
-
       padding: 0;
       border: 0;
       height: 1px;
@@ -280,10 +217,10 @@ const Container = styled.div`
         width: auto;
         overflow: auto;
       }
+      
       th {
-        
         border-bottom: 2px solid ${({theme})=>theme.color2};
-        font-weight:700;
+        font-weight: 700;
         text-align: center;
         color: ${({ theme }) => theme.text};
         &:first-of-type {
@@ -291,18 +228,18 @@ const Container = styled.div`
         }
       }
     }
+    
     tbody,
     tr,
     th,
     td {
-      
       display: block;
       padding: 0;
       text-align: left;
       white-space: normal;
     }
+    
     tr {
-      
       @media (min-width: ${v.bpbart}) {
         display: table-row;
       }
@@ -310,9 +247,9 @@ const Container = styled.div`
 
     th,
     td {
-      
       padding: 0.5em;
       vertical-align: middle;
+      
       @media (min-width: ${v.bplisa}) {
         padding: 0.75em 0.5em;
       }
@@ -327,10 +264,12 @@ const Container = styled.div`
         padding: 0.75em;
       }
     }
+    
     tbody {
       @media (min-width: ${v.bpbart}) {
         display: table-row-group;
       }
+      
       tr {
         margin-bottom: 1em;
         &:nth-of-type(even) {
@@ -343,14 +282,9 @@ const Container = styled.div`
         &:last-of-type {
           margin-bottom: 0;
         }
-        &:nth-of-type(even) {
-          @media (min-width: ${v.bpbart}) {
-           
-          }
-        }
       }
+      
       th[scope="row"] {
-        
         @media (min-width: ${v.bplisa}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         }
@@ -360,26 +294,28 @@ const Container = styled.div`
           color: ${({ theme }) => theme.text};
         }
       }
+      
       .ContentCell {
         text-align: right;
         display: flex;
         justify-content: space-between;
         align-items: center;
         height: 50px;
-
         border-bottom: 1px solid rgba(161, 161, 161, 0.32);
+        
         @media (min-width: ${v.bpbart}) {
           justify-content: center;
           border-bottom: none;
         }
       }
+      
       td {
         text-align: right;
         @media (min-width: ${v.bpbart}) {
-          /* border-bottom: 1px solid rgba(161, 161, 161, 0.32); */
           text-align: center;
         }
       }
+      
       td[data-title]:before {
         content: attr(data-title);
         float: left;
@@ -393,13 +329,4 @@ const Container = styled.div`
       }
     }
   }
-`;
-const Colorcontent = styled.div`
-  justify-content: center;
-  min-height: ${(props) => props.$alto};
-  width: ${(props) => props.$ancho};
-  display: flex;
-  background-color: ${(props) => props.color};
-  border-radius: 50%;
-  text-align: center;
 `;

@@ -12,112 +12,109 @@ import { useForm } from "react-hook-form";
 import { BtnClose } from "../../ui/buttons/BtnClose";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useCajasStore } from "../../../store/CajasStore";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { SelectList } from "../../ui/lists/SelectList";
 import { BarLoader } from "react-spinners";
 import { PermisosUser } from "../UsuariosDesign/PermisosUser";
 import { useRolesStore } from "../../../store/RolesStore";
 import { usePermisosStore } from "../../../store/PermisosStore";
+import { useInsertarUsuarioMutation, useEditarUsuarioMutation } from "../../../tanstack/UsuariosStack";
+
 export function RegistrarUsuarios({ accion, dataSelect, onClose }) {
   const queryClient = useQueryClient();
-  const {
-    cajaSelectItem,
- 
-    mostrarCajaXSucursal,
-   
-  } = useCajasStore();
-  const { insertarUsuario, itemSelect, editarUsuarios } = useUsuariosStore();
+  const { itemSelect } = useUsuariosStore();
   const { dataempresa } = useEmpresaStore();
-  const { mostrarSucursales, sucursalesItemSelect, selectSucursal } =
-    useSucursalesStore();
-  const { rolesItemSelect } = useRolesStore();
+  const { rolesItemSelect, selectRol, mostrarRoles } = useRolesStore();
   const { mostrarPermisos } = usePermisosStore();
+  const { mostrarSucursales, sucursalesItemSelect, selectSucursal } = useSucursalesStore();
+
+  const insertarMutation = useInsertarUsuarioMutation();
+  const editarMutation = useEditarUsuarioMutation();
 
   useEffect(() => {
-    if (accion === "Editar" && itemSelect?.id_usuario) {
-      mostrarPermisos({ id_usuario: itemSelect.id_usuario });
+    if (accion === "Editar" && itemSelect?.id) {
+      mostrarPermisos({ id_usuario: itemSelect.id });
+      if (itemSelect.rol) {
+        selectRol(itemSelect.rol);
+      }
     }
-  }, [accion, itemSelect?.id_usuario]);
+  }, [accion, itemSelect]);
+
+  const { data: dataRoles, isLoading: isloadingRoles } = useQuery({
+    queryKey: ["mostrar roles"],
+    queryFn: mostrarRoles,
+  });
 
   const { data: dataSucursales, isLoading: isloadingSucursales } = useQuery({
     queryKey: ["mostrar sucursales", { id_empresa: dataempresa?.id }],
     queryFn: () => mostrarSucursales({ id_empresa: dataempresa?.id }),
     enabled: !!dataempresa,
   });
-  const { data: dataCaja, isLoading: isloadingCajas } = useQuery({
-    queryKey: [
-      "mostrar caja por sucursal",
-      { id_sucursal: sucursalesItemSelect?.id },
-    ],
-    queryFn: () =>
-      mostrarCajaXSucursal({ id_sucursal: sucursalesItemSelect?.id }),
-    enabled: !!sucursalesItemSelect,
-  });
+
   const {
     register,
     formState: { errors },
     handleSubmit,
   } = useForm({
     defaultValues: {
-      nombres: itemSelect?.usuario,
-      email: itemSelect?.email,
-      nro_doc: itemSelect?.nro_doc,
-      telefono: itemSelect?.telefono,
-      pass: 123456,
+      nombres: itemSelect?.nombres || "",
+      correo: itemSelect?.correo || "",
+      nro_doc: itemSelect?.nroDoc || "",
+      telefono: itemSelect?.telefono || "",
+      pass: "123",
     },
   });
-  const insertar = async (data) => {
+
+  const manejadorInsertar = async (data) => {
+    if (!rolesItemSelect?.id) {
+      toast.error("Debe seleccionar un rol");
+      return;
+    }
+    if (accion !== "Editar" && !sucursalesItemSelect?.id) {
+      toast.error("Debe seleccionar una sucursal");
+      return;
+    }
+
     if (accion === "Editar") {
       const p = {
-        id: itemSelect?.id_usuario,
+        id: itemSelect?.id,
         nombres: data.nombres,
         nro_doc: data.nro_doc,
         telefono: data.telefono,
+        correo: data.correo,
         id_rol: rolesItemSelect?.id,
-
-        //datos asignacion caja y sucursal
-       
-        
+        estado: itemSelect?.estado || "ACTIVO"
       };
-      console.log("pEditar",p)
-      await editarUsuarios(p);
+      editarMutation.mutate(p, {
+        onSuccess: () => {
+          onClose();
+        }
+      });
     } else {
       const p = {
-        
         nombres: data.nombres,
         nro_doc: data.nro_doc,
         telefono: data.telefono,
-        id_rol: rolesItemSelect?.id,
         correo: data.email,
-        //datos asignacion caja y sucursal
-        id_sucursal: sucursalesItemSelect?.id,
-        id_caja: cajaSelectItem?.id,
-        //datos credenciales
         email: data.email,
         pass: data.pass,
+        id_rol: rolesItemSelect?.id,
+        id_sucursal: sucursalesItemSelect?.id,
+        id_tipodocumento: data.id_tipodocumento || null
       };
-      await insertarUsuario(p);
+      insertarMutation.mutate(p, {
+        onSuccess: () => {
+          onClose();
+        }
+      });
     }
   };
-  const { isPending, mutate: doInsertar } = useMutation({
-    mutationKey: ["insertar usuarios"],
-    mutationFn: insertar,
-    onError: (error) => {
-      toast.error(`Error: ${error.message}`);
-    },
-    onSuccess: () => {
-      toast.success("Usuario registrado correctamente");
-      queryClient.invalidateQueries(["mostrar usuarios asignados"]);
-      onClose();
-    },
-  });
 
-  const manejadorInsertar = (data) => {
-    doInsertar(data);
-  };
-  const isLoading = isloadingSucursales || isloadingCajas;
+  const isPending = insertarMutation.isPending || editarMutation.isPending;
+
+  const isLoading = isloadingRoles || isloadingSucursales;
   if (isLoading) return <BarLoader color="#6d6d6d" />;
+  
   return (
     <Container>
       {isPending ? (
@@ -142,41 +139,43 @@ export function RegistrarUsuarios({ accion, dataSelect, onClose }) {
                     />
                   }
                 >
-                  <input disabled ={accion==="Editar"?true:false}
+                  <input 
+                    disabled={accion === "Editar"}
                     className="form__field"
                     type="text"
                     {...register("email", {
-                      required: true,
+                      required: accion !== "Editar",
                     })}
                   />
                   <label className="form__label">email</label>
                   {errors.email?.type === "required" && <p>Campo requerido</p>}
                 </InputText>
               </article>
-              <article>
-                <InputText
-                  icono={
-                    <Icon
-                      icon="material-symbols-light:stacked-email-outline-rounded"
-                      width="24"
-                      height="24"
-                    />
-                  }
-                >
-                  <input disabled ={accion==="Editar"?true:false}
-                    className="form__field"
-                    defaultValue={
-                      accion === "Editar" ? dataSelect?.descripcion : ""
+              
+              {accion !== "Editar" && (
+                <article>
+                  <InputText
+                    icono={
+                      <Icon
+                        icon="material-symbols-light:stacked-email-outline-rounded"
+                        width="24"
+                        height="24"
+                      />
                     }
-                    type="password"
-                    {...register("pass", {
-                      required: true,
-                    })}
-                  />
-                  <label className="form__label">contraseña</label>
-                  {errors.pass?.type === "required" && <p>Campo requerido</p>}
-                </InputText>
-              </article>
+                  >
+                    <input
+                      className="form__field"
+                      type="password"
+                      {...register("pass", {
+                        required: accion !== "Editar",
+                      })}
+                    />
+                    <label className="form__label">contraseña</label>
+                    {errors.pass?.type === "required" && <p>Campo requerido</p>}
+                  </InputText>
+                </article>
+              )}
+              
               <article>
                 <InputText
                   icono={
@@ -198,25 +197,7 @@ export function RegistrarUsuarios({ accion, dataSelect, onClose }) {
                   )}
                 </InputText>
               </article>
-              <article>
-                <InputText
-                  icono={
-                    <Icon
-                      icon="solar:document-outline"
-                      width="24"
-                      height="24"
-                    />
-                  }
-                >
-                  <input
-                    className="form__field"
-                    type="number"
-                    {...register("nro_doc", { required: true })}
-                  />
-                  <label className="form__label">Nro. doc</label>
-                  {errors.nrodoc?.type === "required" && <p>Campo requerido</p>}
-                </InputText>
-              </article>
+              
               <article>
                 <InputText
                   icono={
@@ -230,14 +211,31 @@ export function RegistrarUsuarios({ accion, dataSelect, onClose }) {
                   <input
                     className="form__field"
                     type="text"
-                    {...register("telefono", { required: true })}
+                    {...register("nro_doc", { required: false })}
                   />
-                  <label className="form__label">Teléfono</label>
-                  {errors.telefono?.type === "required" && (
-                    <p>Campo requerido</p>
-                  )}
+                  <label className="form__label">Nro. doc</label>
                 </InputText>
               </article>
+              
+              <article>
+                <InputText
+                  icono={
+                    <Icon
+                      icon="solar:phone-outline"
+                      width="24"
+                      height="24"
+                    />
+                  }
+                >
+                  <input
+                    className="form__field"
+                    type="text"
+                    {...register("telefono", { required: false })}
+                  />
+                  <label className="form__label">Teléfono</label>
+                </InputText>
+              </article>
+              
               <span>Asignación de sucursal</span>
               <article className="contentasignacion">
                 <span>Sucursal:</span>
@@ -260,6 +258,7 @@ export function RegistrarUsuarios({ accion, dataSelect, onClose }) {
     </Container>
   );
 }
+
 const Container = styled.div`
   position: fixed;
   top: 0;
@@ -269,13 +268,14 @@ const Container = styled.div`
   z-index: 1000;
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Importante para que inicie desde arriba */
-  overflow-y: auto; /* Habilita scroll */
+  align-items: flex-start;
+  overflow-y: auto;
   backdrop-filter: blur(5px);
-  padding: 1rem; /* Espacio en móvil */
+  padding: 1rem;
 `;
+
 const Form = styled.form`
-   width: 100%;
+  width: 100%;
   max-width: 900px;
   background-color: ${({ theme }) => theme.body};
   padding: 20px;
@@ -299,6 +299,7 @@ const Form = styled.form`
       flex-direction: column;
       height: 100%;
       align-items: center;
+      gap: 10px;
     }
     .area2 {
       display: flex;
@@ -306,15 +307,22 @@ const Form = styled.form`
       height: 100%;
       align-items: center;
     }
+    .contentasignacion {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 5px;
+    }
   }
 `;
+
 const Header = styled.div`
   width: 100%;
-
   display: flex;
   text-align: center;
   justify-content: center;
 `;
+
 const Title = styled.span`
   font-size: 30px;
   font-weight: bold;

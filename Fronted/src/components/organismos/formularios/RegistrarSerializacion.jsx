@@ -13,12 +13,12 @@ import { useEditarSerializacionMutation } from "../../../tanstack/SerializacionS
 export const RegistrarSerializacion = () => {
   const { setStateClose, itemSelect } = useGlobalStore();
   const [cantidadNumeros, setCantidadNumeros] = useState(
-    itemSelect?.cantidad_numeros
+    itemSelect?.cantidadNumeros || 8
   );
   const {sucursalesItemSelectAsignadas} = useAsignacionCajaSucursalStore()
   const {mutate} = useEditarSerializacionMutation()
-  const [correlativo, setCorrelativo] = useState(itemSelect?.correlativo);
-  const [serie, setSerie] = useState(itemSelect?.serie);
+  const [correlativo, setCorrelativo] = useState(itemSelect?.correlativo || 1);
+  const [serie, setSerie] = useState(itemSelect?.serie || "");
 
   // Función para formatear el correlativo con ceros a la izquierda
   const formatearCorrelativo = (numero, longitud) => {
@@ -33,10 +33,10 @@ export const RegistrarSerializacion = () => {
     watch,
   } = useForm({
     defaultValues: {
-      cantidad_numeros: itemSelect?.cantidad_numeros,
-      correlativo: itemSelect?.correlativo,
-      serie: itemSelect?.serie,
-      sucursal_id: sucursalesItemSelectAsignadas?.id_sucursal,
+      cantidad_numeros: itemSelect?.cantidadNumeros || 8,
+      correlativo: itemSelect?.correlativo || 1,
+      serie: itemSelect?.serie || "",
+      sucursal_id: itemSelect?.sucursal?.id || sucursalesItemSelectAsignadas?.id_sucursal,
     },
   });
   return (
@@ -45,7 +45,7 @@ export const RegistrarSerializacion = () => {
         <div className="comprobante">
           <BtnClose color={"#000"} funcion={() => setStateClose(false)} />
           <span className="title">Comprobante</span>
-          <div className="tipo"> {itemSelect?.tipo_comprobantes?.nombre} </div>
+          <div className="tipo"> {itemSelect?.tipoComprobante?.nombre || "Sin tipo"} </div>
           <div className="numero">
             <span>{serie}-</span>
             <span>{formatearCorrelativo(correlativo, cantidadNumeros)}</span>

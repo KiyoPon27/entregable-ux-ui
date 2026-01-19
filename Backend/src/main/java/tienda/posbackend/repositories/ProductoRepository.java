@@ -12,4 +12,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     // Buscar productos por nombre o código de barras
     @Query("SELECT p FROM Producto p WHERE p.empresa.id = :empresaId AND (lower(p.nombre) LIKE lower(concat('%', :query, '%')) OR p.codigoBarras LIKE concat('%', :query, '%') OR p.codigoInterno LIKE concat('%', :query, '%'))")
     List<Producto> buscarProductos(@Param("empresaId") Long empresaId, @Param("query") String query);
+    
+    // Contar productos por categoría
+    long countByCategoriaId(Long categoriaId);
 }

@@ -47,5 +47,8 @@ public class Producto {
     @Column(name = "maneja_multiprecios")
     private Boolean manejaMultiprecios;
     
+    @Transient
+    private BigDecimal stockTotal;
+    
     // Todo: Add image column if added to DB later.
 }

@@ -2,32 +2,43 @@ import styled from "styled-components";
 import {
   Btn1,
   Buscador,
-  RegistrarCategorias,
   Title,
-  useCategoriasStore,
   useUsuariosStore,
 } from "../../index";
 import { RegistrarUsuarios } from "../organismos/formularios/RegistrarUsuarios";
 import { v } from "../../styles/variables";
-import { TablaCategorias } from "../organismos/tablas/TablaCategorias";
 import { useState } from "react";
 import ConfettiExplosion from "react-confetti-explosion";
 import { Toaster } from "sonner";
-import { useAsignacionCajaSucursalStore } from "../../store/AsignacionCajaSucursalStore";
 import { TablaUsuarios } from "../organismos/tablas/TablaUsuarios";
+import { useMostrarUsuariosQuery } from "../../tanstack/UsuariosStack";
+
 export function UsuariosTemplate() {
   const [openRegistro, SetopenRegistro] = useState(false);
   const [dataSelect, setdataSelect] = useState([]);
-  const {setItemSelect} = useUsuariosStore()
+  const { setItemSelect } = useUsuariosStore();
   const [isExploding, setIsExploding] = useState(false);
-  const {accion,setAccion,datausuariosAsignados,setBuscador} = useAsignacionCajaSucursalStore()
+  const [accion, setAccion] = useState("Nuevo");
+  const [buscador, setBuscador] = useState("");
+  
+  const { data: usuarios, isLoading } = useMostrarUsuariosQuery();
+  
+  // Filtrar usuarios por buscador
+  const usuariosFiltrados = usuarios?.filter(u => 
+    buscador === "" || 
+    u.nombres?.toLowerCase().includes(buscador.toLowerCase()) ||
+    u.correo?.toLowerCase().includes(buscador.toLowerCase()) ||
+    u.nroDoc?.toLowerCase().includes(buscador.toLowerCase())
+  ) || [];
+  
   function nuevoRegistro() {
     SetopenRegistro(!openRegistro);
     setAccion("Nuevo");
     setdataSelect([]);
     setIsExploding(false);
-    setItemSelect(null)
+    setItemSelect(null);
   }
+  
   return (
     <Container>
       <Toaster />
@@ -55,12 +66,16 @@ export function UsuariosTemplate() {
 
       <section className="main">
         {isExploding && <ConfettiExplosion />}
-        <TablaUsuarios
-          setdataSelect={setItemSelect}
-          setAccion={setAccion}
-          SetopenRegistro={SetopenRegistro}
-          data={datausuariosAsignados}
-        />
+        {isLoading ? (
+          <div>Cargando usuarios...</div>
+        ) : (
+          <TablaUsuarios
+            setdataSelect={setItemSelect}
+            setAccion={setAccion}
+            SetopenRegistro={SetopenRegistro}
+            data={usuariosFiltrados}
+          />
+        )}
       </section>
     </Container>
   );

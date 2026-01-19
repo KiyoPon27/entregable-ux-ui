@@ -50,35 +50,11 @@ export async function MostrarAlmacenXSucursal(p) {
 
 export async function MostrarAlmacenesXEmpresa(p) {
   try {
-    const resp = await api.get(`/almacenes/empresa/${p.id_empresa}`);
-    const almacenes = resp.data || [];
-    // Agrupar por sucursal y moldear estructura: [ { id, nombre, delete, almacen: [ ... ] } ]
-    const bySucursal = new Map();
-    for (const a of almacenes) {
-      const s = a.sucursal;
-      if (!s) continue;
-      const key = s.id;
-      if (!bySucursal.has(key)) {
-        bySucursal.set(key, {
-          id: s.id,
-          nombre: s.nombre,
-          direccion_fiscal: s.direccionFiscal,
-          delete: s.eliminar,
-          almacen: [],
-        });
-      }
-      bySucursal.get(key).almacen.push({
-        id: a.id,
-        nombre: a.nombre,
-        fecha_creacion: a.fechaCreacion,
-        delete: a.eliminar,
-        id_sucursal: s.id,
-        defecto: a.defecto,
-      });
-    }
-    return Array.from(bySucursal.values());
+    const resp = await api.get(`/sucursales/empresa/${p.id_empresa}/con-almacenes`);
+    return resp.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || error.message || "Error al mostrar almacenes por empresa");
+    console.error("Error al mostrar almacenes por empresa:", error);
+    return [];
   }
 }
 

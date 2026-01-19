@@ -38,7 +38,7 @@ export function TablaSerializaciones({ data }) {
   }
   const columns = [
     {
-      accessorKey: "tipo_comprobantes.nombre",
+      accessorKey: "tipoComprobante.nombre",
       header: "Comprobante",
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
@@ -60,6 +60,17 @@ export function TablaSerializaciones({ data }) {
       },
     },
     {
+      accessorKey: "cantidadNumeros",
+      header: "Cantidad números",
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
       accessorKey: "correlativo",
       header: "Correlativo",
       cell: (info) => <span>{info.getValue()}</span>,
@@ -71,7 +82,7 @@ export function TablaSerializaciones({ data }) {
       },
     },
     {
-      accessorKey: "por_default",
+      accessorKey: "porDefecto",
       header: "Por default",
       cell: (info) => (
         <div  className="ContentCell">

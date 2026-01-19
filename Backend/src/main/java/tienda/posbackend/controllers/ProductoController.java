@@ -2,14 +2,17 @@ package tienda.posbackend.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.entities.Producto;
 import tienda.posbackend.entities.Empresa;
 import tienda.posbackend.entities.Categoria;
+import tienda.posbackend.entities.Stock;
 import tienda.posbackend.repositories.ProductoRepository;
 import tienda.posbackend.repositories.EmpresaRepository;
 import tienda.posbackend.repositories.CategoriaRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -25,10 +28,22 @@ public class ProductoController {
 
     @Autowired
     private CategoriaRepository categoriaRepository;
+    
+    @Autowired
+    private tienda.posbackend.repositories.StockRepository stockRepository;
 
     @GetMapping("/empresa/{empresaId}")
     public List<Producto> listarPorEmpresa(@PathVariable Long empresaId) {
-        return productoRepository.findByEmpresaId(empresaId);
+        List<Producto> productos = productoRepository.findByEmpresaId(empresaId);
+        // Calcular stock total para cada producto
+        for (Producto producto : productos) {
+            List<Stock> stocks = stockRepository.findByProductoId(producto.getId());
+            BigDecimal total = stocks.stream()
+                .map(Stock::getStock)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            producto.setStockTotal(total);
+        }
+        return productos;
     }
 
     @GetMapping("/{id}")
@@ -96,7 +111,17 @@ public class ProductoController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        // Verificar que el producto existe
+        if (!productoRepository.existsById(id)) {
+            throw new RuntimeException("Producto no encontrado");
+        }
+        
+        // Eliminar primero el stock relacionado
+        stockRepository.deleteByProductoId(id);
+        
+        // Luego eliminar el producto
         productoRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }

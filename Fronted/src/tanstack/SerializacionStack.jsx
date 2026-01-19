@@ -4,17 +4,33 @@ import { useAsignacionCajaSucursalStore } from "../store/AsignacionCajaSucursalS
 import { useGlobalStore } from "../store/GlobalStore";
 import { toast } from "sonner";
 import { useCierreCajaStore } from "../store/CierreCajaStore";
+import { useEmpresaStore } from "../store/EmpresaStore";
 
 export const useMostrarSerializacionesQuery = () => {
   const { mostrarSerializaciones } = useSerializacionStore();
+  const { dataempresa } = useEmpresaStore();
   const { sucursalesItemSelectAsignadas } = useAsignacionCajaSucursalStore();
+  
+  // Usar sucursal asignada si existe, sino mostrar todas de la empresa
+  const queryKey = sucursalesItemSelectAsignadas 
+    ? ["mostrar serializaciones", sucursalesItemSelectAsignadas.id_sucursal]
+    : ["mostrar serializaciones empresa", dataempresa?.id];
+    
   return useQuery({
-    queryKey: ["mostrar serializaciones"],
-    queryFn: () =>
-      mostrarSerializaciones({
-        id_sucursal: sucursalesItemSelectAsignadas?.id_sucursal,
-      }),
-    enabled: !!sucursalesItemSelectAsignadas,
+    queryKey,
+    queryFn: () => {
+      if (sucursalesItemSelectAsignadas) {
+        return mostrarSerializaciones({
+          id_sucursal: sucursalesItemSelectAsignadas.id_sucursal,
+        });
+      } else {
+        // Mostrar todas las serializaciones de la empresa
+        return mostrarSerializaciones({
+          id_empresa: dataempresa?.id,
+        });
+      }
+    },
+    enabled: !!(sucursalesItemSelectAsignadas || dataempresa),
   });
 };
 export const useMostrarSerializacionesVentasQuery = () => {
@@ -37,8 +53,7 @@ export const useEditarSerializacionDefaultMutation = () => {
     mutationKey: ["editar serializacion default"],
     mutationFn: async () => {
       const p = {
-        _id: itemSelect?.id,
-        _id_sucursal: itemSelect?.sucursal_id,
+        id: itemSelect?.id,
       };
       await editarSerializacionDefault(p);
     },
@@ -46,8 +61,9 @@ export const useEditarSerializacionDefaultMutation = () => {
         toast.error("Error al editar por default: " + error.message);
       },
       onSuccess: () => {
-        toast.success("Datos guardados");
-        queryClient.invalidateQueries(["mostrar serializaciones"])
+        toast.success("Serialización por defecto establecida");
+        queryClient.invalidateQueries(["mostrar serializaciones"]);
+        queryClient.invalidateQueries(["mostrar serializaciones empresa"]);
       }
   });
 };
