@@ -192,6 +192,7 @@ CREATE TABLE productos (
   sevende_por VARCHAR(50) DEFAULT 'unidad',
   maneja_inventarios BOOLEAN DEFAULT FALSE,
   maneja_multiprecios BOOLEAN DEFAULT FALSE,
+  estado VARCHAR(20) DEFAULT 'ACTIVO',
   PRIMARY KEY (id),
   CONSTRAINT productos_id_categoria_fkey FOREIGN KEY (id_categoria) REFERENCES categorias(id),
   CONSTRAINT productos_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)

@@ -46,6 +46,9 @@ public class Producto {
 
     @Column(name = "maneja_multiprecios")
     private Boolean manejaMultiprecios;
+
+    @Column(length = 20)
+    private String estado = "ACTIVO";
     
     @Transient
     private BigDecimal stockTotal;

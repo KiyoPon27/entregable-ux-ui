@@ -15,13 +15,21 @@ import { CardListCajas } from "./CardListCajas";
 import { Device } from "../../../../styles/breakpoints";
 import { useMostrarCierreCajaPorEmpresaQuery } from "../../../../tanstack/CierresCajaStack";
 import { useCajasStore } from "../../../../store/CajasStore";
+// Import the query hook
+import { useMostrarSucursalAsignadasQuery } from "../../../../tanstack/AsignacionesSucursalStack";
+
 export function PantallaAperturaCaja() {
   const { dataSucursalesAsignadas } = useAsignacionCajaSucursalStore();
+  // Ensure data is fetched
+  const { isLoading, error } = useMostrarSucursalAsignadasQuery();
 
   const { setCajaSelectItem } = useCajasStore();
   const { setCierreCajaItemSelect } = useCierreCajaStore();
   const { data: dataCierreCajaPorEmpresa } =
     useMostrarCierreCajaPorEmpresaQuery();
+    
+  if (isLoading) return <span>Cargando cajas asignadas...</span>;
+  if (error) return <span>Error cargando cajas: {error.message}</span>;
 
   return (
     <Container>

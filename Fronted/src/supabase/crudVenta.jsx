@@ -1,58 +1,82 @@
-import Swal from "sweetalert2";
-import { supabase } from "../index";
-const tabla = "ventas";
-export async function InsertarVentas(p) {
-  const { error, data } = await supabase
-    .from(tabla)
-    .insert(p)
-    .select()
-    .maybeSingle();
-  if (error) {
-    throw new Error(error.message);
-  }
-  return data;
-}
+import api from "../api/api";
 
+export async function InsertarVentas(p) {
+  try {
+    const venta = {
+      fecha: new Date(),
+      montoTotal: 0,
+      usuario: p.id_usuario ? { id: p.id_usuario } : null,
+      sucursal: p.id_sucursal ? { id: p.id_sucursal } : null,
+      empresa: p.id_empresa ? { id: p.id_empresa } : null,
+      cliente: p.id_cliente ? { id: p.id_cliente } : null,
+      cierreCaja: p.id_cierre_caja ? { id: p.id_cierre_caja } : null,
+      estado: p.estado || "nueva",
+      saldo: 0,
+      pagoCon: 0,
+      vuelto: 0,
+      cantidadProductos: 0,
+      subTotal: 0,
+      valorImpuesto: 0
+    };
+    
+    const response = await api.post("/ventas", venta);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message || "Error al insertar venta");
+  }
+}
 
 export async function EliminarVentasIncompletas(p) {
-  const { error } = await supabase
-    .from(tabla)
-    .delete()
-    .eq("estado", "pendiente")
-    .eq("id_usuario", p.id_usuario)
-    .eq("id_cierre_caja", p.id_cierre_caja);
-  if (error) {
-    throw new Error(error.message);
+  try {
+    // Original deleted 'pendiente'. Ensure backend does too.
+    // My backend deletes what is passed. But I hardcoded "pendiente" in service?
+    // Let's check logic: service.eliminarIncompletas hardcoded "pendiente".
+    await api.delete(`/ventas/incompletas?idUsuario=${p.id_usuario}&idCierreCaja=${p.id_cierre_caja}`);
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
   }
 }
+
 export async function EliminarVenta(p) {
-  const { error } = await supabase
-    .from(tabla)
-    .delete()
-    .eq("id", p.id);
-  if (error) {
-    throw new Error(error.message);
+  try {
+    await api.delete(`/ventas/${p.id}`);
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
   }
 }
 
 export async function MostrarVentasXsucursal(p) {
-  const { data } = await supabase
-    .from(tabla)
-    .select()
-    .eq("id_sucursal", p.id_sucursal)
-    .eq("estado", "nueva")
-    .maybeSingle();
-
-  return data;
-}
-export async function ConfirmarVenta(p) {
-  const { data, error } = await supabase
-    .from(tabla)
-    .update(p)
-    .eq("id", p.id)
-    .select();
-  if (error) {
-    throw new Error(error.message);
+  try {
+    // Original searched for 'nueva'
+    try {
+        const response = await api.get(`/ventas/sucursal/${p.id_sucursal}?estado=nueva`);
+        return response.data;
+    } catch (e) {
+        if (e.response && (e.response.status === 404 || e.response.status === 204)) return null;
+        throw e;
+    }
+  } catch (error) {
+     if (error.response?.status === 404) return null;
+    throw new Error(error.response?.data?.message || error.message);
   }
-  return data;
+}
+
+export async function ConfirmarVenta(p) {
+  try {
+    const payload = {
+        idUsuario: p.id_usuario,
+        vuelto: p.vuelto,
+        idTipoComprobante: p.id_tipo_comprobante,
+        serie: p.serie,
+        idSucursal: p.id_sucursal,
+        idCliente: p.id_cliente,
+        fecha: p.fecha,
+        montoTotal: p.monto_total
+    };
+    
+    const response = await api.post(`/ventas/${p.id}/confirmar`, payload);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message || "Error al confirmar venta");
+  }
 }

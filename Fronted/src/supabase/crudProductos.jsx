@@ -45,6 +45,19 @@ export async function BuscarProductos(p) {
   }
 }
 
+export async function BuscarProductosLectora(p) {
+  try {
+    const q = encodeURIComponent(p.buscador || "");
+    const response = await api.get(`/productos/buscar-lectora/${p.id_empresa}?q=${q}`);
+    return response.data || [];
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return [];
+    }
+    throw new Error(error.response?.data?.message || error.message || "Error al buscar productos por lectora");
+  }
+}
+
 export async function EliminarProductos(p) {
   try {
     await api.delete(`/productos/${p.id}`);

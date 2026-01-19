@@ -13,6 +13,14 @@ import tienda.posbackend.repositories.SucursalRepository;
 import java.util.List;
 import java.util.Optional;
 
+import tienda.posbackend.entities.Usuario;
+import tienda.posbackend.entities.AsignacionSucursal;
+import tienda.posbackend.entities.Impresora;
+import tienda.posbackend.repositories.UsuarioRepository;
+import tienda.posbackend.repositories.AsignacionSucursalRepository;
+import tienda.posbackend.repositories.ImpresoraRepository;
+import tienda.posbackend.dto.CajaDTO;
+
 @Service
 public class CajaService {
 
@@ -21,6 +29,15 @@ public class CajaService {
 
     @Autowired
     private SucursalRepository sucursalRepository;
+    
+    @Autowired
+    private ImpresoraRepository impresoraRepository;
+    
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+    
+    @Autowired
+    private AsignacionSucursalRepository asignacionSucursalRepository;
 
     public List<Caja> listarPorSucursal(Long sucursalId) {
         return cajaRepository.findBySucursalId(sucursalId);
@@ -32,7 +49,7 @@ public class CajaService {
     }
 
     @Transactional
-    public Caja crear(Caja caja) {
+    public Caja crear(Caja caja, Long idUsuarioCreador) {
         // Validar que venga la sucursal
         if (caja.getSucursal() == null || caja.getSucursal().getId() == null) {
             throw new IllegalArgumentException("Debe especificar una sucursal");
@@ -62,8 +79,29 @@ public class CajaService {
         if (caja.getImprimir() == null) {
             caja.setImprimir(false);
         }
+        
+        Caja nuevaCaja = cajaRepository.save(caja);
 
-        return cajaRepository.save(caja);
+        // Trigger logic: Insert Impresora
+        Impresora impresora = new Impresora();
+        impresora.setCaja(nuevaCaja);
+        impresora.setEstado(false);
+        impresora.setNombre("Ticketera"); // Default name
+        impresoraRepository.save(impresora);
+
+        // Logic: Auto-assign creation user to this box IF ID provided
+        if (idUsuarioCreador != null) {
+             Usuario usuario = usuarioRepository.findById(idUsuarioCreador).orElse(null);
+             if (usuario != null) {
+                 AsignacionSucursal asignacion = new AsignacionSucursal();
+                 asignacion.setCaja(nuevaCaja);
+                 asignacion.setSucursal(sucursal);
+                 asignacion.setUsuario(usuario);
+                 asignacionSucursalRepository.save(asignacion);
+             }
+        }
+
+        return nuevaCaja;
     }
 
     @Transactional

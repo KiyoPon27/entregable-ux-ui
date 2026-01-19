@@ -142,6 +142,21 @@ public class SerializacionComprobanteService {
     }
 
     @Transactional
+    public String generarNumero(Long tipoComprobanteId, String serie, Long sucursalId) {
+        SerializacionComprobante serializacion = serializacionRepository
+                .findByTipoComprobanteIdAndSerieAndSucursalId(tipoComprobanteId, serie, sucursalId)
+                .orElseThrow(() -> new ResourceNotFoundException("Serialización no encontrada para Tipo: " + tipoComprobanteId + ", Serie: " + serie + ", Sucursal: " + sucursalId));
+
+        String numeroComprobante = serializacion.generarNumeroComprobante();
+        
+        // Incrementar el correlativo para la próxima vez
+        serializacion.incrementarCorrelativo();
+        serializacionRepository.save(serializacion);
+
+        return numeroComprobante;
+    }
+
+    @Transactional
     public void eliminar(Long id) {
         SerializacionComprobante serializacion = serializacionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Serialización no encontrada con ID: " + id));

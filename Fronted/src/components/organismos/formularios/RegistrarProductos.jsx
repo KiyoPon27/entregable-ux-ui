@@ -62,6 +62,8 @@ export function RegistrarProductos({
     generarCodigo,
     codigogenerado,
     refetchs,
+    mostrarProductos,
+    parametros,
   } = useProductosStore();
   const { insertarStock, mostrarStockXAlmacenYProducto } = useStockStore();
   const { dataempresa } = useEmpresaStore();
@@ -117,6 +119,7 @@ export function RegistrarProductos({
     register,
     formState: { errors },
     handleSubmit,
+    setValue,
   } = useForm();
   const { isPending, mutate: doInsertar } = useMutation({
     mutationFn: insertar,
@@ -190,6 +193,7 @@ export function RegistrarProductos({
         await insertarStock(pStock);
       }
     }
+    await mostrarProductos(parametros);
   }
 
   //#region validar check inventarios
@@ -298,6 +302,9 @@ export function RegistrarProductos({
       setStock(dataStockXAlmacenYProducto.stock || "");
       setStockMinimo(dataStockXAlmacenYProducto.stock_minimo || "");
       setUbicacion(dataStockXAlmacenYProducto.ubicacion || "");
+      setValue("stock",dataStockXAlmacenYProducto.stock);
+      setValue("stock_minimo",dataStockXAlmacenYProducto.stock_minimo);
+      setValue("ubicacion",dataStockXAlmacenYProducto.ubicacion);
     }
   }, [dataStockXAlmacenYProducto, accion]);
 
