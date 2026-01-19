@@ -3,9 +3,10 @@ import {
   MostrarCierreCajaAperturada,
   AperturarCierreCaja,
   CerrarTurnoCaja,
+  MostrarCierreCajaPorEmpresa,
+  MostrarCierreCajaPorUsuario
 } from "../supabase/crudCierresCaja";
-import { supabase } from "../supabase/supabase.config";
-const tabla = "cierrecaja";
+
 export const useCierreCajaStore = create((set) => ({
   stateConteoCaja: false,
   setStateConteoCaja: (p) => set({ stateConteoCaja: p }),
@@ -32,28 +33,13 @@ export const useCierreCajaStore = create((set) => ({
     await CerrarTurnoCaja(p);
   },
   mostrarCierreCajaPorEmpresa: async (p) => {
-    const { data, error } = await supabase.rpc(
-      "mostrarcajasabiertasporempresa",
-      p
-    );
-
-    if (error) {
-      throw new Error(error.message);
-    }
-    return data;
+    const response = await MostrarCierreCajaPorEmpresa(p);
+    return response;
   },
   mostrarCierreCajaPorUsuario: async (p) => {
-    const { data, error } = await supabase
-      .from(tabla)
-      .select(`*, caja(*,sucursales(*))`)
-      .eq("id_usuario", p.id_usuario)
-      .eq("estado", 0)
-      .maybeSingle();
-    if (error) {
-      throw new Error(error.message);
-    }
-    set({ dataCierreCaja: data });
-    return data;
+    const response = await MostrarCierreCajaPorUsuario(p);
+    set({ dataCierreCaja: response });
+    return response;
   },
   cierreCajaItemSelect: null,
   setCierreCajaItemSelect: (p) => {

@@ -12,7 +12,7 @@ export async function InsertarStock(p) {
     const body = {
       almacen: { id: p.id_almacen },
       producto: { id: p.id_producto },
-      cantidad: Number(p.stock ?? p.cantidad ?? 0),
+      stock: Number(p.stock ?? p.cantidad ?? 0),
       stockMinimo: p.stock_minimo != null ? Number(p.stock_minimo) : undefined,
       ubicacion: p.ubicacion ?? undefined,
     };
@@ -36,7 +36,7 @@ export async function EditarStock(p, tipo) {
     const body = {
       almacen: { id: p.id_almacen },
       producto: { id: p.id_producto },
-      cantidad: nuevaCantidad,
+      stock: nuevaCantidad,
       stockMinimo: p.stock_minimo != null ? Number(p.stock_minimo) : current?.stock_minimo ?? undefined,
       ubicacion: p.ubicacion ?? current?.ubicacion ?? undefined,
     };
@@ -52,16 +52,18 @@ export async function MostrarStockXAlmacenYProducto(p) {
     // Obtener todos los stocks del producto y filtrar por almacén
     const resp = await api.get(`/stock/producto/${p.id_producto}`);
     const list = (resp.data || []).filter((s) => s.almacen?.id === p.id_almacen);
-    return list.map((s) => ({
+    if (!list.length) return null; // Retornar null en vez de array vacio si no hay stock
+    const s = list[0];
+    return {
       id: s.id,
       id_almacen: s.almacen?.id,
       id_producto: s.producto?.id,
-      stock: Number(s.cantidad ?? 0),
+      stock: Number(s.stock ?? 0),
       stock_minimo: s.stockMinimo != null ? Number(s.stockMinimo) : null,
       ubicacion: s.ubicacion ?? null,
       almacen: s.almacen,
       producto: s.producto,
-    }));
+    };
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || "Error al mostrar stock por almacén y producto");
   }

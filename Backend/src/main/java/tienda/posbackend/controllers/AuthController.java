@@ -101,12 +101,15 @@ public class AuthController {
         // TODO: Mejorar lógica para empleados que pertenecen a una empresa pero no son dueños directos (usar asignacion_sucursal -> sucursal -> empresa)
         
         if (context.getEmpresa() == null) {
-             asignacionSucursalRepository.findByUsuarioId(usuario.getId())
+             asignacionSucursalRepository.findByUsuarioId(usuario.getId()).stream()
+                .findFirst()
                 .map(asign -> asign.getSucursal().getEmpresa())
                 .ifPresent(context::setEmpresa);
         }
 
-        asignacionSucursalRepository.findByUsuarioId(usuario.getId()).ifPresent(context::setAsignacion);
+        asignacionSucursalRepository.findByUsuarioId(usuario.getId()).stream()
+                .findFirst()
+                .ifPresent(context::setAsignacion);
 
         List<Long> permisosIds = permisoRepository.findByUsuarioId(usuario.getId())
                 .stream()

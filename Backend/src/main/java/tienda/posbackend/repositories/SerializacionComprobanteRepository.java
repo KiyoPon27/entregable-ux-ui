@@ -23,6 +23,8 @@ public interface SerializacionComprobanteRepository extends JpaRepository<Serial
     Optional<SerializacionComprobante> findBySucursalIdAndPorDefectoTrue(Long sucursalId);
     
     Optional<SerializacionComprobante> findBySerieAndSucursalId(String serie, Long sucursalId);
+
+    Optional<SerializacionComprobante> findByTipoComprobanteIdAndSerieAndSucursalId(Long tipoComprobanteId, String serie, Long sucursalId);
     
     @Modifying
     @Query("UPDATE SerializacionComprobante s SET s.porDefecto = false WHERE s.sucursal.id = :sucursalId")

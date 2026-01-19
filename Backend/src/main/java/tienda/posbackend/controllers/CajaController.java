@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.entities.Caja;
+import tienda.posbackend.entities.Sucursal;
 import tienda.posbackend.services.CajaService;
+import tienda.posbackend.dto.CajaDTO;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,9 +32,22 @@ public class CajaController {
     }
 
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody Caja caja) {
+    public ResponseEntity<?> crear(@RequestBody CajaDTO cajaDTO) {
         try {
-            Caja nuevaCaja = cajaService.crear(caja);
+            // Mapping DTO to Entity
+            Caja caja = new Caja();
+            caja.setDescripcion(cajaDTO.getDescripcion());
+            caja.setEliminar(cajaDTO.getEliminar());
+            caja.setImprimir(cajaDTO.getImprimir());
+            // Map date if necessary, or let service handle it (default now())
+            
+            if (cajaDTO.getSucursalId() != null) {
+                Sucursal s = new Sucursal();
+                s.setId(cajaDTO.getSucursalId());
+                caja.setSucursal(s);
+            }
+
+            Caja nuevaCaja = cajaService.crear(caja, cajaDTO.getIdUsuarioCreador());
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevaCaja);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();

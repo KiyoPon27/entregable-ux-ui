@@ -51,11 +51,15 @@ export function CardListCajas({
     await insertarMovCaja(pmovcaja);
   };
   const insertar = async () => {
+    // Si cajaSelectItem viene de AsignacionSucursal, el id de caja está en .caja.id
+    // Si viene directo de Cajas, podría estar en .id
+    const idCajaReal = cajaSelectItem?.caja?.id || cajaSelectItem?.id;
+
     const p = {
       fechainicio: fechaActual,
       fechacierre: fechaActual,
       id_usuario: datausuarios?.id,
-      id_caja: cajaSelectItem?.id_caja,
+      id_caja: idCajaReal,
     };
     console.log("pcierrecaja",p)
     const data = await aperturarcaja(p);

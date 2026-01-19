@@ -34,7 +34,8 @@ public class ProductoController {
 
     @GetMapping("/empresa/{empresaId}")
     public List<Producto> listarPorEmpresa(@PathVariable Long empresaId) {
-        List<Producto> productos = productoRepository.findByEmpresaId(empresaId);
+        // Solo listar productos activos
+        List<Producto> productos = productoRepository.findByEmpresaIdAndEstado(empresaId, "ACTIVO");
         // Calcular stock total para cada producto
         for (Producto producto : productos) {
             List<Stock> stocks = stockRepository.findByProductoId(producto.getId());
@@ -56,6 +57,11 @@ public class ProductoController {
     @GetMapping("/buscar/{empresaId}")
     public List<Producto> buscar(@PathVariable Long empresaId, @RequestParam String q) {
         return productoRepository.buscarProductos(empresaId, q);
+    }
+
+    @GetMapping("/buscar-lectora/{empresaId}")
+    public List<Producto> buscarLectora(@PathVariable Long empresaId, @RequestParam String q) {
+        return productoRepository.buscarProductosLectora(empresaId, q);
     }
 
     @PostMapping
@@ -114,15 +120,15 @@ public class ProductoController {
     @Transactional
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         // Verificar que el producto existe
-        if (!productoRepository.existsById(id)) {
-            throw new RuntimeException("Producto no encontrado");
-        }
+        Producto producto = productoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         
-        // Eliminar primero el stock relacionado
-        stockRepository.deleteByProductoId(id);
+        // Soft delete: Cambiar estado a ELIMINADO en lugar de borrar físicamente
+        producto.setEstado("ELIMINADO");
+        producto.setManejaInventarios(false);
+        productoRepository.save(producto);
         
-        // Luego eliminar el producto
-        productoRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
+
 }
