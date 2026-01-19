@@ -17,11 +17,18 @@ public class EmpresaController {
 
     @GetMapping("/mostrar")
     public ResponseEntity<Empresa> mostrarEmpresa(@RequestParam Long idUsuario) {
-        Optional<Empresa> empresa = empresaRepository.findByUsuarioId(idUsuario);
-        if (empresa.isPresent()) {
-            return ResponseEntity.ok(empresa.get());
-        } else {
-            return ResponseEntity.notFound().build();
+        // Primero intentar buscar la empresa del usuario
+        Optional<Empresa> empresaUsuario = empresaRepository.findByUsuarioId(idUsuario);
+        if (empresaUsuario.isPresent()) {
+            return ResponseEntity.ok(empresaUsuario.get());
         }
+        
+        // Si no tiene empresa asignada, devolver la primera empresa (caso de usuarios nuevos)
+        Optional<Empresa> primeraEmpresa = empresaRepository.findFirstByOrderByIdAsc();
+        if (primeraEmpresa.isPresent()) {
+            return ResponseEntity.ok(primeraEmpresa.get());
+        }
+        
+        return ResponseEntity.notFound().build();
     }
 }

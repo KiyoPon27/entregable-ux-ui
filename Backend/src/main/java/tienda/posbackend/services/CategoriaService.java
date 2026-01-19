@@ -9,6 +9,7 @@ import tienda.posbackend.exceptions.DuplicateResourceException;
 import tienda.posbackend.exceptions.ResourceNotFoundException;
 import tienda.posbackend.repositories.CategoriaRepository;
 import tienda.posbackend.repositories.EmpresaRepository;
+import tienda.posbackend.repositories.ProductoRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,9 @@ public class CategoriaService {
 
     @Autowired
     private EmpresaRepository empresaRepository;
+    
+    @Autowired
+    private ProductoRepository productoRepository;
 
     public List<Categoria> listarPorEmpresa(Long empresaId) {
         return categoriaRepository.findByEmpresaId(empresaId);
@@ -89,9 +93,16 @@ public class CategoriaService {
 
     @Transactional
     public void eliminar(Long id) {
-        if (!categoriaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Categoría no encontrada con ID: " + id);
+        // Verificar que la categoría existe
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
+        
+        // Verificar si tiene productos asociados
+        long cantidadProductos = productoRepository.countByCategoriaId(id);
+        if (cantidadProductos > 0) {
+            throw new IllegalStateException("No se puede eliminar la categoría porque tiene " + cantidadProductos + " producto(s) asociado(s). Elimina o reasigna los productos primero.");
         }
+        
         categoriaRepository.deleteById(id);
     }
 }

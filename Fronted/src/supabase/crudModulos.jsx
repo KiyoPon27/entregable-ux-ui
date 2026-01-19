@@ -1,19 +1,13 @@
-import Swal from "sweetalert2";
-import { supabase } from "../index";
-const tabla = "modulos";
-export async function MostrarModulos() {
+import api from "../api/api";
 
-  const { data,error } = await supabase
-    .from(tabla)
-    .select()
-    .neq("etiquetas","#default")
-    if (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: error.message,
-    });
-    return;
+export async function MostrarModulos() {
+  try {
+    const response = await api.get("/modulos");
+    // Filtrar igual que Supabase: neq("etiquetas","#default")
+    return response.data.filter(m => m.etiquetas !== "#default");
+  } catch (error) {
+    console.error("Error al mostrar módulos:", error);
+    return [];
   }
-  return data;
 }
+

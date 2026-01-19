@@ -4,7 +4,7 @@ import {
   InsertarStock,
   MostrarStockXAlmacenesYProducto,
   MostrarStockXAlmacenYProducto,
-} from "../supabase/crudStock";
+} from "../api/crudStock";
 
 export const useStockStore = create((set) => ({
   stateModal: false,

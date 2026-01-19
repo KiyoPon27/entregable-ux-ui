@@ -135,6 +135,21 @@ export function TablaProductos({
         return filterStatuses.includes(status?.id);
       },
     },
+    {
+      accessorKey: "stockTotal",
+      header: "Stock",
+      cell: (info) => (
+        <td data-title="Stock" className="ContentCell">
+          <span>{info.getValue() ?? 0}</span>
+        </td>
+      ),
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
 
     {
       accessorKey: "acciones",

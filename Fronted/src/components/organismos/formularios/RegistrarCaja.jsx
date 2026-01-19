@@ -39,12 +39,13 @@ export function RegistrarCaja() {
         id_sucursal: cajaSelectItem?.id,
       };
       const response = await insertarCaja(p);
-      const pAsignaciones = {
-        id_sucursal: cajaSelectItem?.id,
-        id_usuario: datausuarios?.id,
-        id_caja: response?.id,
-      };
-      await insertarAsignacionSucursal(pAsignaciones);
+      // TODO: Migrar asignación de caja al backend cuando se necesite
+      // const pAsignaciones = {
+      //   id_sucursal: cajaSelectItem?.id,
+      //   id_usuario: datausuarios?.id,
+      //   id_caja: response?.id,
+      // };
+      // await insertarAsignacionSucursal(pAsignaciones);
     }
   };
   const { isPending, mutate: doInsertar } = useMutation({

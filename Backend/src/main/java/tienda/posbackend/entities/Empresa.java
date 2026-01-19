@@ -27,7 +27,7 @@ public class Empresa {
     @Column(columnDefinition = "TEXT")
     private String logo;
 
-    @Column(name = "id_auth", unique = true, nullable = false)
+    @Column(name = "id_auth", unique = true)
     private String idAuth;
 
     @ManyToOne

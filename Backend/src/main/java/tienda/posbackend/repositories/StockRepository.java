@@ -8,4 +8,5 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     List<Stock> findByAlmacenId(Long idAlmacen);
     List<Stock> findByProductoId(Long idProducto);
     Stock findByProductoIdAndAlmacenId(Long idProducto, Long idAlmacen);
+    void deleteByProductoId(Long idProducto);
 }

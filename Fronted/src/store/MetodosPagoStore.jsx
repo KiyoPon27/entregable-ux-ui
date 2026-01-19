@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { MostrarMetodosPago,InsertarMetodosPago,EliminarMetodosPago,EditarMetodosPago } from "../supabase/crudMetodosPago";
+import { MostrarMetodosPago,InsertarMetodosPago,EliminarMetodosPago,EditarMetodosPago } from "../api/crudMetodosPago";
 
 export const useMetodosPagoStore = create((set) => ({
   dataMetodosPago: null,

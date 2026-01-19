@@ -1,46 +1,46 @@
 import { create } from "zustand";
 import {
   EditarUsuarios,
-  EliminarUsuarioAsignado,
-  InsertarCredencialesUser,
+  EliminarUsuario,
   InsertarUsuarios,
-} from "../index";
+  MostrarUsuarios,
+  MostrarUsuarioPorId,
+  CambiarPasswordUsuario
+} from "../supabase/crudUsuarios";
 import { InsertarAsignacionCajaSucursal } from "../supabase/crudAsignacionCajaSucursal";
 import { usePermisosStore } from "./PermisosStore";
-import { InsertarPermisos } from "../supabase/crudPermisos";
-import { supabase } from "../supabase/supabase.config";
-const tabla = "usuarios";
+import { InsertarPermisos, EliminarPermisos } from "../supabase/crudPermisos";
+import api from "../api/api";
+
 export const useUsuariosStore = create((set) => ({
   refetchs: null,
   datausuarios: null,
   itemSelect: null,
   setItemSelect: (p) => set({ itemSelect: p }),
-  mostrarusuarios: async (p) => {
-    console.log("🏁 Ejecutando mostrarusuarios con:", p.id_auth);
+  
+  mostrarusuarios: async () => {
     try {
-      const { data, error } = await supabase
-        .from(tabla)
-        .select(`*, roles(*)`)
-        .eq("id_auth", p.id_auth)
-        .maybeSingle();
-
-      console.log("📥 Resultado Supabase:", data);
-
-      if (error) {
-        console.error("💥 Supabase error en MostrarUsuarios:", error);
-        throw new Error(error.message);
-      }
-
+      const data = await MostrarUsuarios();
       set({ datausuarios: data });
       return data;
     } catch (err) {
-      console.error("🔥 ERROR inesperado:", err);
+      console.error("Error al mostrar usuarios:", err);
       throw err;
     }
   },
+  
   eliminarUsuarioAsignado: async (p) => {
-    await EliminarUsuarioAsignado(p);
+    // Primero eliminar permisos del usuario
+    try {
+      await EliminarPermisos({ id_usuario: p.id });
+    } catch (error) {
+      console.log("No hay permisos para eliminar o ya fueron eliminados");
+    }
+    
+    // Luego eliminar el usuario
+    await EliminarUsuario(p);
   },
+  
   insertarUsuario: async (p) => {
     const selectModules = usePermisosStore.getState().selectedModules || [];
     console.log("Módulos seleccionados:", selectModules);
@@ -49,25 +49,25 @@ export const useUsuariosStore = create((set) => ({
       throw new Error("No hay módulos seleccionados");
     }
 
-    const data = await InsertarCredencialesUser({
-      email: p.email,
-      pass: p.pass,
-    });
     const dataUserNew = await InsertarUsuarios({
       nombres: p.nombres,
       nro_doc: p.nro_doc,
       telefono: p.telefono,
       id_rol: p.id_rol,
       correo: p.email,
-      id_auth: data,
+      password: p.pass,
+      id_auth: null,
+      id_tipodocumento: p.id_tipodocumento || null
     });
-    await InsertarAsignacionCajaSucursal({
-      id_sucursal: p.id_sucursal,
-      id_usuario: dataUserNew?.id,
-      id_caja: p.id_caja,
-    });
+    
+    // Comentado temporalmente hasta migrar asignación
+    // await InsertarAsignacionCajaSucursal({
+    //   id_sucursal: p.id_sucursal,
+    //   id_usuario: dataUserNew?.id,
+    //   id_caja: p.id_caja,
+    // });
 
-    // Insert permisos in parallel
+    // Insertar permisos en paralelo
     await Promise.all(
       selectModules.map((idModule) => {
         const perm = {
@@ -78,13 +78,40 @@ export const useUsuariosStore = create((set) => ({
       })
     );
   },
+  
   editarUsuarios: async (p) => {
+    const selectModules = usePermisosStore.getState().selectedModules || [];
+    
+    // Actualizar datos básicos del usuario
     await EditarUsuarios(p);
+    
+    // Si hay módulos seleccionados, actualizar permisos
+    if (Array.isArray(selectModules) && selectModules.length > 0 && p.id) {
+      // Primero eliminar permisos existentes
+      await EliminarPermisos({ id_usuario: p.id });
+      
+      // Luego insertar los nuevos permisos
+      await Promise.all(
+        selectModules.map((idModule) => {
+          const perm = {
+            id_usuario: p.id,
+            idmodulo: idModule,
+          };
+          return InsertarPermisos(perm);
+        })
+      );
+    }
   },
+  
+  cambiarPasswordUsuario: async (p) => {
+    await CambiarPasswordUsuario(p);
+  },
+  
   editarThemeUser: async (p) => {
-    const { error } = await supabase.from(tabla).update(p).eq("id", p.id);
-    if (error) {
-      throw new Error(error.message);
+    try {
+      await api.put(`/usuarios/${p.id}`, { tema: p.tema });
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message);
     }
   },
 }));

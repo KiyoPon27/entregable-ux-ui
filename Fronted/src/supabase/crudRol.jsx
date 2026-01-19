@@ -1,13 +1,23 @@
-import { supabase } from "../index";
-const tabla = "roles";
+import api from "../api/api";
+
 export async function MostrarRolesXnombre(p) {
-  const { data } = await supabase
-    .from(tabla)
-    .select()
-    .eq("nombre", p.nombre).maybeSingle();
-  return data;
+  try {
+    const response = await api.get("/roles");
+    const roles = response.data;
+    return roles.find(r => r.nombre === p.nombre) || null;
+  } catch (error) {
+    console.error("Error al buscar rol:", error);
+    return null;
+  }
 }
+
 export async function MostrarRoles() {
-  const { data } = await supabase.from(tabla).select().neq("nombre","superadmin")
-  return data
+  try {
+    const response = await api.get("/roles");
+    // Filtrar superadmin igual que Supabase
+    return response.data.filter(r => r.nombre !== "superadmin");
+  } catch (error) {
+    console.error("Error al mostrar roles:", error);
+    return [];
+  }
 }

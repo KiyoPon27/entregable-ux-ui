@@ -1,92 +1,159 @@
 import Swal from "sweetalert2";
-import { supabase } from "../index";
-import { EliminarPermisos, InsertarPermisos, MostrarPermisos } from "./crudPermisos";
-import { usePermisosStore } from "../store/PermisosStore";
-const tabla = "usuarios";
-export async function MostrarUsuarios(p) {
-  const { data, error } = await supabase
-    .from(tabla)
-    .select(`*, roles(*)`)
-    .eq("id_auth", p.id_auth)
-    .maybeSingle();
-  if (error) {
-    return;
-  }
-  return data;
-}
-export async function InsertarAdmin(p) {
-  const { error } = await supabase.from(tabla).insert(p);
-  if (error) {
-    throw new Error(error.message);
+import api from "../api/api";
+
+export async function MostrarUsuarios() {
+  try {
+    const response = await api.get("/usuarios");
+    return response.data;
+  } catch (error) {
+    console.error("Error al mostrar usuarios:", error);
+    return [];
   }
 }
+
+export async function MostrarUsuarioPorId(id) {
+  try {
+    const response = await api.get(`/usuarios/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al mostrar usuario:", error);
+    throw new Error(error.response?.data?.message || error.message);
+  }
+}
+
+export async function MostrarUsuarioPorCorreo(correo) {
+  try {
+    const response = await api.get(`/usuarios/correo/${correo}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al buscar usuario por correo:", error);
+    throw new Error(error.response?.data?.message || error.message);
+  }
+}
+
 export async function InsertarUsuarios(p) {
-  const { error, data } = await supabase
-    .from(tabla)
-    .insert(p)
-    .select()
-    .maybeSingle();
-  if (error) {
-    throw new Error(error.message);
+  try {
+    const usuario = {
+      nombres: p.nombres,
+      nroDoc: p.nro_doc || "-",
+      telefono: p.telefono || "-",
+      rol: p.id_rol ? { id: p.id_rol } : null,
+      correo: p.correo,
+      password: p.password || "123",
+      estado: p.estado || "ACTIVO",
+      tema: p.tema || "light",
+      idAuth: p.id_auth,
+      tipoDocumento: p.id_tipodocumento ? { id: p.id_tipodocumento } : null
+    };
+    
+    const response = await api.post("/usuarios", usuario);
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Usuario creado!",
+      text: "El usuario se ha creado exitosamente",
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+    return response.data;
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message;
+    Swal.fire({
+      icon: "error",
+      title: "Error al crear usuario",
+      text: mensaje,
+    });
+    throw new Error(mensaje);
   }
-  return data;
 }
 
-export async function InsertarCredencialesUser(p) {
-  const { data, error } = await supabase.rpc("crearcredencialesuser", p);
-  if (error) {
-    throw new Error(error.message);
-  }
-  return data;
-}
-export async function ObtenerIdAuthSupabase() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (session != null) {
-    const { user } = session;
-    const idauth = user.id;
-    return idauth;
-  }
-}
-export async function EliminarUsuarioAsignado(p) {
-  const { error } = await supabase.from(tabla).delete().eq("id", p.id);
-  if (error) {
-    throw new Error(error.message);
-  }
-}
 export async function EditarUsuarios(p) {
-  // actualizar datos del usuario primero
-  const { error } = await supabase.from(tabla).update(p).eq("id", p.id);
-
-  // obtener módulos seleccionados desde el store (si hay)
-  let selectModules = usePermisosStore.getState().selectedModules || [];
-
-  // si no hay módulos seleccionados en el UI, traer los permisos actuales desde la BD
-  if (!Array.isArray(selectModules) || selectModules.length === 0) {
-    try {
-      const actuales = await MostrarPermisos({ id_usuario: p.id });
-      selectModules = Array.isArray(actuales) ? actuales.map((it) => it.idmodulo) : [];
-    } catch (err) {
-      // si falla al obtener permisos actuales, dejamos selectModules como vacío
-      selectModules = [];
-    }
+  try {
+    const usuario = {
+      nombres: p.nombres,
+      nroDoc: p.nro_doc,
+      telefono: p.telefono,
+      rol: p.id_rol ? { id: p.id_rol } : undefined,
+      correo: p.correo,
+      estado: p.estado,
+      tema: p.tema,
+      tipoDocumento: p.id_tipodocumento ? { id: p.id_tipodocumento } : undefined
+    };
+    
+    const response = await api.put(`/usuarios/${p.id}`, usuario);
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Usuario actualizado!",
+      text: "El usuario se ha actualizado exitosamente",
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+    return response.data;
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message;
+    Swal.fire({
+      icon: "error",
+      title: "Error al editar usuario",
+      text: mensaje,
+    });
+    throw new Error(mensaje);
   }
+}
 
-  // eliminar permisos existentes y volver a insertar los que correspondan
-  await EliminarPermisos({ id_usuario: p.id });
-
-  if (Array.isArray(selectModules) && selectModules.length > 0) {
-    for (const idModule of selectModules) {
-      const pp = {
-        id_usuario: p.id,
-        idmodulo: idModule,
-      };
-      await InsertarPermisos(pp);
-    }
+export async function CambiarPasswordUsuario(p) {
+  try {
+    await api.put(`/usuarios/${p.id}/cambiar-password`, {
+      password: p.password
+    });
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Contraseña actualizada!",
+      text: "La contraseña se ha cambiado exitosamente",
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message;
+    Swal.fire({
+      icon: "error",
+      title: "Error al cambiar contraseña",
+      text: mensaje,
+    });
+    throw new Error(mensaje);
   }
+}
 
-  if (error) {
-    throw new Error(error.message);
+export async function EliminarUsuario(p) {
+  try {
+    await api.delete(`/usuarios/${p.id}`);
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Usuario eliminado!",
+      text: "El usuario se ha eliminado exitosamente",
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message;
+    Swal.fire({
+      icon: "error",
+      title: "Error al eliminar usuario",
+      text: mensaje,
+    });
+    throw new Error(mensaje);
   }
+}
+
+// Mantener compatibilidad con código antiguo
+export async function EliminarUsuarioAsignado(p) {
+  return EliminarUsuario(p);
+}
+
+export async function InsertarAdmin(p) {
+  return InsertarUsuarios(p);
 }

@@ -1,12 +1,10 @@
 import { create } from "zustand";
 import {
   MostrarCajaXSucursal,
-
+  InsertarCaja,
   EditarCaja,
   EliminarCaja,
 } from "../supabase/crudCaja";
-import { supabase } from "../supabase/supabase.config";
-const tabla = "caja";
 export const useCajasStore = create((set) => ({
   stateCaja: false,
   setStateCaja: (p) => set({ stateCaja: p }),
@@ -26,15 +24,7 @@ export const useCajasStore = create((set) => ({
   },
 
   insertarCaja: async (p) => {
-    const { error, data } = await supabase
-      .from(tabla)
-      .insert(p)
-      .select()
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(error.message);
-    }
+    const data = await InsertarCaja(p);
     return data;
   },
   editarCaja: async (p) => {
