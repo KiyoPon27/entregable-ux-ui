@@ -27,8 +27,7 @@ export async function EditarStock(p, tipo) {
   // Ajuste incremental/decremental según 'tipo'
   try {
     // Obtener stock actual del producto y filtrar por almacén
-    const currentList = await MostrarStockXAlmacenYProducto({ id_almacen: p.id_almacen, id_producto: p.id_producto });
-    const current = currentList?.[0];
+    const current = await MostrarStockXAlmacenYProducto({ id_almacen: p.id_almacen, id_producto: p.id_producto });
     const actualCantidad = Number(current?.stock ?? current?.cantidad ?? 0);
     const delta = Number(p.cantidad ?? p.stock ?? 0);
     const nuevaCantidad = tipo === "ingreso" ? actualCantidad + delta : actualCantidad - delta;

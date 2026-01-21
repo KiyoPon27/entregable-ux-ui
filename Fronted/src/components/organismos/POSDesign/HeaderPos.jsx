@@ -66,6 +66,10 @@ export function HeaderPos() {
   }
 
   async function insertarventas(opts = {}) {
+    console.log("🔵 INICIANDO insertarventas, opts:", opts);
+    console.log("🔵 idventa actual:", idventa);
+    console.log("🔵 productosItemSelect:", useProductosStore.getState().productosItemSelect);
+    
     if (idventa === 0) {
       const pventas = {
         fecha: fechaactual,
@@ -74,12 +78,15 @@ export function HeaderPos() {
         id_empresa: dataempresa?.id,
         id_cierre_caja: dataCierreCaja?.id,
       };
+      console.log("🔵 Creando nueva venta con:", pventas);
 
       const result = await insertarVentas(pventas);
+      console.log("🔵 Venta creada con ID:", result?.id);
       if (result?.id > 0) {
         await insertarDVentas(result?.id);
       }
     } else {
+      console.log("🔵 Usando venta existente:", idventa);
       await insertarDVentas(idventa);
     }
     setBuscador("");
@@ -90,10 +97,24 @@ export function HeaderPos() {
       } catch (e) {}
     }
     setCantidadInput(1);
+    console.log("🟢 insertarventas completado");
   }
   async function insertarDVentas(idventa) {
+    console.log("🟡 INICIANDO insertarDVentas con idventa:", idventa);
     const productosItemSelect =
       useProductosStore.getState().productosItemSelect;
+    
+    console.log("🟡 Producto seleccionado:", productosItemSelect);
+    console.log("🟡 cantidadInput:", cantidadInput);
+    console.log("🟡 dataCierreCaja:", dataCierreCaja);
+    
+    // Validar que haya un producto seleccionado
+    if (!productosItemSelect || !productosItemSelect.id) {
+      console.error("❌ No hay producto seleccionado");
+      toast.error("Por favor selecciona un producto primero");
+      return;
+    }
+    
     const pDetalleVentas = {
       _id_venta: idventa,
       _cantidad: parseFloat(cantidadInput) || 1,
@@ -101,17 +122,21 @@ export function HeaderPos() {
       _descripcion: productosItemSelect.nombre,
       _id_producto: productosItemSelect.id,
       _precio_compra: productosItemSelect.precioCompra,
-      _id_sucursal: dataCierreCaja?.caja?.id_sucursal,
-      _id_almacen: almacenSelectItem?.id,
+      idSucursal: dataCierreCaja?.caja?.id_sucursal,
+      idAlmacen: almacenSelectItem?.id,
     };
-    console.log("pDetalleVentas", pDetalleVentas);
+    console.log("🟡 pDetalleVentas construido:", pDetalleVentas);
+    
     try {
+      console.log("🟡 Llamando a insertarDetalleVentas...");
       await insertarDetalleVentas(pDetalleVentas);
+      console.log("🟢 Detalle insertado exitosamente");
     } catch (error) {
-      console.error("Error insertar detalle venta:", error);
+      console.error("❌ Error insertar detalle venta:", error);
       const msg = error?.message || "";
       const isFK = msg.toLowerCase().includes("foreign key") || msg.toLowerCase().includes("violates foreign key");
       if (isFK) {
+        console.log("⚠️ Error de FK, intentando recrear venta...");
         // probable: the venta id was deleted (incomplete sales removed). Create a new venta and retry.
         try {
           const pventas = {
@@ -123,16 +148,18 @@ export function HeaderPos() {
           };
           const nuevo = await insertarVentas(pventas);
           const nuevoId = nuevo?.id;
+          console.log("🟡 Nueva venta creada con ID:", nuevoId);
           if (nuevoId) {
             // update detalle with new venta id and retry
             pDetalleVentas._id_venta = nuevoId;
             await insertarDetalleVentas(pDetalleVentas);
             // ensure query state reflects new detalle
             queryClient.invalidateQueries(["mostrar detalle venta"]);
+            console.log("🟢 Detalle insertado después de recrear venta");
             return;
           }
         } catch (err2) {
-          console.error("Error recreando venta y reintentando detalle:", err2);
+          console.error("❌ Error recreando venta y reintentando detalle:", err2);
           toast.error(err2?.message || "Error al crear venta");
           throw err2;
         }
@@ -169,12 +196,15 @@ export function HeaderPos() {
 
   // global barcode scanner: when a code is read, try to find the product and add it
   useBarcodeScanner((code) => {
+    console.log("📷 Barcode escaneado:", code);
     try {
       const productoEncontrado = dataProductos?.find(
         (p) => String(p.codigoBarras) === String(code)
       );
+      console.log("📷 Producto encontrado por barcode:", productoEncontrado);
       if (productoEncontrado) {
         selectProductos(productoEncontrado);
+        console.log("📷 Llamando mutationInsertarVentas desde barcode scanner");
         // add product without forcing focus back to buscador
         mutationInsertarVentas({ noFocus: true });
         setBuscador("");
@@ -182,21 +212,27 @@ export function HeaderPos() {
         toast.error("Producto no encontrado");
       }
     } catch (err) {
-      console.error("barcode handler error", err);
+      console.error("❌ barcode handler error", err);
     }
   });
   useEffect(() => {
     let timeout;
     const texto = buscador.trim();
     const isCodigoDeBarras = /^[0-9]{3,}$/.test(texto);
+    
+    console.log("🔍 useEffect buscador - texto:", texto, "isCodigoDeBarras:", isCodigoDeBarras);
+    
     if (isCodigoDeBarras) {
       setStateListaproductos(false);
       timeout = setTimeout(() => {
+        console.log("🔍 Buscando producto con código:", texto);
         const productoEncontrado = dataProductos?.find(
           (p) => p.codigoBarras === texto
         );
+        console.log("🔍 Producto encontrado:", productoEncontrado);
         if (productoEncontrado) {
           selectProductos(productoEncontrado);
+          console.log("🔍 Llamando mutationInsertarVentas desde buscador");
           mutationInsertarVentas();
           setBuscador("");
         } else {
@@ -213,6 +249,7 @@ export function HeaderPos() {
         setStateListaproductos(false);
       }
     }
+    return () => clearTimeout(timeout);
   }, [buscador]);
   return (
     <Header>

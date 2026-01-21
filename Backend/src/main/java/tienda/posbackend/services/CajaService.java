@@ -19,9 +19,10 @@ import tienda.posbackend.entities.Impresora;
 import tienda.posbackend.repositories.UsuarioRepository;
 import tienda.posbackend.repositories.AsignacionSucursalRepository;
 import tienda.posbackend.repositories.ImpresoraRepository;
-import tienda.posbackend.dto.CajaDTO;
+import tienda.posbackend.repositories.CierreCajaRepository;
 
 @Service
+@SuppressWarnings("null")
 public class CajaService {
 
     @Autowired
@@ -38,6 +39,9 @@ public class CajaService {
     
     @Autowired
     private AsignacionSucursalRepository asignacionSucursalRepository;
+    
+    @Autowired
+    private CierreCajaRepository cierreCajaRepository;
 
     public List<Caja> listarPorSucursal(Long sucursalId) {
         return cajaRepository.findBySucursalId(sucursalId);
@@ -86,7 +90,7 @@ public class CajaService {
         Impresora impresora = new Impresora();
         impresora.setCaja(nuevaCaja);
         impresora.setEstado(false);
-        impresora.setNombre("Ticketera"); // Default name
+        impresora.setNombre("Impresora de " + nuevaCaja.getDescripcion()); // Nombre descriptivo basado en la caja
         impresoraRepository.save(impresora);
 
         // Logic: Auto-assign creation user to this box IF ID provided
@@ -139,11 +143,33 @@ public class CajaService {
     @Transactional
     public void eliminar(Long id) {
         // Verificar que la caja existe
-        Caja caja = cajaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada con ID: " + id));
+        if (!cajaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Caja no encontrada con ID: " + id);
+        }
         
-        // TODO: Agregar validación si tiene asignaciones de usuarios o movimientos
+        // Verificar si tiene cierres de caja asociados (aperturas o movimientos)
+        // Esto impide eliminar cajas que ya se han usado
+        long cierresCount = cierreCajaRepository.countByCajaId(id);
+        if (cierresCount > 0) {
+            throw new IllegalStateException(
+                "No se puede eliminar la caja porque tiene " + cierresCount + 
+                " registro(s) de apertura/cierre. Una caja que ya se usó no puede eliminarse."
+            );
+        }
         
+        // Eliminar asignaciones de sucursal asociadas
+        List<AsignacionSucursal> asignaciones = asignacionSucursalRepository.findByCajaId(id);
+        if (!asignaciones.isEmpty()) {
+            asignacionSucursalRepository.deleteAll(asignaciones);
+        }
+        
+        // Eliminar impresoras asociadas
+        List<Impresora> impresoras = impresoraRepository.findByCajaId(id);
+        if (!impresoras.isEmpty()) {
+            impresoraRepository.deleteAll(impresoras);
+        }
+        
+        // Finalmente eliminar la caja
         cajaRepository.deleteById(id);
     }
 }

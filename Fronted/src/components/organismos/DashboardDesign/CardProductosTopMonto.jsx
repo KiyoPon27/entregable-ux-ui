@@ -13,14 +13,14 @@ export const CardProductosTopMonto = () => {
   const { fechaInicio, fechaFin } = useDashboardStore();
   const {data,isLoading,error} = useQuery({
     queryKey: ["mostrar top10 productos masvendidosxmonto",{
-      _id_empresa: dataempresa?.id,
-      _fecha_inicio: fechaInicio,
-      _fecha_fin: fechaFin,
+      idEmpresa: dataempresa?.id,
+      fechaInicio: fechaInicio,
+      fechaFin: fechaFin,
     }],
     queryFn: () => mostrartop10productosmasvendidosxmonto({
-      _id_empresa: dataempresa?.id,
-      _fecha_inicio: fechaInicio,
-      _fecha_fin: fechaFin,
+      idEmpresa: dataempresa?.id,
+      fechaInicio: fechaInicio,
+      fechaFin: fechaFin,
     }),
     enabled: !!dataempresa,
   });

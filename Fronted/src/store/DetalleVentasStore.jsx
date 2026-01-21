@@ -3,10 +3,12 @@ import {
   InsertarDetalleVentas,
   MostrarDetalleVenta,
   EliminarDetalleVentas,
-  Mostrartop5productosmasvendidosxcantidad,
-  Mostrartop10productosmasvendidosxmonto,
   EditarCantidadDetalleVenta,
-} from "../index";
+} from "../supabase/crudDetalleVenta";
+import {
+  ObtenerTop5ProductosPorCantidad,
+  ObtenerTop10ProductosPorMonto,
+} from "../supabase/crudDashboard";
 function calcularTotal(items) {
   return items.reduce(
     (total, item) => total + item.precio_venta * item.cantidad,
@@ -30,11 +32,19 @@ export const useDetalleVentasStore = create((set, get) => ({
     await EliminarDetalleVentas(p);
   },
   mostrartop5productosmasvendidosxcantidad: async (p) => {
-    const response = Mostrartop5productosmasvendidosxcantidad(p);
+    const response = await ObtenerTop5ProductosPorCantidad({
+      id_empresa: p.idEmpresa,
+      fecha_inicio: p.fechaInicio,
+      fecha_fin: p.fechaFin
+    });
     return response;
   },
   mostrartop10productosmasvendidosxmonto: async (p) => {
-    const response = Mostrartop10productosmasvendidosxmonto(p);
+    const response = await ObtenerTop10ProductosPorMonto({
+      id_empresa: p.idEmpresa,
+      fecha_inicio: p.fechaInicio,
+      fecha_fin: p.fechaFin
+    });
     return response;
   },
   editarCantidadDetalleVenta: async (p) => {

@@ -2,15 +2,26 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { useRef, useState } from "react";
 import styled from "styled-components";
 import { useGlobalStore } from "../store/GlobalStore";
+
 export const ImageSelector = ({ fileUrl }) => {
   const fileInputRef = useRef(null);
   const { setFile, setFileUrl } = useGlobalStore();
+  const [isDragging, setIsDragging] = useState(false);
+  
   function openFileSelector() {
     fileInputRef.current.click();
   }
+  
   const handleImageChange = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
+    
+    // Validar que sea imagen
+    if (!selectedFile.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido');
+      return;
+    }
+    
     const fileReader = new FileReader();
     fileReader.readAsDataURL(selectedFile);
     setFile(selectedFile);
@@ -18,69 +29,185 @@ export const ImageSelector = ({ fileUrl }) => {
       setFileUrl(fileReader.result);
     };
   };
+  
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const droppedFile = e.dataTransfer.files[0];
+    if (!droppedFile) return;
+    
+    // Validar que sea imagen
+    if (!droppedFile.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido');
+      return;
+    }
+    
+    const fileReader = new FileReader();
+    fileReader.readAsDataURL(droppedFile);
+    setFile(droppedFile);
+    fileReader.onload = () => {
+      setFileUrl(fileReader.result);
+    };
+  };
+  
+  const hasImage = fileUrl && fileUrl !== "-";
+  
   return (
     <Container>
-      <ImageWrapper>
-        <Avatar
-          src={
-            fileUrl !== "-" ? fileUrl : "https://i.ibb.co/39y0kysq/subir.png"
-          }
-          alt="Selected"
-        />
-        <EditButton onClick={openFileSelector}>
-          <Icon icon="lets-icons:edit-fill" className="icon" />
-        </EditButton>
+      <DropZone
+        isDragging={isDragging}
+        hasImage={hasImage}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={openFileSelector}
+      >
+        {hasImage ? (
+          <>
+            <PreviewImage src={fileUrl} alt="Logo de empresa" />
+            <OverlayEdit>
+              <Icon icon="lets-icons:edit-fill" className="edit-icon" />
+              <span>Cambiar logo</span>
+            </OverlayEdit>
+          </>
+        ) : (
+          <PlaceholderContent>
+            <Icon icon="ph:image-duotone" className="placeholder-icon" />
+            <TextContainer>
+              <MainText>Click para seleccionar tu logo</MainText>
+              <SubText>o arrastra y suelta aquí</SubText>
+              <FormatText>PNG, JPG, GIF hasta 5MB</FormatText>
+            </TextContainer>
+          </PlaceholderContent>
+        )}
         <HiddenInput
-          onChange={(e) => handleImageChange(e)}
+          onChange={handleImageChange}
           ref={fileInputRef}
           type="file"
+          accept="image/*"
         />
-      </ImageWrapper>
+      </DropZone>
     </Container>
   );
 };
-const Container = styled.div`
-  text-align: center;
-  margin-bottom: 20px;
-`;
-const ImageWrapper = styled.div`
-  position: relative;
-  display: inline-block;
-`;
 
-const Avatar = styled.img`
-  width: 80px;
-  height: 80px;
-  border-radius: 10px;
-  object-fit: cover;
-  transition: transform 0.3s;
-  &:hover {
-    transform: scale(1.05);
-  }
-`;
-const EditButton = styled.button`
-  position: absolute;
-  left: 60px;
-  top: 10px;
-  width: 30px;
-  height: 30px;
-  background-color: #2e2e2e;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
+const Container = styled.div`
+  width: 100%;
+  margin: 20px 0;
   display: flex;
   justify-content: center;
+`;
+
+const DropZone = styled.div`
+  position: relative;
+  width: 280px;
+  height: 200px;
+  border: 2px dashed ${props => props.isDragging ? '#ffc107' : props.hasImage ? '#4CAF50' : '#ccc'};
+  border-radius: 12px;
+  background-color: ${props => props.isDragging ? '#fffde7' : props.hasImage ? '#f9f9f9' : '#fafafa'};
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  display: flex;
   align-items: center;
-  transition: background-color 0.3s, transform 0.2s;
-  .icon {
-    font-size: 18px;
-    color: white;
-  }
+  justify-content: center;
+  
   &:hover {
-    background-color: #575757;
-    transform: scale(1.1);
+    border-color: ${props => props.hasImage ? '#45a049' : '#ffc107'};
+    background-color: ${props => props.hasImage ? '#f5f5f5' : '#fff9c4'};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 `;
+
+const PreviewImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+`;
+
+const OverlayEdit = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: white;
+  gap: 8px;
+  
+  ${DropZone}:hover & {
+    opacity: 1;
+  }
+  
+  .edit-icon {
+    font-size: 32px;
+  }
+  
+  span {
+    font-size: 14px;
+    font-weight: 500;
+  }
+`;
+
+const PlaceholderContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  text-align: center;
+  
+  .placeholder-icon {
+    font-size: 48px;
+    color: #999;
+  }
+`;
+
+const TextContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const MainText = styled.p`
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+`;
+
+const SubText = styled.p`
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+`;
+
+const FormatText = styled.p`
+  font-size: 11px;
+  color: #999;
+  margin: 0;
+`;
+
 const HiddenInput = styled.input`
   display: none;
 `;

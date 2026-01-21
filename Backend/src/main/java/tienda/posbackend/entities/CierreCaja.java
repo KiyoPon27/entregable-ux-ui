@@ -1,6 +1,7 @@
 package tienda.posbackend.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -15,14 +16,16 @@ public class CierreCaja {
     private Long id;
 
     @Column(name = "fechainicio")
+    @JsonProperty("fechainicio")
     private LocalDateTime fechaInicio;
 
     @Column(name = "fechacierre")
+    @JsonProperty("fechacierre")
     private LocalDateTime fechaCierre;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_usuario")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "empresa", "rol"})
     private Usuario usuario;
 
     @Column(name = "total_efectivo_calculado")
@@ -36,7 +39,7 @@ public class CierreCaja {
     @Column(name = "diferencia_efectivo")
     private BigDecimal diferenciaEfectivo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_caja")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Caja caja;

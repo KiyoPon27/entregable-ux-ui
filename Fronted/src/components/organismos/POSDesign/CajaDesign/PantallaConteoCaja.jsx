@@ -4,7 +4,6 @@ import { InputText2 } from "../../formularios/InputText2";
 import {
   Btn1,
   FormatearNumeroDinero,
-  useAuthStore,
   useEmpresaStore,
   useUsuariosStore,
 } from "../../../..";
@@ -17,7 +16,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BarLoader } from "react-spinners";
 export function PantallaConteoCaja() {
-  const { cerrarSesion } = useAuthStore();
   const [montoEfectivo, setMontoEfectivo] = useState(0);
   const { totalEfectivoTotalCaja } = useMovCajaStore();
   const { datausuarios } = useUsuariosStore();
@@ -59,7 +57,7 @@ export function PantallaConteoCaja() {
       setStateCierraCaja(false);
       reset();
       queryClient.invalidateQueries(["mostrar cierre de caja"]);
-      cerrarSesion();
+      // No cerrar sesión después de cerrar caja
     },
     onError: (error) => {
       toast.error(`Error al cerrar caja: ${error.message}`);

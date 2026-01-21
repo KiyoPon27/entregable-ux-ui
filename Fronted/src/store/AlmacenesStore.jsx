@@ -14,9 +14,11 @@ export const useAlmacenesStore = create((set, get) => ({
   setStateAlmacen: (p) => set({ stateAlmacen: p }),
   accion: "",
   setAccion: (p) => set({ accion: p }),
-  almacenSelectItem: [],
+  // Siempre usar el almacén principal con id=1
+  almacenSelectItem: { id: 1, nombre: "Almacén Principal" },
   setAlmacenSelectItem: (p) => {
-    set({ almacenSelectItem: p });
+    // Siempre mantener el almacén con id=1
+    set({ almacenSelectItem: { id: 1, nombre: "Almacén Principal" } });
   },
 
   dataalmacen: [],
@@ -37,7 +39,16 @@ export const useAlmacenesStore = create((set, get) => ({
   dataAlmacenesXsucursal: null,
   mostrarAlmacenesXSucursal: async (p) => {
     const response = await MostrarAlmacenesXSucursal(p);
-    set({ almacenSelectItem: response[0] });
+    
+    // Seleccionar primer almacén disponible o null si no hay
+    if (response && response.length > 0) {
+      const primerAlmacen = response[0];
+      set({ almacenSelectItem: { id: primerAlmacen.id, nombre: primerAlmacen.nombre } });
+    } else {
+      set({ almacenSelectItem: null });
+      console.warn("⚠️ La sucursal no tiene almacenes configurados");
+    }
+    
     set({ dataAlmacenesXsucursal: response });
     return response;
   },

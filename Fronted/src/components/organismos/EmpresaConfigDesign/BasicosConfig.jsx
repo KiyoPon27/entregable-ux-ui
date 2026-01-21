@@ -23,9 +23,11 @@ export const BasicosConfig = () => {
   } = useForm({
     defaultValues:{
       nombre:dataempresa?.nombre,
-      direccion:dataempresa?.direccion_fiscal,
+      id_fiscal:dataempresa?.idFiscal,
+      direccion:dataempresa?.direccionFiscal,
+      correo:dataempresa?.correo,
       impuesto:dataempresa?.impuesto,
-      valor_impuesto: dataempresa?.valor_impuesto
+      valor_impuesto: dataempresa?.valorImpuesto
     }
   });
 
@@ -59,6 +61,18 @@ export const BasicosConfig = () => {
               />
               {errors.nombre?.type === "required" && <p>Campo requerido</p>}
             </InputText2>
+            <Label>RUC / ID Fiscal</Label>
+            <InputText2>
+              <input
+                className="form__field"
+                placeholder="20123456789"
+                type="text"
+                {...register("id_fiscal", {
+                  required: true,
+                })}
+              />
+              {errors.id_fiscal?.type === "required" && <p>Campo requerido</p>}
+            </InputText2>
             <Label>Dirección</Label>
             <InputText2>
               <input
@@ -71,6 +85,20 @@ export const BasicosConfig = () => {
                 })}
               />
               {errors.direccion?.type === "required" && <p>Campo requerido</p>}
+            </InputText2>
+            <Label>Correo</Label>
+            <InputText2>
+              <input
+                className="form__field"
+                placeholder="contacto@empresa.com"
+                type="email"
+                {...register("correo", {
+                  required: true,
+                  pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                })}
+              />
+              {errors.correo?.type === "required" && <p>Campo requerido</p>}
+              {errors.correo?.type === "pattern" && <p>Correo inválido</p>}
             </InputText2>
             <Label>Impuesto</Label>
             <InputText2>

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.dto.ConfirmarVentaDTO;
+import tienda.posbackend.dto.VentaConfirmadaDTO;
 import tienda.posbackend.entities.Venta;
 import tienda.posbackend.services.VentaService;
 
@@ -16,8 +17,8 @@ public class VentaController {
     private final VentaService ventaService;
 
     @PostMapping("/{id}/confirmar")
-    public ResponseEntity<Venta> confirmarVenta(@PathVariable Long id, @RequestBody ConfirmarVentaDTO dto) {
-        Venta venta = ventaService.confirmarVenta(id, dto);
+    public ResponseEntity<VentaConfirmadaDTO> confirmarVenta(@PathVariable Long id, @RequestBody ConfirmarVentaDTO dto) {
+        VentaConfirmadaDTO venta = ventaService.confirmarVenta(id, dto);
         return ResponseEntity.ok(venta);
     }
 

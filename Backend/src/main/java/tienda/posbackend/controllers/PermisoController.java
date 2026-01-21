@@ -20,6 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/permisos")
 @CrossOrigin(origins = "*")
+@SuppressWarnings("null")
 public class PermisoController {
 
     @Autowired

@@ -25,10 +25,20 @@ export function PantallaCierreCaja() {
   } = useMovCajaStore();
   const { dataempresa } = useEmpresaStore();
   const fechaactual = useFormattedDate();
-  const fechaInicioFormateada = format(
-    new Date(dataCierreCaja?.fechainicio),
-    "dd/MM/yyyy HH:mm:ss"
-  );
+  
+  // Validar y formatear fecha de inicio de forma segura
+  let fechaInicioFormateada = "Sin fecha";
+  if (dataCierreCaja?.fechainicio) {
+    try {
+      const fecha = new Date(dataCierreCaja.fechainicio);
+      if (!isNaN(fecha.getTime())) {
+        fechaInicioFormateada = format(fecha, "dd/MM/yyyy HH:mm:ss");
+      }
+    } catch (error) {
+      console.error("Error al formatear fecha:", error);
+    }
+  }
+  
   const {
     isLoading: isloading1,
     isError: iserror1,

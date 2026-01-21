@@ -61,8 +61,8 @@ export const SelectAlmacenModal = () => {
       _descripcion: productosItemSelect.nombre,
       _id_producto: productosItemSelect.id,
       _precio_compra: productosItemSelect.precioCompra,
-      _id_sucursal: sucursalesItemSelectAsignadas.id_sucursal,
-      _id_almacen: almacenSelectItem?.id_almacen,
+      idSucursal: sucursalesItemSelectAsignadas.id_sucursal,
+      idAlmacen: almacenSelectItem?.id,
     };
     console.log("pDetalleVentas",pDetalleVentas)
     await insertarDetalleVentas(pDetalleVentas);

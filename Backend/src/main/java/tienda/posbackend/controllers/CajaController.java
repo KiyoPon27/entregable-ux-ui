@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.entities.Caja;
 import tienda.posbackend.entities.Sucursal;
 import tienda.posbackend.services.CajaService;
-import tienda.posbackend.dto.CajaDTO;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,22 +31,37 @@ public class CajaController {
     }
 
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody CajaDTO cajaDTO) {
+    public ResponseEntity<?> crear(@RequestBody Map<String, Object> payload) {
         try {
-            // Mapping DTO to Entity
-            Caja caja = new Caja();
-            caja.setDescripcion(cajaDTO.getDescripcion());
-            caja.setEliminar(cajaDTO.getEliminar());
-            caja.setImprimir(cajaDTO.getImprimir());
-            // Map date if necessary, or let service handle it (default now())
+            // Extract idUsuarioCreador if present
+            Long idUsuarioCreador = null;
+            if (payload.containsKey("idUsuarioCreador") && payload.get("idUsuarioCreador") != null) {
+                idUsuarioCreador = Long.valueOf(payload.get("idUsuarioCreador").toString());
+            }
             
-            if (cajaDTO.getSucursalId() != null) {
-                Sucursal s = new Sucursal();
-                s.setId(cajaDTO.getSucursalId());
-                caja.setSucursal(s);
+            // Build Caja from payload
+            Caja caja = new Caja();
+            caja.setDescripcion(payload.get("descripcion").toString());
+            
+            if (payload.containsKey("eliminar")) {
+                caja.setEliminar(Boolean.valueOf(payload.get("eliminar").toString()));
+            }
+            if (payload.containsKey("imprimir")) {
+                caja.setImprimir(Boolean.valueOf(payload.get("imprimir").toString()));
+            }
+            
+            // Extract sucursal from nested object
+            if (payload.containsKey("sucursal")) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> sucursalMap = (Map<String, Object>) payload.get("sucursal");
+                if (sucursalMap != null && sucursalMap.containsKey("id")) {
+                    Sucursal s = new Sucursal();
+                    s.setId(Long.valueOf(sucursalMap.get("id").toString()));
+                    caja.setSucursal(s);
+                }
             }
 
-            Caja nuevaCaja = cajaService.crear(caja, cajaDTO.getIdUsuarioCreador());
+            Caja nuevaCaja = cajaService.crear(caja, idUsuarioCreador);
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevaCaja);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();

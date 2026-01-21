@@ -31,16 +31,16 @@ export const ChartProductosTop5 = () => {
     queryKey: [
       "mostrar top5 productos mas vendidos xcantidad",
       {
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        idEmpresa: dataempresa?.id,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
       },
     ],
     queryFn: () =>
       mostrartop5productosmasvendidosxcantidad({
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        idEmpresa: dataempresa?.id,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
       }),
     enabled: !!dataempresa,
   });

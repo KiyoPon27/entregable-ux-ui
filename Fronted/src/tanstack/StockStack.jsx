@@ -14,22 +14,22 @@ import { useFormattedDate } from "../hooks/useFormattedDate";
 import { useStockStore } from "../store/StockStore";
 export const useMostrarStockXAlmacenesYProductoQuery = () => {
   const { mostrarStockXAlmacenesYProducto } = useStockStore();
-  const { almacenSelectItem } = useAlmacenesStore();
   const { productosItemSelect } = useProductosStore();
+  // Siempre usar almacén con id=1
   return useQuery({
     queryKey: [
       "mostrar Stock XAlmacenes YProducto",
       {
         id_producto: productosItemSelect?.id,
-        id_almacen: almacenSelectItem?.id,
+        id_almacen: 1,
       },
     ],
     queryFn: () =>
       mostrarStockXAlmacenesYProducto({
         id_producto: productosItemSelect?.id,
-        id_almacen: almacenSelectItem?.id,
+        id_almacen: 1, // Siempre usar almacén principal
       }),
-    enabled: !!almacenSelectItem,
+    enabled: !!productosItemSelect?.id,
     refetchOnWindowFocus: false,
   });
 };

@@ -15,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/stock")
+@SuppressWarnings("null")
 public class StockController {
 
     @Autowired

@@ -35,6 +35,7 @@ public class CategoriaService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public Categoria crear(Categoria categoria) {
         // Validar que venga la empresa
         if (categoria.getEmpresa() == null || categoria.getEmpresa().getId() == null) {
@@ -62,6 +63,7 @@ public class CategoriaService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public Categoria editar(Long id, Categoria categoriaDetails) {
         // Buscar categoría existente
         Categoria categoria = categoriaRepository.findById(id)
@@ -92,10 +94,12 @@ public class CategoriaService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public void eliminar(Long id) {
         // Verificar que la categoría existe
-        Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
+        if (!categoriaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Categoría no encontrada con ID: " + id);
+        }
         
         // Verificar si tiene productos asociados
         long cantidadProductos = productoRepository.countByCategoriaId(id);

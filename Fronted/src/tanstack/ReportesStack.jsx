@@ -14,16 +14,16 @@ export const useMostrarVentasDashboardQuery = () => {
     queryKey: [
       "mostrar Ventas Dashboard",
       {
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        idEmpresa: dataempresa?.id,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
       },
     ],
     queryFn: () =>
       mostrarVentasDashboard({
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        id_empresa: dataempresa?.id,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
       }),
     enabled: !!dataempresa?.id && !!fechaInicio && !!fechaFin,
   });
@@ -37,16 +37,16 @@ export const useMostrarCantidadDetalleVentaDashboardQuery = () => {
     queryKey: [
       "mostrar cantidad detalle Ventas Dashboard",
       {
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        idEmpresa: dataempresa?.id,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
       },
     ],
     queryFn: () =>
       mostrarCantidadDetalleVentasDashboard({
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        id_empresa: dataempresa?.id,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
       }),
     enabled: !!dataempresa?.id && !!fechaInicio && !!fechaFin,
   });
@@ -61,16 +61,16 @@ export const useMostrarCantidadDetalleVentaPeriodoAnteriorDashboardQuery =
       queryKey: [
         "mostrar cantidad detalle Ventas Dashboard",
         {
-          _id_empresa: dataempresa?.id,
-          _fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
-          _fecha_fin: fechasAnteriores?.fechaAnteriorFin,
+          idEmpresa: dataempresa?.id,
+          fechaInicio: fechasAnteriores?.fechaAnteriorInicio,
+          fechaFin: fechasAnteriores?.fechaAnteriorFin,
         },
       ],
       queryFn: () =>
         mostrarCantidadDetalleVentasDashboard({
-          _id_empresa: dataempresa?.id,
-          _fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
-          _fecha_fin: fechasAnteriores?.fechaAnteriorFin,
+          id_empresa: dataempresa?.id,
+          fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
+          fecha_fin: fechasAnteriores?.fechaAnteriorFin,
         }),
       enabled:
         !!dataempresa?.id &&
@@ -89,16 +89,16 @@ export const useMostrarVentasDashboardPeriodoAnteriorQuery = () => {
     queryKey: [
       "mostrar Ventas Dashboard periodo anterior",
       {
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
-        _fecha_fin: fechasAnteriores?.fechaAnteriorFin,
+        idEmpresa: dataempresa?.id,
+        fechaInicio: fechasAnteriores?.fechaAnteriorInicio,
+        fechaFin: fechasAnteriores?.fechaAnteriorFin,
       },
     ],
     queryFn: () =>
       mostrarVentasDashboardPeriodoAnterior({
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
-        _fecha_fin: fechasAnteriores?.fechaAnteriorFin,
+        id_empresa: dataempresa?.id,
+        fecha_inicio: fechasAnteriores?.fechaAnteriorInicio,
+        fecha_fin: fechasAnteriores?.fechaAnteriorFin,
       }),
     enabled:
       !!dataempresa?.id &&
@@ -117,16 +117,16 @@ export const useGananciasDetalleVentaQuery = () => {
     queryKey: [
       "mostrar ganancias detalle venta",
       {
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        idEmpresa: dataempresa?.id,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
       },
     ],
     queryFn: () =>
       mostrarGananciasDetalleVenta({
-        _id_empresa: dataempresa?.id,
-        _fecha_inicio: fechaInicio,
-        _fecha_fin: fechaFin,
+        id_empresa: dataempresa?.id,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
       }),
     enabled: !!dataempresa?.id && !!fechaInicio && !!fechaFin,
     refetchOnWindowFocus: false,
@@ -141,14 +141,14 @@ export const useReporteInventarioValoradoQuery = () => {
     queryKey: [
       "reporte de inventario valorado",
       {
-        sucursal_id: sucursalesItemSelect?.id,
-        almacen_id: almacenSelectItem?.id,
+        sucursalId: sucursalesItemSelect?.id,
+        almacenId: almacenSelectItem?.id,
       },
     ],
     queryFn: () =>
       reportStockPorAlmacenSucursal({
-        sucursal_id: sucursalesItemSelect?.id,
-        almacen_id: almacenSelectItem?.id,
+        sucursalId: sucursalesItemSelect?.id,
+        almacenId: almacenSelectItem?.id,
       }),
     enabled: !!sucursalesItemSelect?.id && !!almacenSelectItem?.id,
     refetchOnWindowFocus: false,

@@ -3,11 +3,11 @@ import api from "../api/api";
 
 export async function InsertarCategorias(p, file) {
   try {
-    const response = await api.post("/categorias/insertar", {
+    const response = await api.post("/categorias", {
       nombre: p._nombre,
       color: p._color,
       icono: p._icono || '-',
-      idEmpresa: p._id_empresa
+      empresa: { id: p.idEmpresa }
     });
     
     Swal.fire({
@@ -30,7 +30,7 @@ export async function InsertarCategorias(p, file) {
 
 export async function MostrarCategorias(p) {
   try {
-    const response = await api.get(`/categorias/mostrar/${p.id_empresa}`);
+    const response = await api.get(`/categorias/empresa/${p.id_empresa}`);
     return response.data;
   } catch (error) {
     console.error("Error al mostrar categorías:", error);
@@ -41,7 +41,7 @@ export async function MostrarCategorias(p) {
 export async function BuscarCategorias(p) {
   try {
     // El backend no tiene endpoint de búsqueda, así que filtramos en frontend
-    const response = await api.get(`/categorias/mostrar/${p.id_empresa}`);
+    const response = await api.get(`/categorias/empresa/${p.id_empresa}`);
     const categorias = response.data;
     
     // Filtrar por nombre si hay descripción
@@ -60,7 +60,7 @@ export async function BuscarCategorias(p) {
 
 export async function EliminarCategorias(p) {
   try {
-    await api.delete(`/categorias/eliminar/${p.id}`);
+    await api.delete(`/categorias/${p.id}`);
     Swal.fire({
       icon: "success",
       title: "¡Eliminado!",
@@ -79,14 +79,11 @@ export async function EliminarCategorias(p) {
 
 export async function EditarCategorias(p, fileold, filenew) {
   try {
-    // El backend espera params en la URL, no body
-    await api.put(`/categorias/editar/${p._id}`, null, {
-      params: {
-        nombre: p._nombre,
-        idEmpresa: p._id_empresa,
-        color: p._color || null,
-        icono: p._icono || null
-      }
+    await api.put(`/categorias/${p._id}`, {
+      nombre: p._nombre,
+      empresa: { id: p.idEmpresa },
+      color: p._color || null,
+      icono: p._icono || null
     });
     
     Swal.fire({

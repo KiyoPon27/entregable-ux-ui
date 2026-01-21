@@ -179,7 +179,34 @@ CREATE TABLE clientes_proveedores (
   CONSTRAINT clientes_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
 );
 
--- 14. TABLA PRODUCTOS
+-- 14. TABLA COMPRAS
+CREATE TABLE compras (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  numero_factura VARCHAR(50) NOT NULL,
+  fecha_emision DATE NOT NULL,
+  id_proveedor BIGINT NOT NULL,
+  id_metodo_pago BIGINT NOT NULL,
+  id_tipo_comprobante BIGINT NOT NULL,
+  observacion TEXT,
+  estado VARCHAR(20) DEFAULT 'INCOMPLETO',
+  monto_total DECIMAL(12,2) NOT NULL,
+  id_empresa BIGINT NOT NULL,
+  id_usuario BIGINT NOT NULL,
+  fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT compras_id_proveedor_fkey FOREIGN KEY (id_proveedor) REFERENCES clientes_proveedores(id),
+  CONSTRAINT compras_id_metodo_pago_fkey FOREIGN KEY (id_metodo_pago) REFERENCES metodos_pago(id),
+  CONSTRAINT compras_id_tipo_comprobante_fkey FOREIGN KEY (id_tipo_comprobante) REFERENCES tipo_comprobantes(id),
+  CONSTRAINT compras_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id),
+  CONSTRAINT compras_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
+  INDEX idx_compras_empresa (id_empresa),
+  INDEX idx_compras_proveedor (id_proveedor),
+  INDEX idx_compras_estado (estado),
+  INDEX idx_compras_numero_factura (numero_factura)
+);
+
+-- 15. TABLA PRODUCTOS
 CREATE TABLE productos (
   id BIGINT NOT NULL AUTO_INCREMENT,
   nombre VARCHAR(255) NOT NULL,
@@ -193,12 +220,30 @@ CREATE TABLE productos (
   maneja_inventarios BOOLEAN DEFAULT FALSE,
   maneja_multiprecios BOOLEAN DEFAULT FALSE,
   estado VARCHAR(20) DEFAULT 'ACTIVO',
+  tipo_comprobante VARCHAR(20) DEFAULT 'BOLETA' COMMENT 'Tipo de comprobante: FACTURA o BOLETA',
   PRIMARY KEY (id),
   CONSTRAINT productos_id_categoria_fkey FOREIGN KEY (id_categoria) REFERENCES categorias(id),
-  CONSTRAINT productos_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
+  CONSTRAINT productos_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id),
+  INDEX idx_productos_tipo_comprobante (tipo_comprobante)
 );
 
--- 15. TABLA VENTAS
+-- 16. TABLA DETALLE_COMPRA
+CREATE TABLE detalle_compra (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  id_compra BIGINT NOT NULL,
+  id_producto BIGINT NOT NULL,
+  cantidad_esperada INT NOT NULL,
+  cantidad_recibida INT NOT NULL,
+  precio_compra DECIMAL(12,2) NOT NULL,
+  subtotal DECIMAL(12,2) NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT detalle_compra_id_compra_fkey FOREIGN KEY (id_compra) REFERENCES compras(id) ON DELETE CASCADE,
+  CONSTRAINT detalle_compra_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id),
+  INDEX idx_detalle_compra_compra (id_compra),
+  INDEX idx_detalle_compra_producto (id_producto)
+);
+
+-- 17. TABLA VENTAS
 CREATE TABLE ventas (
   id BIGINT NOT NULL AUTO_INCREMENT,
   fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -218,13 +263,15 @@ CREATE TABLE ventas (
   valor_impuesto DECIMAL(15,2) DEFAULT 0,
   id_cierre_caja BIGINT,
   nro_comprobante VARCHAR(255) DEFAULT NULL,
+  tipo_comprobante VARCHAR(20) DEFAULT 'BOLETA' COMMENT 'Tipo de comprobante emitido: FACTURA o BOLETA',
   PRIMARY KEY (id),
   CONSTRAINT ventas_id_cliente_fkey FOREIGN KEY (id_cliente) REFERENCES clientes_proveedores(id),
   CONSTRAINT ventas_id_cierre_caja_fkey FOREIGN KEY (id_cierre_caja) REFERENCES cierrecaja(id),
-  CONSTRAINT ventas_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+  CONSTRAINT ventas_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
+  INDEX idx_ventas_tipo_comprobante (tipo_comprobante)
 );
 
--- 16. TABLA DETALLE_VENTA
+-- 18. TABLA DETALLE_VENTA
 CREATE TABLE detalle_venta (
   id BIGINT NOT NULL AUTO_INCREMENT,
   id_venta BIGINT NOT NULL,
@@ -243,7 +290,7 @@ CREATE TABLE detalle_venta (
   CONSTRAINT detalle_venta_id_venta_fkey FOREIGN KEY (id_venta) REFERENCES ventas(id)
 );
 
--- 17. TABLA IMPRESORAS
+-- 19. TABLA IMPRESORAS
 CREATE TABLE impresoras (
   id BIGINT NOT NULL AUTO_INCREMENT,
   id_caja BIGINT NOT NULL,
@@ -255,7 +302,7 @@ CREATE TABLE impresoras (
   CONSTRAINT impresoras_id_caja_fkey FOREIGN KEY (id_caja) REFERENCES caja(id)
 );
 
--- 18. TABLA KARDEX
+-- 20. TABLA KARDEX
 CREATE TABLE kardex (
   id BIGINT NOT NULL AUTO_INCREMENT,
   fecha DATE NOT NULL,
@@ -274,19 +321,19 @@ CREATE TABLE kardex (
   CONSTRAINT kardex_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
 );
 
--- 19. TABLA METODOS_PAGO
+-- 21. TABLA METODOS_PAGO
 CREATE TABLE metodos_pago (
   id BIGINT NOT NULL AUTO_INCREMENT,
   nombre VARCHAR(255) NOT NULL,
   id_empresa BIGINT,
-  icono VARCHAR(255) DEFAULT '-',
+  icono VARCHAR(255) DEFAULT NULL,
   ver_nombre BOOLEAN DEFAULT TRUE,
   eliminar_actualizar BOOLEAN DEFAULT FALSE, -- Replaces 'delete_update'
   PRIMARY KEY (id),
   CONSTRAINT metodos_pago_id_empresa_fkey FOREIGN KEY (id_empresa) REFERENCES empresa(id)
 );
 
--- 20. TABLA MOVIMIENTOS_CAJA
+-- 22. TABLA MOVIMIENTOS_CAJA
 CREATE TABLE movimientos_caja (
   id BIGINT NOT NULL AUTO_INCREMENT,
   fecha_movimiento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -305,7 +352,7 @@ CREATE TABLE movimientos_caja (
   CONSTRAINT movimientos_caja_id_ventas_fkey FOREIGN KEY (id_ventas) REFERENCES ventas(id)
 );
 
--- 21. TABLA MOVIMIENTOS_STOCK
+-- 23. TABLA MOVIMIENTOS_STOCK
 CREATE TABLE movimientos_stock (
   id BIGINT NOT NULL AUTO_INCREMENT,
   id_almacen BIGINT NOT NULL,
@@ -320,7 +367,7 @@ CREATE TABLE movimientos_stock (
   CONSTRAINT movimientos_stock_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id)
 );
 
--- 22. TABLA MULTIPRECIOS
+-- 24. TABLA MULTIPRECIOS
 CREATE TABLE multiprecios (
   id BIGINT NOT NULL AUTO_INCREMENT,
   precio_venta DECIMAL(15,2) NOT NULL,
@@ -330,7 +377,7 @@ CREATE TABLE multiprecios (
   CONSTRAINT multiprecios_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES productos(id)
 );
 
--- 23. TABLA PERMISOS
+-- 25. TABLA PERMISOS
 CREATE TABLE permisos (
   id BIGINT NOT NULL AUTO_INCREMENT,
   id_usuario BIGINT NOT NULL,
@@ -340,7 +387,7 @@ CREATE TABLE permisos (
   CONSTRAINT permisos_idmodulo_fkey FOREIGN KEY (idmodulo) REFERENCES modulos(id)
 );
 
--- 24. TABLA PERMISOS_DEFAULT
+-- 26. TABLA PERMISOS_DEFAULT
 CREATE TABLE permisos_default (
   id BIGINT NOT NULL AUTO_INCREMENT,
   id_rol BIGINT NOT NULL,
@@ -350,7 +397,7 @@ CREATE TABLE permisos_default (
   CONSTRAINT permisos_default_id_rol_fkey FOREIGN KEY (id_rol) REFERENCES roles(id)
 );
 
--- 25. TABLA SERIALIZACION_COMPROBANTES
+-- 27. TABLA SERIALIZACION_COMPROBANTES
 CREATE TABLE serializacion_comprobantes (
   id BIGINT NOT NULL AUTO_INCREMENT,
   id_tipo_comprobante BIGINT NOT NULL,
@@ -364,7 +411,7 @@ CREATE TABLE serializacion_comprobantes (
   CONSTRAINT serial_comprobantes_sucursal_id_fkey FOREIGN KEY (sucursal_id) REFERENCES sucursales(id)
 );
 
--- 26. TABLA STOCK
+-- 28. TABLA STOCK
 CREATE TABLE stock (
   id BIGINT NOT NULL AUTO_INCREMENT,
   id_almacen BIGINT NOT NULL,

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@SuppressWarnings("null")
 public class MovimientoStockService {
 
     @Autowired
@@ -33,8 +34,24 @@ public class MovimientoStockService {
     /**
      * Listar movimientos por producto
      */
+    @Transactional(readOnly = true)
     public List<MovimientoStock> listarPorProducto(Long productoId) {
-        return movimientoStockRepository.findByProductoIdOrderByFechaDesc(productoId);
+        List<MovimientoStock> movimientos = movimientoStockRepository.findByProductoIdOrderByFechaDesc(productoId);
+        
+        // Forzar inicialización de relaciones lazy
+        movimientos.forEach(m -> {
+            if (m.getAlmacen() != null) {
+                m.getAlmacen().getNombre();
+                if (m.getAlmacen().getSucursal() != null) {
+                    m.getAlmacen().getSucursal().getNombre();
+                }
+            }
+            if (m.getProducto() != null) {
+                m.getProducto().getNombre();
+            }
+        });
+        
+        return movimientos;
     }
 
     /**
@@ -47,8 +64,24 @@ public class MovimientoStockService {
     /**
      * Listar movimientos por producto y almacén
      */
+    @Transactional(readOnly = true)
     public List<MovimientoStock> listarPorProductoYAlmacen(Long productoId, Long almacenId) {
-        return movimientoStockRepository.findByProductoIdAndAlmacenIdOrderByFechaDesc(productoId, almacenId);
+        List<MovimientoStock> movimientos = movimientoStockRepository.findByProductoIdAndAlmacenIdOrderByFechaDesc(productoId, almacenId);
+        
+        // Forzar inicialización de relaciones lazy
+        movimientos.forEach(m -> {
+            if (m.getAlmacen() != null) {
+                m.getAlmacen().getNombre();
+                if (m.getAlmacen().getSucursal() != null) {
+                    m.getAlmacen().getSucursal().getNombre();
+                }
+            }
+            if (m.getProducto() != null) {
+                m.getProducto().getNombre();
+            }
+        });
+        
+        return movimientos;
     }
 
     /**
@@ -82,8 +115,24 @@ public class MovimientoStockService {
     /**
      * Listar movimientos por empresa
      */
+    @Transactional(readOnly = true)
     public List<MovimientoStock> listarPorEmpresa(Long empresaId) {
-        return movimientoStockRepository.findByEmpresaId(empresaId);
+        List<MovimientoStock> movimientos = movimientoStockRepository.findByEmpresaId(empresaId);
+        
+        // Forzar inicialización de relaciones lazy
+        movimientos.forEach(m -> {
+            if (m.getAlmacen() != null) {
+                m.getAlmacen().getNombre();
+                if (m.getAlmacen().getSucursal() != null) {
+                    m.getAlmacen().getSucursal().getNombre();
+                }
+            }
+            if (m.getProducto() != null) {
+                m.getProducto().getNombre();
+            }
+        });
+        
+        return movimientos;
     }
 
     /**

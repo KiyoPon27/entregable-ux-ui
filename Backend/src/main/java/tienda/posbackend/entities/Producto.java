@@ -1,6 +1,7 @@
 package tienda.posbackend.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -22,9 +23,9 @@ public class Producto {
     @Column(name = "precio_compra")
     private BigDecimal precioCompra;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria")
-    @JsonIgnoreProperties({"empresa"})
+    @JsonIgnoreProperties({"empresa", "hibernateLazyInitializer", "handler"})
     private Categoria categoria;
 
     @Column(name = "codigo_barras")
@@ -33,9 +34,9 @@ public class Producto {
     @Column(name = "codigo_interno")
     private String codigoInterno;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_empresa")
-    @JsonIgnoreProperties({"usuario"})
+    @JsonIgnoreProperties({"usuario", "hibernateLazyInitializer", "handler"})
     private Empresa empresa;
 
     @Column(name = "sevende_por")
@@ -50,8 +51,22 @@ public class Producto {
     @Column(length = 20)
     private String estado = "ACTIVO";
     
+    @Column(name = "tipo_comprobante")
+    private String tipoComprobante; // 'FACTURA' o 'BOLETA'
+    
     @Transient
     private BigDecimal stockTotal;
+    
+    // Exponer IDs directamente para evitar problemas de serialización
+    @JsonProperty("id_categoria")
+    public Long getIdCategoria() {
+        return categoria != null ? categoria.getId() : null;
+    }
+    
+    @JsonProperty("id_empresa")
+    public Long getIdEmpresa() {
+        return empresa != null ? empresa.getId() : null;
+    }
     
     // Todo: Add image column if added to DB later.
 }

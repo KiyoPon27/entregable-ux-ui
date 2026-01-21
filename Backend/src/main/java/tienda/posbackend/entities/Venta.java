@@ -1,5 +1,6 @@
 package tienda.posbackend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -30,12 +31,6 @@ public class Venta {
     private Usuario usuario;
 
     private BigDecimal saldo;
-    
-    @Column(name = "pago_con")
-    private BigDecimal pagoCon;
-    
-    @Column(name = "referencia_tarjeta")
-    private String referenciaTarjeta;
     
     @Column(name = "vuelto")
     private BigDecimal vuelto;
@@ -74,11 +69,14 @@ public class Venta {
     @Column(name = "nro_comprobante")
     private String nroComprobante;
     
+    @Column(name = "tipo_comprobante")
+    private String tipoComprobante; // 'FACTURA' o 'BOLETA'
+    
     /* 
        Optional: relationship to DetalleVenta 
        Mapped by "venta" field in DetalleVenta
     */
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("venta")
+    @JsonIgnore
     private List<DetalleVenta> detalles;
 }

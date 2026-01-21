@@ -31,8 +31,7 @@ export function POSTemplate() {
   const { stateIngresoSalida, stateCierreCaja } = useCierreCajaStore();
   const { stateModal } = useStockStore();
   useBuscarProductosQuery();
-  const { isLoading: isLoadingAlmacenXSucursal } =
-    useMostrarAlmacenesXSucursalQuery();
+  useMostrarAlmacenesXSucursalQuery();
   const { isLoading: isLoadingStockPorProductoYAlmacen } =
     useMostrarStockXAlmacenesYProductoQuery();
    

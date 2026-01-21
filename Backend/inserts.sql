@@ -87,37 +87,40 @@ ON DUPLICATE KEY UPDATE
 -- 4. USUARIO ADMINISTRADOR INICIAL (1 registro)
 -- =====================================================
 -- Usuario SuperAdmin para primer acceso al sistema
--- Contraseña: "123" (encriptada con BCrypt)
+-- Contraseña: "ltsanchez" (encriptada con BCrypt)
 -- 
 -- IMPORTANTE: Cambiar la contraseña después del primer login
 
 INSERT INTO usuarios (
     id,
-    nombres, 
-    correo, 
+    nombres,
+    correo,
     password,
-    id_rol, 
-    estado, 
-    nro_doc, 
+    id_rol,
+    estado,
+    nro_doc,
     telefono,
     tema,
-    id_auth
+    id_auth,
+    id_tipodocumento
 ) VALUES (
     1,
-    'Alonso Admin', 
-    'admin@tienda.com', 
-    '$2a$10$mlrsY0Oq.JlMF.AsQFSXoeMiEJlM/Tq5oV0QJcZDEhHQk5UBmwb5W', -- Contraseña: "123"
+    'Laura Sanchez',
+    'itsanchezadm@gmail.com',
+    '$2a$12$Z9OfQ48Wn8ZnoZFZuY7xje.RPM5tYvSKSAN4SR8gmCJ3GL.Cphi6O', -- Contraseña: "ltsanchez"
     1,  -- superadmin
-    'ACTIVO', 
-    '00000000', 
-    '999-999-999',
+    'ACTIVO',
+    '40438437',
+    '962510490',
     'light',
-    'auth-admin-1'
+    'auth-admin-1',
+    1  -- DNI
 )
 ON DUPLICATE KEY UPDATE 
     nombres = VALUES(nombres),
     correo = VALUES(correo),
-    password = VALUES(password);
+    password = VALUES(password),
+    id_tipodocumento = VALUES(id_tipodocumento);
 
 -- =====================================================
 -- 5. EMPRESA (1 registro)

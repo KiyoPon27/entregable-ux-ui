@@ -1,9 +1,29 @@
 package tienda.posbackend.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import tienda.posbackend.entities.MovimientoCaja;
 import java.util.List;
 
 public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, Long> {
     List<MovimientoCaja> findByCierreCajaId(Long cierreCajaId);
+    
+    @Query("SELECT mc.tipoMovimiento, SUM(mc.monto) " +
+           "FROM MovimientoCaja mc " +
+           "JOIN mc.metodoPago mp " +
+           "WHERE mc.cierreCaja.id = :idCierreCaja " +
+           "AND mp.nombre = 'Efectivo' " +
+           "AND mc.venta IS NULL " +
+           "GROUP BY mc.tipoMovimiento")
+    List<Object[]> findEfectivoSinVentasPorCierre(@Param("idCierreCaja") Long idCierreCaja);
+    
+    @Query("SELECT mc FROM MovimientoCaja mc " +
+           "JOIN FETCH mc.usuario u " +
+           "JOIN FETCH mc.cierreCaja cc " +
+           "JOIN FETCH cc.caja c " +
+           "JOIN FETCH c.sucursal s " +
+           "WHERE s.empresa.id = :idEmpresa " +
+           "ORDER BY mc.fechaMovimiento DESC")
+    List<MovimientoCaja> findByEmpresaIdOrderByFechaDesc(@Param("idEmpresa") Long idEmpresa);
 }

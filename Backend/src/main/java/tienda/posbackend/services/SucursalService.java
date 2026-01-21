@@ -7,12 +7,16 @@ import tienda.posbackend.entities.Almacen;
 import tienda.posbackend.entities.Caja;
 import tienda.posbackend.entities.Empresa;
 import tienda.posbackend.entities.Sucursal;
+import tienda.posbackend.entities.SerializacionComprobante;
+import tienda.posbackend.entities.TipoComprobante;
 import tienda.posbackend.exceptions.DuplicateResourceException;
 import tienda.posbackend.exceptions.ResourceNotFoundException;
 import tienda.posbackend.repositories.AlmacenRepository;
 import tienda.posbackend.repositories.CajaRepository;
 import tienda.posbackend.repositories.EmpresaRepository;
 import tienda.posbackend.repositories.SucursalRepository;
+import tienda.posbackend.repositories.SerializacionComprobanteRepository;
+import tienda.posbackend.repositories.TipoComprobanteRepository;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("null")
 public class SucursalService {
 
     @Autowired
@@ -34,6 +39,12 @@ public class SucursalService {
     
     @Autowired
     private AlmacenRepository almacenRepository;
+    
+    @Autowired
+    private SerializacionComprobanteRepository serializacionRepository;
+    
+    @Autowired
+    private TipoComprobanteRepository tipoComprobanteRepository;
 
     public List<Sucursal> listarPorEmpresa(Long empresaId) {
         return sucursalRepository.findByEmpresaId(empresaId);
@@ -88,7 +99,8 @@ public class SucursalService {
                 almacenMap.put("nombre", almacen.getNombre());
                 almacenMap.put("fecha_creacion", almacen.getFechaCreacion());
                 almacenMap.put("eliminar", almacen.getEliminar());
-                almacenMap.put("delete", almacen.getEliminar()); // Compatibilidad con frontend
+                // Lógica correcta: almacén por defecto NO se puede eliminar
+                almacenMap.put("delete", !almacen.getDefecto()); // Si es defecto, NO se elimina
                 almacenMap.put("defecto", almacen.getDefecto());
                 almacenMap.put("id_sucursal", sucursal.getId());
                 return almacenMap;
@@ -134,7 +146,30 @@ public class SucursalService {
             sucursal.setEliminar(true);
         }
 
-        return sucursalRepository.save(sucursal);
+        Sucursal nuevaSucursal = sucursalRepository.save(sucursal);
+        
+        // TRIGGER: Crear automáticamente 5 serializaciones para la sucursal
+        // ID 1: Factura, ID 2: Boleta, ID 3: Nota de Venta, ID 4: Nota de Crédito, ID 5: Nota de Débito
+        String[] seriesDefault = {"F001", "B001", "NV001", "NC001", "ND001"};
+        Long[] tipoComprobanteIds = {1L, 2L, 3L, 4L, 5L};
+        
+        for (int i = 0; i < 5; i++) {
+            TipoComprobante tipoComprobante = tipoComprobanteRepository.findById(tipoComprobanteIds[i]).orElse(null);
+            
+            if (tipoComprobante != null) {
+                SerializacionComprobante serializacion = new SerializacionComprobante();
+                serializacion.setTipoComprobante(tipoComprobante);
+                serializacion.setSerie(seriesDefault[i]);
+                serializacion.setSucursal(nuevaSucursal);
+                serializacion.setCorrelativo(1L);
+                serializacion.setCantidadNumeros(8L);
+                serializacion.setPorDefecto(i == 0); // Solo la primera (Factura) es por defecto
+                
+                serializacionRepository.save(serializacion);
+            }
+        }
+
+        return nuevaSucursal;
     }
 
     @Transactional
@@ -172,8 +207,9 @@ public class SucursalService {
     @Transactional
     public void eliminar(Long id) {
         // Verificar que la sucursal existe
-        Sucursal sucursal = sucursalRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con ID: " + id));
+        if (!sucursalRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Sucursal no encontrada con ID: " + id);
+        }
         
         // TODO: Agregar validación si tiene cajas, almacenes o ventas asociadas
         // Por ahora permitimos la eliminación

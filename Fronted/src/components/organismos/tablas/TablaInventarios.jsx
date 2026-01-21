@@ -76,7 +76,7 @@ export function TablaInventarios({
       },
     },
     {
-      accessorKey: "almacen.sucursales.nombre",
+      accessorKey: "almacen.sucursal.nombre",
       header: "Sucursal",
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,

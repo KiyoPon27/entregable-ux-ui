@@ -16,6 +16,7 @@ import java.util.Map;
 @RequestMapping("/api/cierre-caja")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@SuppressWarnings("null")
 public class CierreCajaController {
     
     private final CierreCajaRepository cierreCajaRepository;
@@ -39,7 +40,14 @@ public class CierreCajaController {
     
     @GetMapping("/usuario/{idUsuario}/abierta")
     public ResponseEntity<CierreCaja> mostrarAbiertaPorUsuario(@PathVariable Long idUsuario) {
-        return cierreCajaRepository.findByUsuarioIdAndEstado(idUsuario, 0L)
+        var result = cierreCajaRepository.findByUsuarioIdAndEstado(idUsuario, 0L);
+        if (result.isPresent()) {
+            CierreCaja cc = result.get();
+            System.out.println("📦 CierreCaja encontrado - ID: " + cc.getId());
+            System.out.println("📦 Caja: " + (cc.getCaja() != null ? cc.getCaja().getId() : "null"));
+            System.out.println("📦 Sucursal: " + (cc.getCaja() != null && cc.getCaja().getSucursal() != null ? cc.getCaja().getSucursal().getId() : "null"));
+        }
+        return result
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.ok(null));
     }
@@ -58,9 +66,15 @@ public class CierreCajaController {
             Long idCaja = Long.valueOf(payload.get("id_caja").toString());
             Long idUsuario = Long.valueOf(payload.get("id_usuario").toString());
             
-            // Check if already open
+            // Check if this caja is already open
             if (cierreCajaRepository.findByCajaIdAndEstado(idCaja, 0L).isPresent()) {
                  return ResponseEntity.badRequest().body("Caja ya está aperturada");
+            }
+            
+            // CRITICAL: Check if this user already has another caja open
+            var cajaAbiertaUsuario = cierreCajaRepository.findByUsuarioIdAndEstado(idUsuario, 0L);
+            if (cajaAbiertaUsuario.isPresent()) {
+                return ResponseEntity.badRequest().body("Usuario ya tiene otra caja abierta (ID: " + cajaAbiertaUsuario.get().getId() + ")");
             }
             
             Caja caja = cajaRepository.findById(idCaja)

@@ -1,92 +1,42 @@
-import { supabase } from "./supabase.config";
-const tabla = "metodos_pago";
+import api from "../api/api";
+
 export async function MostrarMetodosPago(p) {
-  const { data } = await supabase
-    .from(tabla)
-    .select()
-    .eq("id_empresa", p.id_empresa);
-  return data;
+  try {
+    const response = await api.get(`/metodos-pago/empresa/${p.id_empresa}`);
+    return response.data || [];
+  } catch (error) {
+    console.error("Error al mostrar métodos de pago:", error);
+    return [];
+  }
 }
-//manejo de icono en forma de imagen
 export async function InsertarMetodosPago(p, file) {
-  const { error, data } = await supabase
-    .from(tabla)
-    .insert(p)
-    .select()
-    .maybeSingle();
-  if (error) {
-    throw new Error(error.message);
-  }
-  const img = file.size;
-  if (img != undefined) {
-    const nuevo_id = data?.id;
-    const urlImagen = await subirImagen(nuevo_id, file);
-    const piconoeditar = {
-      icono: urlImagen.publicUrl,
-      id: nuevo_id,
+  try {
+    const body = {
+      nombre: p.nombre,
+      empresa: { id: p.id_empresa },
+      icono: p.icono || "-",
+      verNombre: p.ver_nombre !== false,
+      eliminarActualizar: p.delete_update === true
     };
-    await EditarIconoMetodosPago(piconoeditar);
+    const response = await api.post("/metodos-pago", body);
+    // TODO: Si necesitas subir imágenes, implementar con multipart/form-data
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
   }
 }
 
-async function subirImagen(idmetodopago, file) {
-  const ruta = "metodospago/" + idmetodopago;
-  const { data, error } = await supabase.storage
-    .from("imagenes")
-    .upload(ruta, file, {
-      cacheControl: "0",
-      upsert: true,
-    });
-  if (error) {
-    throw new Error(error.message);
-  }
-  if (data) {
-    const { data: urlimagen } = await supabase.storage
-      .from("imagenes")
-      .getPublicUrl(ruta);
-    return urlimagen;
-  }
-}
-async function EditarIconoMetodosPago(p) {
-  const { error } = await supabase.from(tabla).update(p).eq("id", p.id);
-  if (error) {
-    throw new Error(error.message);
-  }
-}
-export async function EditarIconoStorage(id, file) {
-  const ruta = "metodospago/" + id;
-  await supabase.storage.from("imagenes").update(ruta, file, {
-    cacheControl: "0",
-    upsert: true,
-  });
-}
-//
 export async function EditarMetodosPago(p, fileold, filenew) {
-  const { error } = await supabase.from(tabla).update(p).eq("id", p.id);
-  if (error) {
-    throw new Error(error.message);
-  }
-  if (filenew != "-" && filenew.size != undefined) {
-    if (fileold != "-") {
-      await EditarIconoStorage(p._id, filenew);
-    } else {
-      const dataImagen = await subirImagen(p._id, filenew);
-      const piconoeditar = {
-        icono: dataImagen.publicUrl,
-        id: p._id,
-      };
-      await EditarIconoMetodosPago(piconoeditar);
-    }
-  }
-}
-
-export async function EliminarMetodosPago(p) {
-  const { error } = await supabase.from(tabla).delete().eq("id", p.id);
-  if (error) {
-    throw new Error(error.message);
-  }
-  if (p.icono != "-") {
-    const ruta = "metodospago/" + p.id;
-    await supabase.storage.from("imagenes").remove([ruta]);
+  try {
+    const body = {
+      nombre: p.nombre,
+      icono: p.icono || "-",
+      verNombre: p.ver_nombre !== false,
+      eliminarActualizar: p.delete_update === true
+    };
+    await api.put(`/metodos-pago/${p.id || p._id}`, body);
+    // TODO: Si necesitas subir imágenes, implementar con multipart/form-data
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
   }
 }
