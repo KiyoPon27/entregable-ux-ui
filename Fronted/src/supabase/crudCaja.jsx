@@ -17,7 +17,8 @@ export async function InsertarCaja(p) {
       descripcion: p.descripcion,
       sucursal: { id: p.id_sucursal },
       eliminar: p.eliminar !== undefined ? p.eliminar : true,
-      imprimir: p.imprimir !== undefined ? p.imprimir : false
+      imprimir: p.imprimir !== undefined ? p.imprimir : false,
+      idUsuarioCreador: p.idUsuarioCreador
     };
     
     const response = await api.post("/cajas", caja);

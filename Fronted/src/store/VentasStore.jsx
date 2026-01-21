@@ -6,7 +6,6 @@ import {
   useClientesProveedoresStore,
   ConfirmarVenta,
   EliminarVenta,
-  supabase,
 } from "../index";
 import { toast } from "sonner";
 const initialState = {
@@ -63,14 +62,6 @@ export const useVentasStore = create((set, get) => ({
   },
 
   confirmarVenta: async (p) => {
-    const { error, data } = await supabase
-      .rpc("confirmar_venta", p)
-      .select()
-      .maybeSingle();
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
+    return await ConfirmarVenta(p);
   },
 }));

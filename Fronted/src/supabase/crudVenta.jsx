@@ -64,17 +64,17 @@ export async function MostrarVentasXsucursal(p) {
 export async function ConfirmarVenta(p) {
   try {
     const payload = {
-        idUsuario: p.id_usuario,
-        vuelto: p.vuelto,
-        idTipoComprobante: p.id_tipo_comprobante,
-        serie: p.serie,
-        idSucursal: p.id_sucursal,
-        idCliente: p.id_cliente,
-        fecha: p.fecha,
-        montoTotal: p.monto_total
+        idUsuario: p.idUsuario ?? p.id_usuario,
+        vuelto: p._vuelto ?? p.vuelto,
+        idTipoComprobante: p._id_tipo_comprobante ?? p.id_tipo_comprobante,
+        serie: p._serie ?? p.serie,
+        idSucursal: p.idSucursal ?? p.id_sucursal,
+        idCliente: p._id_cliente ?? p.id_cliente,
+        fecha: p._fecha ?? p.fecha,
+        montoTotal: p._monto_total ?? p.monto_total
     };
     
-    const response = await api.post(`/ventas/${p.id}/confirmar`, payload);
+    const response = await api.post(`/ventas/${p._id_venta ?? p.id_venta ?? p.id}/confirmar`, payload);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || "Error al confirmar venta");

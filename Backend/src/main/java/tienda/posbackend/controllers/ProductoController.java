@@ -48,6 +48,7 @@ public class ProductoController {
     }
 
     @GetMapping("/{id}")
+    @SuppressWarnings("null")
     public ResponseEntity<Producto> obtenerPorId(@PathVariable Long id) {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
@@ -65,6 +66,7 @@ public class ProductoController {
     }
 
     @PostMapping
+    @SuppressWarnings("null")
     public ResponseEntity<Producto> crear(@RequestBody Producto producto) {
          if (producto.getEmpresa() != null && producto.getEmpresa().getId() != null) {
             Empresa empresa = empresaRepository.findById(producto.getEmpresa().getId())
@@ -92,6 +94,7 @@ public class ProductoController {
     }
 
     @PutMapping("/{id}")
+    @SuppressWarnings("null")
     public ResponseEntity<Producto> editar(@PathVariable Long id, @RequestBody Producto details) {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
@@ -118,6 +121,7 @@ public class ProductoController {
 
     @DeleteMapping("/{id}")
     @Transactional
+    @SuppressWarnings("null")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         // Verificar que el producto existe
         Producto producto = productoRepository.findById(id)

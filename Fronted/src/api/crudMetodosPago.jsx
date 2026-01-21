@@ -18,7 +18,7 @@ export async function InsertarMetodosPago(p, file) {
       icono: p.icono || p._icono || "-",
       verNombre: p.ver_nombre !== undefined ? p.ver_nombre : true,
       eliminarActualizar: p.eliminar_actualizar || false,
-      empresa: { id: p.id_empresa || p._id_empresa }
+      empresa: { id: p.id_empresa || p.idEmpresa }
     };
     
     const response = await api.post("/metodos-pago", metodoPago);

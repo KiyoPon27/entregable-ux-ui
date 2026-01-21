@@ -62,7 +62,7 @@ export function RegistrarClientesProveedores({
       const p = {
         id: dataSelect.id, // Cambiado de _id a id
         _nombres: ConvertirCapitalize(data.nombres),
-        _id_empresa: dataempresa?.id,
+        idEmpresa: dataempresa?.id,
         _direccion: data.direccion,
         _telefono: data.telefono,
         _email: data.email,
@@ -74,7 +74,7 @@ export function RegistrarClientesProveedores({
     } else {
       const p = {
         _nombres: ConvertirCapitalize(data.nombres),
-        _id_empresa: dataempresa?.id,
+        idEmpresa: dataempresa?.id,
         _direccion: data.direccion,
         _telefono: data.telefono,
         _email: data.email,
@@ -197,12 +197,12 @@ export function RegistrarClientesProveedores({
                     className="form__field"
                     
                     type="text"
-                    placeholder="identificador_nacional"
+                    placeholder="Ingrese la ciudad"
                     {...register("identificador_nacional", {
                       required: true,
                     })}
                   />
-                  <label className="form__label">identificador nacional</label>
+                  <label className="form__label">Ciudad</label>
                   {errors.identificador_nacional?.type === "required" && (
                     <p>Campo requerido</p>
                   )}
@@ -214,12 +214,12 @@ export function RegistrarClientesProveedores({
                     className="form__field"
                    
                     type="text"
-                    placeholder="identificador_fiscal"
+                    placeholder="Ingrese el RUC"
                     {...register("identificador_fiscal", {
                       required: true,
                     })}
                   />
-                  <label className="form__label">identificador fiscal</label>
+                  <label className="form__label">RUC</label>
                   {errors.identificador_fiscal?.type === "required" && (
                     <p>Campo requerido</p>
                   )}

@@ -1,6 +1,7 @@
 package tienda.posbackend.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -46,4 +47,25 @@ public class DetalleVenta {
     @JoinColumn(name = "id_almacen")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Almacen almacen;
+    
+    // Exponer IDs directamente para evitar problemas de serialización
+    @JsonProperty("id_venta")
+    public Long getIdVenta() {
+        return venta != null ? venta.getId() : null;
+    }
+    
+    @JsonProperty("id_producto")
+    public Long getIdProducto() {
+        return producto != null ? producto.getId() : null;
+    }
+    
+    @JsonProperty("id_sucursal")
+    public Long getIdSucursal() {
+        return sucursal != null ? sucursal.getId() : null;
+    }
+    
+    @JsonProperty("id_almacen")
+    public Long getIdAlmacen() {
+        return almacen != null ? almacen.getId() : null;
+    }
 }

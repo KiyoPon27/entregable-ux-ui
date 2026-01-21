@@ -143,11 +143,11 @@ export const IngresoCobro = forwardRef((props, ref) => {
     if (restante === 0) {
       const pventas = {
         _id_venta: idventa,
-        _id_usuario: datausuarios?.id,
+        idUsuario: datausuarios?.id,
         _vuelto: vuelto,
-        _id_tipo_comprobante: itemComprobanteSelect?.id_tipo_comprobante,
+        _id_tipo_comprobante: itemComprobanteSelect?.tipoComprobante?.id,
         _serie: itemComprobanteSelect?.serie,
-        _id_sucursal: dataCierreCaja?.caja?.id_sucursal,
+        idSucursal: dataCierreCaja?.caja?.id_sucursal,
         _id_cliente: cliproItemSelect?.id || null,
         _fecha: fechaActual,
         _monto_total: total,
@@ -272,16 +272,30 @@ export const IngresoCobro = forwardRef((props, ref) => {
 
             <section className="areacomprobantes">
               {dataComprobantes?.map((item, index) => {
+                const isSelected = itemComprobanteSelect?.id === item?.id;
                 return (
-                  <article className="box" key={index}>
-                    <Btn1
-                      titulo={item?.tipo_comprobantes?.nombre}
-                      border="0"
-                      height="70px"
-                      width="100%"
-                      funcion={() => setItemComprobanteSelect(item)}
-                    />
-                  </article>
+                  <ComprobanteBox 
+                    key={index}
+                    $isSelected={isSelected}
+                    onClick={() => setItemComprobanteSelect(item)}
+                  >
+                    <div className="comprobante-icon">
+                      <Icon 
+                        icon={
+                          item?.tipo_comprobantes?.nombre === "Factura" 
+                            ? "mdi:invoice-text-outline" 
+                            : item?.tipo_comprobantes?.nombre === "Boleta"
+                            ? "mdi:receipt-text-outline" 
+                            : "mdi:ticket-percent-outline"
+                        } 
+                      />
+                    </div>
+                    <div className="comprobante-info">
+                      <span className="comprobante-nombre">
+                        {item?.tipo_comprobantes?.nombre}
+                      </span>
+                    </div>
+                  </ComprobanteBox>
                 );
               })}
             </section>
@@ -444,12 +458,9 @@ const Container = styled.div`
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      padding: 10px;
-      .box {
-        flex: 1 1 40%;
-        display: flex;
-        gap: 10px;
-      }
+      padding: 10px 0;
+      width: 100%;
+      justify-content: center;
     }
     .tipocobro {
       position: absolute;
@@ -541,5 +552,62 @@ const EditButton = styled.button`
   margin: auto;
   .icono {
     font-size: 20px;
+  }
+`;
+
+const ComprobanteBox = styled.div`
+  flex: 1 1 calc(33.33% - 10px);
+  min-width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 12px;
+  border-radius: 12px;
+  background: ${props => props.$isSelected 
+    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+    : '#f8f9fa'};
+  border: 2px solid ${props => props.$isSelected ? '#5a67d8' : '#dee2e6'};
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: ${props => props.$isSelected 
+    ? '0 4px 15px rgba(102, 126, 234, 0.4)' 
+    : '0 2px 8px rgba(0, 0, 0, 0.08)'};
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    background: ${props => props.$isSelected 
+      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+      : '#e9ecef'};
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  .comprobante-icon {
+    font-size: 40px;
+    color: ${props => props.$isSelected ? '#ffffff' : '#495057'};
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .comprobante-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+  
+  .comprobante-nombre {
+    font-size: 17px;
+    font-weight: 800;
+    color: ${props => props.$isSelected ? '#ffffff' : '#212529'};
+    text-align: center;
+    letter-spacing: 0.3px;
   }
 `;

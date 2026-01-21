@@ -22,16 +22,16 @@ const ReportVentas = () => {
     queryKey: [
       "report Ventas Por Sucursal",
       {
-        sucursal_id: sucursalesItemSelect?.id,
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
+        idSucursal: sucursalesItemSelect?.id,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
       },
     ],
     queryFn: () =>
       reportVentasPorSucursal({
-        sucursal_id: sucursalesItemSelect?.id,
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
+        idSucursal: sucursalesItemSelect?.id,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
       }),
     refetchOnWindowFocus: false,
   });
@@ -56,10 +56,10 @@ const ReportVentas = () => {
 
   const rows = Array.isArray(data) ? data : [];
 
-  const totalVentas = rows.reduce((a, x) => a + (x.monto_total || 0), 0);
-  const totalImpuestos = rows.reduce((a, x) => a + (x.total_impuestos || 0), 0);
+  const totalVentas = rows.reduce((a, x) => a + (x.montoTotal || 0), 0);
+  const totalImpuestos = rows.reduce((a, x) => a + (x.totalImpuestos || 0), 0);
   const totalProductos = rows.reduce(
-    (a, x) => a + (x.cantidad_productos || 0),
+    (a, x) => a + (x.cantidadProductos || 0),
     0
   );
 
@@ -248,14 +248,14 @@ const ReportVentas = () => {
                 <Text style={styles.empty}>No hay ventas para el rango seleccionado.</Text>
               ) : (
                 rows.map((r, i) => (
-                  <View key={r.id_venta || i} style={[styles.row, i % 2 === 1 && styles.zebra]}>
-                    <Text style={[styles.td, cw(COL.id)]}>{r.id_venta}</Text>
+                  <View key={r.idVenta || i} style={[styles.row, i % 2 === 1 && styles.zebra]}>
+                    <Text style={[styles.td, cw(COL.id)]}>{r.idVenta}</Text>
                     <Text style={[styles.td, cw(COL.fecha)]}>{d(r.fecha)}</Text>
-                    <Text style={[styles.td, cw(COL.total), styles.right]}>{n(r.monto_total)}</Text>
-                    <Text style={[styles.td, cw(COL.imp), styles.right]}>{n(r.total_impuestos)}</Text>
+                    <Text style={[styles.td, cw(COL.total), styles.right]}>{n(r.montoTotal)}</Text>
+                    <Text style={[styles.td, cw(COL.imp), styles.right]}>{n(r.totalImpuestos)}</Text>
                     <Text style={[styles.td, cw(COL.sub), styles.right]}>{n(r.subtotal)}</Text>
-                    <Text style={[styles.td, cw(COL.pago)]}>{r.pago_con}</Text>
-                    <Text style={[styles.td, cw(COL.cant), styles.center]}>{r.cantidad_productos ?? 0}</Text>
+                    <Text style={[styles.td, cw(COL.pago)]}>{r.pagoCon}</Text>
+                    <Text style={[styles.td, cw(COL.cant), styles.center]}>{r.cantidadProductos ?? 0}</Text>
                     <Text style={[styles.td, cw(COL.cajero)]}>{r.cajero}</Text>
                     <Text style={[styles.td, cw(COL.estado)]}>{r.estado}</Text>
                   </View>

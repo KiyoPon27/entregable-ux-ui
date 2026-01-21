@@ -3,6 +3,7 @@ import { Btn1 } from "../components/moleculas/Btn1";
 import { ImageSelector } from "../hooks/useImageSelector";
 import { useEmpresaStore } from "../store/EmpresaStore";
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 
 import { Toaster } from "sonner";
 
@@ -17,16 +18,28 @@ export const ConfiguracionTicket = () => {
     register,
     formState: { errors },
     handleSubmit,
+    watch,
+    reset,
   } = useForm({
     defaultValues: {
-      nombre: dataempresa?.nombre,
-      id_fiscal: dataempresa?.id_fiscal,
-      direccion_fiscal: dataempresa?.direccion_fiscal,
-      nombre_moneda: dataempresa?.nombre_moneda,
-      pie_pagina_ticket: dataempresa?.pie_pagina_ticket,
+      nombre_moneda: dataempresa?.nombre_moneda || "",
+      pie_pagina_ticket: dataempresa?.pie_pagina_ticket || "",
     },
   });
   const { mutate, isPending } = useUpdateEmpresaTicketMutation();
+
+  // Observar cambios en tiempo real del formulario
+  const formValues = watch();
+
+  // Actualizar valores del formulario cuando dataempresa cambie
+  useEffect(() => {
+    if (dataempresa) {
+      reset({
+        nombre_moneda: dataempresa.nombre_moneda || "",
+        pie_pagina_ticket: dataempresa.pie_pagina_ticket || "",
+      });
+    }
+  }, [dataempresa, reset]);
 
   return (
     <Container>
@@ -36,885 +49,517 @@ export const ConfiguracionTicket = () => {
       ) : (
         <div className="left-section">
           <Contentguia>
-            <span className="title">TICKET</span>
+            <span className="title">CONFIGURACIÓN DE TICKET</span>
             <span className="format-title">
-              puedes modificar detalles de tu ticket
+              Personaliza cómo se verá tu comprobante de pago
             </span>
-            {/* <Btn1 bgcolor={"#fad43c"} titulo={"Guardar"} /> */}
           </Contentguia>
 
-          <ImageSelector fileUrl={fileUrl || dataempresa?.logo} />
+          <LogoSection>
+            <LogoLabel>Logo de tu empresa</LogoLabel>
+            <LogoDescription>Este logo aparecerá en todos tus comprobantes</LogoDescription>
+            <ImageSelector fileUrl={fileUrl || dataempresa?.logo} />
+          </LogoSection>
+          
           <form className="receipt-content" onSubmit={handleSubmit(mutate)}>
-            <Btn1 bgcolor={"#fad43c"} titulo={"Guardar"} />
-            <br></br>
+            <ButtonContainer>
+              <Btn1 bgcolor={"#fad43c"} titulo={"Guardar cambios"} />
+            </ButtonContainer>
 
+            <SectionTitle>Información de la empresa (solo lectura)</SectionTitle>
+            <InfoNote>Estos datos se modifican desde Configuración → Empresa</InfoNote>
+            
             <div className="company-info">
               <div className="company-name">
-                <input
+                <InputLabel>Nombre de la empresa</InputLabel>
+                <ReadOnlyInput 
                   type="text"
-                  placeholder="Ingrese el nombre de la empresa"
-                  {...register("nombre", {
-                    required: "Campo requerido",
-                  })}
+                  value={dataempresa?.nombre || "Sin nombre"}
+                  readOnly
                 />
-                {errors.nombre && <p>{errors.nombre.message}</p>}
-                <div className="tech-label">
-                  <span>NombreEmpresa</span>
-                  <span className="tech-type">(input)</span>
-                </div>
-                <div className="connector-line" />
               </div>
 
               <div className="company-details">
-                <input
+                <InputLabel>RUC / Número de identificación fiscal</InputLabel>
+                <ReadOnlyInput 
                   type="text"
-                  placeholder="Ingrese el RUC"
-                  {...register("id_fiscal", {
-                    required: "Campo requerido",
-                  })}
+                  value={dataempresa?.id_fiscal || dataempresa?.idFiscal || "Sin RUC"}
+                  readOnly
                 />
-                {errors.id_fiscal && <p>{errors.id_fiscal.message}</p>}
-                <div className="tech-label">
-                  <span>RUC</span>
-                  <span className="tech-type">(input)</span>
-                </div>
-                <div className="connector-line" />
               </div>
 
               <div className="company-details">
-                <input
+                <InputLabel>Dirección fiscal</InputLabel>
+                <ReadOnlyInput 
                   type="text"
-                  placeholder="Ingrese la dirección fiscal"
-                  {...register("direccion_fiscal", {
-                    required: "Campo requerido",
-                  })}
+                  value={dataempresa?.direccion_fiscal || dataempresa?.direccionFiscal || "Sin dirección"}
+                  readOnly
                 />
-                {errors.direccion_fiscal && (
-                  <p>{errors.direccion_fiscal.message}</p>
-                )}
-                <div className="tech-label">
-                  <span>Dirección</span>
-                  <span className="tech-type">(input)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-            </div>
-
-            <div className="ticket-number">
-              TICKET - T0001
-              <div className="tech-label">
-                <span>Ticket</span>
-                <span className="tech-type">(id)</span>
-              </div>
-              <div className="connector-line" />
-            </div>
-
-            <div className="divider"></div>
-
-            <div className="details-section">
-              <div className="details-row">
-                <div className="details-label">Cajero</div>
-                <div className="details-colon">:</div>
-                <div className="details-value">Nombre del Cajero</div>
-                <div className="tech-label">
-                  <span>Cajero</span>
-                  <span className="tech-type">(text)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-
-              <div className="details-row">
-                <div className="details-label">Fecha Emisión</div>
-                <div className="details-colon">:</div>
-                <div className="details-value">19/02/2018</div>
-                <div className="tech-label">
-                  <span>Fecha</span>
-                  <span className="tech-type">(date)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-
-              <div className="details-row">
-                <div className="details-label">Cliente</div>
-                <div className="details-colon">:</div>
-                <div className="details-value">NOMBRE DEL CLIENTE</div>
-                <div className="tech-label">
-                  <span>Cliente</span>
-                  <span className="tech-type">(text)</span>
-                </div>
-                <div className="connector-line" />
               </div>
             </div>
 
             <div className="divider"></div>
+            
+            <SectionTitle>Configuración de moneda</SectionTitle>
 
-            <table className="products-table">
-              <thead>
-                <tr>
-                  <th>
-                    Cant.
-                    <div className="tech-label">
-                      <span>Cantidad</span>
-                      <span className="tech-type">(number)</span>
-                    </div>
-                    <div className="connector-line" />
-                  </th>
-                  <th>
-                    Descripción
-                    <div className="tech-label">
-                      <span>Producto</span>
-                      <span className="tech-type">(text)</span>
-                    </div>
-                    <div className="connector-line" />
-                  </th>
-                  <th>
-                    Importe
-                    <div className="tech-label">
-                      <span>Precio</span>
-                      <span className="tech-type">(currency)</span>
-                    </div>
-                    <div className="connector-line" />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>1</td>
-                  <td>Gaseosa Coca Cola x 1 Lt</td>
-                  <td>S/. 26</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div className="summary-section">
-              <div className="summary-row">
-                <div>Sub Total:</div>
-                <div>S/. 26</div>
-                <div className="tech-label">
-                  <span>SubTotal</span>
-                  <span className="tech-type">(currency)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-              <div className="summary-row">
-                <div>Descuento:</div>
-                <div>S/. 0.00</div>
-                <div className="tech-label">
-                  <span>Descuento</span>
-                  <span className="tech-type">(currency)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-              <div className="summary-row total">
-                <div>TOTAL:</div>
-                <div>S/. 26</div>
-                <div className="tech-label">
-                  <span>Total</span>
-                  <span className="tech-type">(currency)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-            </div>
-
-            <div className="payment-info">
-              <div className="son-text">
-                SON: VEINTISEIS CON 50/100
+            <div className="footer-info">
+              <div className="footer-row">
+                <InputLabel>Nombre de la moneda</InputLabel>
                 <input
                   type="text"
-                  placeholder="Ingrese nombre moneda"
+                  placeholder="Ej: Soles, Pesos, Dólares"
                   {...register("nombre_moneda", {
                     required: "Campo requerido",
                   })}
                 />
-                {errors.nombre_moneda && <p>{errors.nombre_moneda.message}</p>}
-                <div className="tech-label">
-                  <span>Moneda</span>
-                  <span className="tech-type">(input)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-              <div className="payment-row">
-                <div>EFECTIVO:</div>
-                <div>S/. 50</div>
-                <div className="tech-label">
-                  <span>Efectivo</span>
-                  <span className="tech-type">(currency)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-              <div className="payment-row">
-                <div>VUELTO:</div>
-                <div>S/. 14</div>
-                <div className="tech-label">
-                  <span>Vuelto</span>
-                  <span className="tech-type">(currency)</span>
-                </div>
-                <div className="connector-line" />
-              </div>
-              <div className="payment-row">
-                <div>Tipo de Pago:</div>
-                <div>Efectivo</div>
-                <div className="tech-label">
-                  <span>TipoPago</span>
-                  <span className="tech-type">(text)</span>
-                </div>
-                <div className="connector-line" />
+                {errors.nombre_moneda && <ErrorText>{errors.nombre_moneda.message}</ErrorText>}
+                <InputHelper>Este texto aparecerá en el monto en letras del ticket</InputHelper>
               </div>
             </div>
 
             <div className="divider"></div>
+            
+            <SectionTitle>Mensaje de agradecimiento</SectionTitle>
 
             <div className="footer-info">
               <div className="footer-row">
+                <InputLabel>Pie de página del ticket</InputLabel>
                 <input
                   type="text"
-                  placeholder="Ingrese un pie de pagina"
+                  placeholder="Ej: Gracias por su compra. Vuelva pronto!"
                   {...register("pie_pagina_ticket", {
                     required: "Campo requerido",
                   })}
                 />
                 {errors.pie_pagina_ticket && (
-                  <p>{errors.pie_pagina_ticket.message}</p>
+                  <ErrorText>{errors.pie_pagina_ticket.message}</ErrorText>
                 )}
-                <div className="tech-label">
-                  <span>Agradecimiento</span>
-                  <span className="tech-type">(input)</span>
+                <InputHelper>Mensaje que aparecerá al final de cada ticket</InputHelper>
+              </div>
+            </div>
+
+            <PreviewSection>
+              <PreviewTitle>Vista previa del ticket</PreviewTitle>
+              <PreviewNote>Así se verá tu comprobante (se actualiza en tiempo real):</PreviewNote>
+              
+              <TicketPreview>
+                <div className="ticket-header">
+                  {(fileUrl || dataempresa?.logo) && fileUrl !== "-" ? (
+                    <img src={fileUrl || dataempresa?.logo} alt="Logo" className="preview-logo" />
+                  ) : (
+                    <div className="no-logo">Sin logo</div>
+                  )}
+                  <div className="preview-company-name">
+                    {dataempresa?.nombre || "Nombre de Empresa"}
+                  </div>
+                  <div className="preview-ruc">
+                    RUC: {dataempresa?.id_fiscal || dataempresa?.idFiscal || "00000000000"}
+                  </div>
+                  <div className="preview-address">
+                    {dataempresa?.direccion_fiscal || dataempresa?.direccionFiscal || "Dirección fiscal"}
+                  </div>
                 </div>
-                <div className="connector-line" />
-              </div>
-            </div>
-
-            <div className="footer-stars">
-              ************************************************
-            </div>
-
-            <div className="qr-code">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Codigo_QR.svg/500px-Codigo_QR.svg.png"
-                alt="QR Code"
-              />
-              <div className="tech-label">
-                <span>QR</span>
-                <span className="tech-type">(image)</span>
-              </div>
-              <div className="connector-line" />
-            </div>
+                
+                <div className="divider-preview"></div>
+                
+                <div className="preview-number">BOLETA - B001-00001</div>
+                
+                <div className="divider-preview"></div>
+                
+                <div className="preview-details">
+                  <div>Cajero: Usuario Demo</div>
+                  <div>Fecha: {new Date().toLocaleDateString()}</div>
+                  <div>Cliente: Cliente General</div>
+                </div>
+                
+                <div className="divider-preview"></div>
+                
+                <div className="preview-products">
+                  <div className="product-row">
+                    <span>1</span>
+                    <span>Producto ejemplo</span>
+                    <span>S/ 10.00</span>
+                  </div>
+                </div>
+                
+                <div className="divider-preview"></div>
+                
+                <div className="preview-total">
+                  <div>TOTAL: <strong>S/ 10.00</strong></div>
+                  <div className="preview-amount-text">
+                    SON: DIEZ CON 00/100 {formValues.nombre_moneda?.toUpperCase() || dataempresa?.nombre_moneda?.toUpperCase() || "SOLES"}
+                  </div>
+                </div>
+                
+                <div className="divider-preview"></div>
+                
+                <div className="preview-footer">
+                  {formValues.pie_pagina_ticket || dataempresa?.pie_pagina_ticket || "Gracias por su compra"}
+                </div>
+                
+                <div className="preview-qr">
+                  <div className="qr-placeholder">QR Code</div>
+                </div>
+              </TicketPreview>
+            </PreviewSection>
           </form>
         </div>
       )}
     </Container>
   );
 };
+
 const Container = styled.div`
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
-  position: relative;
-  color: #000;
-  /* background-color:red; */
-  input {
-    width: 90%;
-    padding: 6px 10px;
-    font-size: 12px;
-    text-align: center;
-    border: 1px solid #ffd600;
-    border-radius: 4px;
-    background-color: #fffde7;
-    transition: all 0.3s ease;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #2c3e50;
 
-    &:hover,
-    &:focus {
+  input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    border: 2px solid #e0e6ed;
+    border-radius: 8px;
+    background-color: #ffffff;
+    transition: all 0.3s ease;
+    color: #2c3e50;
+    font-family: inherit;
+
+    &::placeholder {
+      color: #95a5a6;
+    }
+
+    &:hover {
       border-color: #ffc107;
-      background-color: #fff9c4;
-      box-shadow: 0 0 0 2px rgba(255, 214, 0, 0.1);
     }
 
     &:focus {
       outline: none;
+      border-color: #ffc107;
+      background-color: #fffef5;
+      box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
     }
   }
 
   .left-section {
-    width: 400px;
-    margin: 10px;
-    margin-top:20px;
-    margin-bottom:20px;
+    width: 100%;
+    max-width: 800px;
     background-color: #ffffff;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     position: relative;
-    &::before,
-    &::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 20px;
-      background-image: linear-gradient(
-        to right,
-        transparent 0%,
-        transparent 5%,
-        white 5%,
-        white 10%,
-        transparent 10%,
-        transparent 15%,
-        white 15%,
-        white 20%,
-        transparent 20%,
-        transparent 25%,
-        white 25%,
-        white 30%,
-        transparent 30%,
-        transparent 35%,
-        white 35%,
-        white 40%,
-        transparent 40%,
-        transparent 45%,
-        white 45%,
-        white 50%,
-        transparent 50%,
-        transparent 55%,
-        white 55%,
-        white 60%,
-        transparent 60%,
-        transparent 65%,
-        white 65%,
-        white 70%,
-        transparent 70%,
-        transparent 75%,
-        white 75%,
-        white 80%,
-        transparent 80%,
-        transparent 85%,
-        white 85%,
-        white 90%,
-        transparent 90%,
-        transparent 95%,
-        white 95%,
-        white 100%
-      );
-    }
-
-    &::before {
-      top: -10px;
-    }
-
-    &::after {
-      bottom: -10px;
-    }
-  }
-
-  .back-button {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    z-index: 10;
-    align-items: center;
-    display: flex;
-    font-weight: 600;
-  }
-
-  .camera-icon {
-    margin: 30px 0;
-    position: relative;
-
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .company-info {
-    width: 100%;
-    max-width: 600px;
-    text-align: center;
-    margin-bottom: 20px;
-    position: relative;
-
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .company-name {
-    font-weight: bold;
-    margin-bottom: 10px;
-    position: relative;
-
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .company-details {
-    font-size: 12px;
-    margin: 8px 0;
-    position: relative;
-
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .ticket-number {
-    font-weight: bold;
-    margin: 10px 0;
-    position: relative;
-
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .barcode {
-    width: 100%;
-    max-width: 600px;
-    height: 50px;
-    margin: 10px 0;
-    position: relative;
-
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-
-    img {
-      max-width: 100%;
-      height: auto;
-    }
   }
 
   .divider {
     width: 100%;
-    max-width: 600px;
-    border-top: 1px dashed #ccc;
-    margin: 10px 0;
+    border-top: 2px dashed #e0e6ed;
+    margin: 30px 0;
   }
 
-  .details-section {
+  .company-info {
     width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-    position: relative;
-  }
-
-  .details-row {
-    display: grid;
-    grid-template-columns: 120px 20px 1fr;
-    padding: 8px 0;
-    border-bottom: 1px dotted #ccc;
-    align-items: center;
-    position: relative;
-
-    &:hover {
-      background-color: rgba(74, 108, 247, 0.05);
-
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .details-label {
-    font-weight: 500;
-  }
-
-  .details-colon {
-    text-align: center;
-  }
-
-  .details-value {
-    color: #333;
-  }
-
-  .products-table {
-    width: 100%;
-    max-width: 600px;
-    margin: 20px auto;
-    border-collapse: separate;
-    border-spacing: 0;
-
-    th,
-    td {
-      padding: 10px;
-      text-align: left;
-      position: relative;
-
-      &:hover {
-        background-color: rgba(74, 108, 247, 0.05);
-
-        .tech-label {
-          opacity: 1;
-        }
-
-        .connector-line {
-          opacity: 1;
-          width: 50px;
-        }
-      }
-    }
-
-    th {
-      font-weight: 500;
-      color: #666;
-      border-bottom: 1px solid #ddd;
-    }
-
-    td {
-      border-bottom: 1px dotted #ccc;
-    }
-  }
-
-  .summary-section {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .summary-row {
     display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin: 5px 0;
-    padding: 5px 0;
-    position: relative;
-
-    &:hover {
-      background-color: rgba(74, 108, 247, 0.05);
-
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
+    flex-direction: column;
+    gap: 20px;
   }
 
-  .summary-row.total {
-    font-weight: bold;
-    color: #000;
-  }
-
-  .payment-info {
+  .company-name,
+  .company-details {
     width: 100%;
-    max-width: 600px;
-    font-size: 12px;
-    margin: 10px auto;
-  }
-
-  .son-text {
-    display: flex;
-    align-items: center;
-    padding: 5px 0;
-    position: relative;
-
-    &:hover {
-      background-color: rgba(74, 108, 247, 0.05);
-
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .payment-row {
-    display: flex;
-    justify-content: space-between;
-    margin: 5px 0;
-    padding: 5px 0;
-    position: relative;
-
-    &:hover {
-      background-color: rgba(74, 108, 247, 0.05);
-
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-  }
-
-  .footer-info {
-    width: 100%;
-    max-width: 600px;
-    margin: 20px auto 0;
-  }
-
-  .footer-row {
-    width: 100%;
-
-    text-align: center;
-    padding: 5px 0;
-    margin: 2px 0;
-    font-size: 12px;
-    position: relative;
-
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-        width: 50px;
-      }
-    }
-
-    input {
-      width: 90%;
-      padding: 6px 10px;
-      font-size: 12px;
-      text-align: center;
-      border: 1px solid #ffd600;
-      border-radius: 4px;
-      background-color: #fffde7;
-      transition: all 0.3s ease;
-
-      &:hover,
-      &:focus {
-        border-color: #ffc107;
-        background-color: #fff9c4;
-        box-shadow: 0 0 0 2px rgba(255, 214, 0, 0.1);
-      }
-
-      &:focus {
-        outline: none;
-      }
-    }
-  }
-
-  .footer-stars {
-    width: 100%;
-    max-width: 600px;
-    text-align: center;
-    color: #ffd700;
-    margin: 10px auto;
-  }
-
-  .qr-code {
-    width: 120px;
-    height: 120px;
-    position: relative;
-    &:hover {
-      .tech-label {
-        opacity: 1;
-      }
-
-      .connector-line {
-        opacity: 1;
-      }
-    }
-
-    img {
-      max-width: 100%;
-      height: auto;
-    }
   }
 
   .receipt-content {
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 20px;
   }
 
-  /* Desktop tooltips */
-  .tech-label {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%) translateX(-10px);
-    left: -120px;
-    background-color: #1a1a1a;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: "Courier New", monospace;
-    font-size: 12px;
-    opacity: 0;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    pointer-events: none;
-    z-index: 20;
-    white-space: nowrap;
+  .footer-info {
+    width: 100%;
   }
 
-  .tech-type {
-    color: #ff7e33;
-    font-size: 11px;
-  }
-
-  .connector-line {
-    position: absolute;
-    left: -70px;
-    top: 50%;
-    height: 2px;
-    background-color: white;
-    opacity: 0;
-    width: 0;
-    transition: all 0.3s ease;
-    z-index: 19;
-  }
-
-  .help-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #1a1a1a;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 2px solid #333;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    z-index: 1001;
-    transition: all 0.3s ease;
-  }
-
-  .help-button:hover {
-    background-color: #333;
-    transform: scale(1.1);
-  }
-
-  /* Mobile tooltips */
-  @media (max-width: 768px) {
-    /* Add margin to all elements that have tooltips to make space */
-    .company-name,
-    .company-details,
-    .ticket-number,
-    .barcode,
-    .details-row,
-    .summary-row,
-    .payment-row,
-    .son-text,
-    .footer-row,
-    .qr-code,
-    .camera-icon,
-    th,
-    td {
-      margin-bottom: 30px;
-    }
-
-    /* Position tooltips below elements */
-    .tech-label {
-      top: 100%;
-      left: 0;
-      right: 0;
-      width: 100%;
-      margin-top: 5px;
-      transform: none;
-      text-align: center;
-      justify-content: center;
-    }
-
-    /* Position connector lines */
-    .connector-line {
-      top: 100%;
-      left: 50%;
-      width: 2px !important;
-      height: 5px;
-      margin-top: 0;
-    }
-
-    /* Ensure tooltips don't overlap */
-    .receipt-content {
-      padding-bottom: 40px;
-    }
-
-    /* Make inputs more touch-friendly */
-    input {
-      padding: 10px !important;
-      font-size: 16px !important;
-    }
+  .footer-row {
+    width: 100%;
   }
 `;
+
 const Contentguia = styled.div`
   display: flex;
   flex-direction: column;
   text-align: center;
-  gap: 10px;
-  margin: 10px;
-  font-size: 14px;
-  width: 100%;
-  border-bottom: 2px dashed #c9c9c9;
+  gap: 8px;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f3f7;
 
   .title {
-    font-size: 40px;
-    font-weight: bold;
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c3e50;
+    letter-spacing: -0.5px;
   }
+
   .format-title {
-    color: #878787;
-    margin-bottom: 10px;
+    color: #7f8c8d;
+    font-size: 14px;
   }
 `;
+
+const LogoSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fafbfc 0%, #f8f9fb 100%);
+  border-radius: 12px;
+  border: 1px solid #e8ecf1;
+`;
+
+const LogoLabel = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+`;
+
+const LogoDescription = styled.p`
+  font-size: 13px;
+  color: #7f8c8d;
+  margin: 0 0 12px 0;
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: #34495e;
+  margin: 10px 0 20px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ffc107;
+  display: inline-block;
+`;
+
+const InputLabel = styled.label`
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+`;
+
+const InputHelper = styled.p`
+  font-size: 12px;
+  color: #95a5a6;
+  margin: 6px 0 0 0;
+  font-style: italic;
+`;
+
+const ErrorText = styled.p`
+  color: #e74c3c;
+  font-size: 12px;
+  margin: 6px 0 0 0;
+  font-weight: 500;
+`;
+
+const PreviewSection = styled.div`
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 3px double #e0e6ed;
+`;
+
+const PreviewTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 8px;
+`;
+
+const PreviewNote = styled.p`
+  font-size: 13px;
+  color: #7f8c8d;
+  margin-bottom: 20px;
+`;
+
+const TicketPreview = styled.div`
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
+  padding: 30px 20px;
+  background: white;
+  border: 2px dashed #bdc3c7;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #2c3e50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  .ticket-header {
+    text-align: center;
+    margin-bottom: 15px;
+    
+    .preview-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+    
+    .no-logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 10px;
+      background: #ecf0f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: #95a5a6;
+      font-size: 11px;
+    }
+    
+    .preview-company-name {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    
+    .preview-ruc,
+    .preview-address {
+      font-size: 11px;
+      color: #7f8c8d;
+      margin: 3px 0;
+    }
+  }
+
+  .divider-preview {
+    border-top: 1px dashed #bdc3c7;
+    margin: 12px 0;
+  }
+
+  .preview-number {
+    text-align: center;
+    font-weight: bold;
+    font-size: 13px;
+    margin: 10px 0;
+  }
+
+  .preview-details {
+    font-size: 11px;
+    margin: 10px 0;
+    
+    div {
+      margin: 5px 0;
+    }
+  }
+
+  .preview-products {
+    margin: 10px 0;
+    
+    .product-row {
+      display: grid;
+      grid-template-columns: 30px 1fr 80px;
+      gap: 5px;
+      font-size: 11px;
+      margin: 5px 0;
+    }
+  }
+
+  .preview-total {
+    margin: 15px 0;
+    text-align: right;
+    
+    div {
+      margin: 5px 0;
+    }
+    
+    strong {
+      font-size: 14px;
+    }
+    
+    .preview-amount-text {
+      font-size: 10px;
+      color: #7f8c8d;
+      text-align: center;
+      margin-top: 10px;
+    }
+  }
+
+  .preview-footer {
+    text-align: center;
+    font-size: 11px;
+    margin: 15px 0;
+    font-style: italic;
+    color: #7f8c8d;
+  }
+
+  .preview-qr {
+    text-align: center;
+    margin-top: 15px;
+    
+    .qr-placeholder {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto;
+      background: #ecf0f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #bdc3c7;
+      border-radius: 8px;
+      color: #95a5a6;
+      font-size: 11px;
+    }
+  }
+`;
+const ReadOnlyInput = styled.input`
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  border: 2px solid #e0e6ed;
+  border-radius: 8px;
+  background-color: #f5f7fa;
+  color: #7f8c8d;
+  cursor: not-allowed;
+  font-family: inherit;
+  
+  &:focus {
+    outline: none;
+  }
+`;
+
+const InfoNote = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-left: 4px solid #2196f3;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #1976d2;
+  
+  &::before {
+    content: "ℹ";
+    font-size: 18px;
+    font-weight: bold;
+  }
+`;
+
+export default ConfiguracionTicket;

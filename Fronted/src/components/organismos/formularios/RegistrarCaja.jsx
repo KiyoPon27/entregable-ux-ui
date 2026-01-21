@@ -37,6 +37,7 @@ export function RegistrarCaja() {
       const p = {
         descripcion: ConvertirCapitalize(data.descripcion),
         id_sucursal: cajaSelectItem?.id,
+        idUsuarioCreador: datausuarios?.id,
       };
       const response = await insertarCaja(p);
       // TODO: Migrar asignación de caja al backend cuando se necesite

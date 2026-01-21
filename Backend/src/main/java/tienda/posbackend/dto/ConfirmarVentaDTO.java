@@ -14,7 +14,4 @@ public class ConfirmarVentaDTO {
     private Long idCliente;
     private LocalDateTime fecha;
     private BigDecimal montoTotal;
-    
-    // Optional: Payment method details if needed for full context, but SQL didn't request them specifically as args, 
-    // although "pago_con", "referencia_tarjeta" exist in Venta table.
 }

@@ -4,8 +4,8 @@ import {
   MostrarSucursalCajaAsignada,
   MostrarUsuariosAsignados,
 } from "../supabase/crudAsignacionCajaSucursal";
-import { supabase } from "../supabase/supabase.config";
-const tabla = "asignacion_sucursal";
+import api from "../api/api";
+
 export const useAsignacionCajaSucursalStore = create((set) => ({
   buscador: "",
   setBuscador: (p) => {
@@ -41,9 +41,15 @@ export const useAsignacionCajaSucursalStore = create((set) => ({
     return response;
   },
   insertarAsignacionSucursal: async (p) => {
-    const { error } = await supabase.from(tabla).insert(p);
-    if (error) {
-      throw new Error(error.message);
+    try {
+      const body = {
+        usuario: { id: p.id_usuario },
+        sucursal: { id: p.id_sucursal },
+        caja: p.id_caja ? { id: p.id_caja } : null
+      };
+      await api.post("/asignacion-sucursal", body);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message);
     }
   },
 }));

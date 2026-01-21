@@ -1,24 +1,40 @@
-import { supabase } from "./supabase.config";
-const tabla = "movimientos_caja";
+import api from "../api/api";
+
 export async function InsertarMovCaja(p) {
-  const { error } = await supabase.from(tabla).insert(p);
-  if (error) {
-    throw new Error(error.message);
+  try {
+    const response = await api.post("/movimientos-caja", p);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
   }
 }
-export async function MostrarEfectivoSinVentasMovcierrecaja(p) {
 
-  const { data } = await supabase.rpc("sumarefectivosinventasmovcierrecaja",p)
-  return data;
+export async function MostrarEfectivoSinVentasMovcierrecaja(p) {
+  try {
+    const response = await api.get(`/movimientos-caja/cierre-caja/${p._id_cierre_caja}/efectivo-sin-ventas`);
+    return response.data || [];
+  } catch (error) {
+    console.error("Error al obtener efectivo sin ventas:", error);
+    return [];
+  }
 }
 export async function MostrarVentasMetodoPagoMovCaja(p) {
-  
-  const { data } = await supabase.rpc("sumarventasmetodopagomovcierrecaja",p)
-  return data;
+  try {
+    const response = await api.get(`/movimientos-caja/ventas-metodo-pago/${p._id_cierre_caja}`);
+    return response.data || [];
+  } catch (error) {
+    console.error("Error al obtener ventas por método de pago:", error);
+    return [];
+  }
 }
 export async function Mostrarmovimientoscajalive(p) {
-  
-  const { data } = await supabase.rpc("mostrarmovimientoscajalive",p)
-  return data;
+  try {
+    const response = await api.get(`/movimientos-caja/empresa/${p.idEmpresa}`);
+    const data = response.data || [];
+    return data;
+  } catch (error) {
+    console.error("Error al obtener movimientos de caja live:", error);
+    return [];
+  }
 }
 

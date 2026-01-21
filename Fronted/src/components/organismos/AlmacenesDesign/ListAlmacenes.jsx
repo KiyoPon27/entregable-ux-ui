@@ -130,7 +130,7 @@ export const ListAlmacenes = () => {
           <Sucursal key={index}>
             <SucursalHeader>
               <Acciones $right="0px" $top="0px">
-                {sucursal?.delete && (
+                {sucursal?.delete && sucursal?.id !== 1 && (
                   <Icon
                     icon="wpf:delete"
                     width="15"

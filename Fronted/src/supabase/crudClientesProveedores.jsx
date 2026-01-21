@@ -1,60 +1,83 @@
 import Swal from "sweetalert2";
-import { supabase } from "../index";
-const tabla = "clientes_proveedores";
+import api from "../api/api";
+
 export async function InsertarClientesProveedores(p) {
-  const { error, data } = await supabase.rpc("insertarclientesproveedores", p);
-  if (error) {
+  try {
+    const body = {
+      nombres: p.nombres,
+      empresa: { id: p.id_empresa },
+      direccion: p.direccion || "-",
+      telefono: p.telefono || "-",
+      email: p.email || "-",
+      identificadorNacional: p.identificador_nacional || "-",
+      identificadorFiscal: p.identificador_fiscal || "-",
+      tipo: p.tipo || "-",
+      estado: p.estado || "activo"
+    };
+    const response = await api.post("/clientes-proveedores", body);
+    return response.data;
+  } catch (error) {
     Swal.fire({
       icon: "error",
-      title: error.message,
-      text: error.message,
+      title: "Error",
+      text: error.response?.data?.message || error.message,
     });
     return;
   }
-  return data;
 }
 
 export async function MostrarClientesProveedores(p) {
-  const { data, error } = await supabase
-    .from(tabla)
-    .select()
-    .eq("id_empresa", p.id_empresa)
-    .eq("tipo", p.tipo);
-  if (error) {
-    return;
+  try {
+    const response = await api.get(`/clientes-proveedores/empresa/${p.id_empresa}/tipo/${p.tipo}`);
+    return response.data || [];
+  } catch (error) {
+    console.error("Error al mostrar clientes/proveedores:", error);
+    return [];
   }
-  return data;
 }
+
 export async function BuscarClientesProveedores(p) {
-  const { data, error } = await supabase
-    .from(tabla)
-    .select()
-    .eq("id_empresa", p.id_empresa)
-    .eq("tipo", p.tipo)
-    .ilike("nombres", "%"+p.buscador+"%");
-  if (error) {
-    return;
+  try {
+    const q = encodeURIComponent(p.buscador || "");
+    const response = await api.get(`/clientes-proveedores/buscar/${p.id_empresa}?tipo=${p.tipo}&q=${q}`);
+    return response.data || [];
+  } catch (error) {
+    console.error("Error al buscar clientes/proveedores:", error);
+    return [];
   }
-  return data;
 }
+
 export async function EliminarClientesProveedores(p) {
-  const { error } = await supabase.from(tabla).delete().eq("id", p.id);
-  if (error) {
+  try {
+    await api.delete(`/clientes-proveedores/${p.id}`);
+  } catch (error) {
     Swal.fire({
       icon: "error",
       title: "Oops...",
-      text: error.message,
+      text: error.response?.data?.message || error.message,
     });
     return;
   }
 }
+
 export async function EditarClientesProveedores(p) {
-  const { error } = await supabase.rpc("editarclientesproveedores", p);
-  if (error) {
+  try {
+    const body = {
+      nombres: p.nombres,
+      direccion: p.direccion || "-",
+      telefono: p.telefono || "-",
+      email: p.email || "-",
+      identificadorNacional: p.identificador_nacional || "-",
+      identificadorFiscal: p.identificador_fiscal || "-",
+      tipo: p.tipo || "-",
+      estado: p.estado || "activo"
+    };
+    await api.put(`/clientes-proveedores/${p.id}`, body);
+  } catch (error) {
     Swal.fire({
       icon: "error",
-      title: error.message,
-      text: error.message,
+      title: "Error",
+      text: error.response?.data?.message || error.message,
     });
     return;
   }

@@ -11,12 +11,12 @@ export const useMostrarCierreCajaPorEmpresaQuery = () => {
     queryKey: [
       "mostrar cierre caja por empresa",
       {
-        _id_empresa: dataempresa?.id,
+        idEmpresa: dataempresa?.id,
       },
     ],
     queryFn: () =>
       mostrarCierreCajaPorEmpresa({
-        _id_empresa: dataempresa?.id,
+        idEmpresa: dataempresa?.id,
       }),
     enabled: !!dataempresa,
   });

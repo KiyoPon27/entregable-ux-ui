@@ -112,11 +112,10 @@ export const ReportInventarios = () => {
     },
     descriptionCell: {
       flex: 2,
-      textAlign: "left",
+      textAlign: "center",
       fontFamily: "Inconsolata",
       fontSize: 9,
       padding: 3,
-      paddingLeft: 5,
     },
     numberCell: {
       flex: 0.8,
@@ -174,8 +173,8 @@ export const ReportInventarios = () => {
   );
   const renderTableRow = (rowData) => (
     <View style={styles.row}>
-      <Text style={styles.codeCell}> {rowData.codigo_articulo} </Text>
-      <Text style={styles.descriptionCell}>{rowData.descripcion_articulo}</Text>
+      <Text style={styles.codeCell}> {rowData.codigoArticulo} </Text>
+      <Text style={styles.descriptionCell}>{rowData.descripcionArticulo}</Text>
       <Text style={styles.numberCell}>
         {" "}
         {typeof rowData.stock === "number"
@@ -184,9 +183,9 @@ export const ReportInventarios = () => {
       </Text>
       <Text style={styles.numberCell}>
         {" "}
-        {typeof rowData.precio_costo === "number"
-          ? rowData.precio_costo.toFixed(2)
-          : rowData.precio_costo}{" "}
+        {typeof rowData.precioCosto === "number"
+          ? rowData.precioCosto.toFixed(2)
+          : rowData.precioCosto}{" "}
       </Text>
       <Text style={styles.numberCell}>
         {" "}

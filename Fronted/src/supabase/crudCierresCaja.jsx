@@ -40,7 +40,7 @@ export async function CerrarTurnoCaja(p) {
 
 export async function MostrarCierreCajaPorEmpresa(p) {
     try {
-        const response = await api.get(`/cierre-caja/empresa/${p._id_empresa}/abiertas`);
+        const response = await api.get(`/cierre-caja/empresa/${p.idEmpresa}/abiertas`);
         // The RPC 'mostrarcajasabiertasporempresa' returns simplified columns: 
         // id_cierre_caja, id_caja, usuario, rol
         // The backend returns full CierreCaja object.

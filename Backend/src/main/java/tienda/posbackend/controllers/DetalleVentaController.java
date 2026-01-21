@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.dto.DetalleVentaDTO;
-import tienda.posbackend.entities.DetalleVenta;
+import tienda.posbackend.dto.DetalleVentaResponseDTO;
 import tienda.posbackend.services.DetalleVentaService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,7 +38,16 @@ public class DetalleVentaController {
     }
     
     @GetMapping("/venta/{idVenta}")
-    public ResponseEntity<List<DetalleVenta>> listarPorVenta(@PathVariable Long idVenta) {
-        return ResponseEntity.ok(detalleVentaService.listarPorVenta(idVenta));
+    public ResponseEntity<List<DetalleVentaResponseDTO>> listarPorVenta(@PathVariable Long idVenta) {
+        System.out.println("🔍 GET /detalle-ventas/venta/" + idVenta);
+        try {
+            List<DetalleVentaResponseDTO> detalles = detalleVentaService.listarPorVentaDTO(idVenta);
+            System.out.println("✅ Encontrados " + detalles.size() + " detalles");
+            return ResponseEntity.ok(detalles);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR en listarPorVenta: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

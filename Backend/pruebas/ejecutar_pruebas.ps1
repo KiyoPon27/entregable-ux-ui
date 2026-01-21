@@ -21,7 +21,7 @@ Write-Host "PRUEBA 1: Autenticación (Login + Token)" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 try {
     $loginBody = @{ correo = "admin@tienda.com"; password = "123" } | ConvertTo-Json
-    $resp = Invoke-RestMethod -Method Post -Uri "$base/auth/login" -Body $loginBody -ContentType "application/json"
+    $resp = Invoke-RestMethod -Method Post -Uri "$base/api/auth/login" -Body $loginBody -ContentType "application/json"
     $token = $resp.accessToken
     $headers = @{ Authorization = "Bearer $token" }
     

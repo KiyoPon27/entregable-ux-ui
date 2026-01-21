@@ -21,7 +21,7 @@ export const CardTotales = ({ title, icon, value, percentage }) => {
                   dataempresa?.iso
                 )}  </SalesValue>
       {
-        percentage!=undefined &&<Percentage isPositive={isPositive} isNeutral={isNeutral}>
+        percentage!=undefined &&<Percentage $isPositive={isPositive} $isNeutral={isNeutral}>
        <Icon icon={isNeutral?"akar-icons:minus":isPositive?"iconamoon:arrow-up-2-fill":"iconamoon:arrow-down-2-fill"}   width="16"
           height="16"/>
         {percentage}% al periodo anterior
@@ -63,7 +63,7 @@ const SalesValue = styled.span`
 `;
 const Percentage = styled.span`
   color: ${(props) =>
-    props.isNeutral ? "#6b7280" : props.isPositive ? "#616161" : "#d32f5b"};
+    props.$isNeutral ? "#6b7280" : props.$isPositive ? "#616161" : "#d32f5b"};
    font-weight: 500;
    display: flex;
    align-items: start;

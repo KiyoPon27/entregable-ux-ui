@@ -41,19 +41,23 @@ export function CardListCajas({
     const pmovcaja = {
       fecha_movimiento: fechaActual,
       tipo_movimiento: "apertura",
-      monto: montoEfectivo ? montoEfectivo : 0,
+      monto: p.monto || 0,
       id_metodo_pago: id_metodo_pago,
-      descripcion: `Apertura de caja con`,
+      descripcion: `Apertura de caja con ${p.monto || 0}`,
       id_usuario: datausuarios?.id,
       id_cierre_caja: p.id_cierre_caja,
     };
-
+    console.log("Movimiento a insertar:", pmovcaja);
     await insertarMovCaja(pmovcaja);
   };
   const insertar = async () => {
     // Si cajaSelectItem viene de AsignacionSucursal, el id de caja está en .caja.id
     // Si viene directo de Cajas, podría estar en .id
     const idCajaReal = cajaSelectItem?.caja?.id || cajaSelectItem?.id;
+
+    // Capturar el monto actual ANTES de cualquier operación async
+    const montoActual = montoEfectivo;
+    console.log("Monto a registrar:", montoActual);
 
     const p = {
       fechainicio: fechaActual,
@@ -64,7 +68,13 @@ export function CardListCajas({
     console.log("pcierrecaja",p)
     const data = await aperturarcaja(p);
 
-    await registrarMovCaja({ id_cierre_caja: data?.id });
+    // Validar que se obtuvo el ID del cierre de caja antes de registrar el movimiento
+    if (data && data.id) {
+      await registrarMovCaja({ id_cierre_caja: data.id, monto: montoActual });
+    } else {
+      console.error("No se obtuvo ID del cierre de caja", data);
+      throw new Error("Error al obtener el ID del cierre de caja");
+    }
   };
 
   const mutation = useMutation({
@@ -103,7 +113,9 @@ export function CardListCajas({
         {state && (
           <Btn1
             titulo="TOMAR TURNO"
-           
+            funcion={() => {
+              toast.info("Para tomar turno, el cajero actual debe cerrar su sesión primero");
+            }}
           />
         )}
 

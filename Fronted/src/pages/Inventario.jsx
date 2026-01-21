@@ -56,7 +56,7 @@ export const Inventario = () => {
   function nuevoRegistro() {
     setStateClose(true);
     setAccion("Nuevo");
-    setItemSelect([]);
+    selectProductos(null);
   }
   return (
     <Container>

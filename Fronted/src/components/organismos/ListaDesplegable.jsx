@@ -15,13 +15,16 @@ export function ListaDesplegable({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const dropdownRef = useRef(null);
   function seleccionar(p) {
+    console.log("📋 ListaDesplegable - seleccionando producto:", p);
     if (refetch) {
       refetch();
     }
 
     funcion(p);
+    console.log("📋 Llamando setState para cerrar lista");
     setState();
     if (funcioncrud) {
+      console.log("📋 Llamando funcioncrud para insertar");
       funcioncrud();
     }
   }

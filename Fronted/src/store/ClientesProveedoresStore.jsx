@@ -59,7 +59,7 @@ export const useClientesProveedoresStore = create((set, get) => ({
       // Adaptar payload al formato del backend
       const payload = {
         nombres: p._nombres ?? p.nombres,
-        empresa: { id: p._id_empresa ?? p.id_empresa },
+        empresa: { id: p.idEmpresa ?? p.id_empresa },
         direccion: p._direccion ?? p.direccion ?? "-",
         telefono: p._telefono ?? p.telefono ?? "-",
         email: p._email ?? p.email ?? "-",

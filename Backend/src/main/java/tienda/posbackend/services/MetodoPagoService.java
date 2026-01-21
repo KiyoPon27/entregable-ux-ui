@@ -30,12 +30,14 @@ public class MetodoPagoService {
         return metodoPagoRepository.buscarPorNombre(empresaId, query);
     }
 
+    @SuppressWarnings("null")
     public MetodoPago obtenerPorId(Long id) {
         return metodoPagoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Método de pago no encontrado con ID: " + id));
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public MetodoPago crear(MetodoPago metodoPago) {
         // Validar que venga la empresa
         if (metodoPago.getEmpresa() == null || metodoPago.getEmpresa().getId() == null) {
@@ -62,6 +64,7 @@ public class MetodoPagoService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public MetodoPago editar(Long id, MetodoPago metodoPagoDetails) {
         // Buscar método de pago existente
         MetodoPago metodoPago = metodoPagoRepository.findById(id)
@@ -96,6 +99,7 @@ public class MetodoPagoService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public void eliminar(Long id) {
         // Verificar que el método de pago existe
         MetodoPago metodoPago = metodoPagoRepository.findById(id)

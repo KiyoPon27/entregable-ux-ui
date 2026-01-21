@@ -51,6 +51,12 @@ export const LinksArray = [
     icon: "flat-ui:graph",
     to: "/reportes",
   },
+
+  {
+    label: "Compras",
+    icon: "noto:shopping-bags",
+    to: "/compras",
+  }
  
 ];
 export const SecondarylinksArray = [

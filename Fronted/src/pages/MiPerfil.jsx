@@ -19,7 +19,7 @@ export const MiPerfil = () => {
   } = useForm({
     defaultValues: {
       nombres: datausuarios?.nombres || "",
-      nro_doc: datausuarios?.nro_doc || "",
+      nro_doc: datausuarios?.nroDoc || "",
       telefono: datausuarios?.telefono || "",
     },
   });

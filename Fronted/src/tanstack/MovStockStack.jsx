@@ -59,12 +59,20 @@ export const useInsertarMovStockMutation = () => {
       };
       const pProductos = {
         id: productosItemSelect?.id,
-        precio_compra: parseFloat(
+        nombre: productosItemSelect?.nombre,
+        precioCompra: parseFloat(
           (productosItemSelect?.precioCompra + data.precio_compra) / 2
         ),
-        precio_venta: parseFloat(
+        precioVenta: parseFloat(
           (productosItemSelect?.precioVenta + data.precio_venta) / 2
         ),
+        codigoBarras: productosItemSelect?.codigoBarras,
+        codigoInterno: productosItemSelect?.codigoInterno,
+        seVendePor: productosItemSelect?.seVendePor,
+        manejaInventarios: productosItemSelect?.manejaInventarios,
+        manejaMultiprecios: productosItemSelect?.manejaMultiprecios,
+        categoria: productosItemSelect?.categoria ? { id: productosItemSelect.categoria.id } : null,
+        empresa: productosItemSelect?.empresa ? { id: productosItemSelect.empresa.id } : null,
       };
       console.log("pMovimientoStock",pMovimientoStock)
       console.log("pStock",pStock)
@@ -81,8 +89,12 @@ export const useInsertarMovStockMutation = () => {
     onSuccess: () => {
       toast.success("Registro guardado correctamente");
       queryClient.invalidateQueries(["buscar productos"]);
-      setStateClose(false)
-      resetProductosItemSelect()
+      setStateClose(false);
+      resetProductosItemSelect();
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries(["mostrar movimientos de stock"]);
+      }, 300);
     },
   });
 };

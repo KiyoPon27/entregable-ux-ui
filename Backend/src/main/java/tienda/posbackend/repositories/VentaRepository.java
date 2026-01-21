@@ -12,5 +12,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     
     Optional<Venta> findBySucursalIdAndEstado(Long sucursalId, String estado);
     
+    // Find all ventas for specific cierre caja
+    List<Venta> findByCierreCajaId(Long cierreCajaId);
+    
     void deleteByEstadoAndUsuarioIdAndCierreCajaId(String estado, Long usuarioId, Long cierreCajaId);
 }

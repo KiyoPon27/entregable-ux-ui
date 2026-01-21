@@ -7,17 +7,22 @@ import org.springframework.transaction.annotation.Transactional;
 import tienda.posbackend.entities.Rol;
 import tienda.posbackend.entities.TipoDocumento;
 import tienda.posbackend.entities.Usuario;
+import tienda.posbackend.entities.Permiso;
+import tienda.posbackend.entities.Modulo;
 import tienda.posbackend.exceptions.DuplicateResourceException;
 import tienda.posbackend.exceptions.ResourceNotFoundException;
 import tienda.posbackend.repositories.RolRepository;
 import tienda.posbackend.repositories.TipoDocumentoRepository;
 import tienda.posbackend.repositories.UsuarioRepository;
+import tienda.posbackend.repositories.PermisoRepository;
+import tienda.posbackend.repositories.ModuloRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@SuppressWarnings("null")
 public class UsuarioService {
 
     @Autowired
@@ -31,6 +36,12 @@ public class UsuarioService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private PermisoRepository permisoRepository;
+    
+    @Autowired
+    private ModuloRepository moduloRepository;
 
     public List<Usuario> listarTodos() {
         return usuarioRepository.findAll();
@@ -90,7 +101,20 @@ public class UsuarioService {
             usuario.setTelefono("-");
         }
 
-        return usuarioRepository.save(usuario);
+        Usuario nuevoUsuario = usuarioRepository.save(usuario);
+        
+        // TRIGGER: Asignar automáticamente el módulo "Home" (ID 22, enlace="/") al nuevo usuario
+        Modulo moduloHome = moduloRepository.findById(22L).orElse(null);
+        
+        if (moduloHome != null) {
+            Permiso permisoHome = new Permiso();
+            permisoHome.setUsuario(nuevoUsuario);
+            permisoHome.setModulo(moduloHome);
+            
+            permisoRepository.save(permisoHome);
+        }
+
+        return nuevoUsuario;
     }
 
     @Transactional

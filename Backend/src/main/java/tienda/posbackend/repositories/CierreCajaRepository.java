@@ -9,6 +9,9 @@ public interface CierreCajaRepository extends JpaRepository<CierreCaja, Long> {
     List<CierreCaja> findByUsuarioId(Long usuarioId);
     Optional<CierreCaja> findTopByUsuarioIdOrderByFechaInicioDesc(Long usuarioId);
     
+    // Find all cierres for a specific caja
+    List<CierreCaja> findByCajaId(Long cajaId);
+    
     // Find open session for specific caja (Status=0 often means open?)
     // Actually user SQL says "where cierrecaja.estado = 0".
     Optional<CierreCaja> findByCajaIdAndEstado(Long cajaId, Long estado);
@@ -19,4 +22,7 @@ public interface CierreCajaRepository extends JpaRepository<CierreCaja, Long> {
     List<CierreCaja> findAbiertasPorEmpresa(Long empresaId);
     
     Optional<CierreCaja> findByUsuarioIdAndEstado(Long usuarioId, Long estado);
+    
+    // Count cierres for a specific caja
+    long countByCajaId(Long cajaId);
 }

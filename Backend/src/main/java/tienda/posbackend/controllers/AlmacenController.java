@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/almacenes")
+@SuppressWarnings("null")
 public class AlmacenController {
 
     @Autowired

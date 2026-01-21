@@ -5,20 +5,24 @@ import { useEmpresaStore } from "../../..";
 import { useMovCajaStore } from "../../../store/MovCajaStore";
 import { useQuery } from "@tanstack/react-query";
 import { BarLoader } from "react-spinners";
-import { useSupabaseSubscription } from "../../../hooks/useSupabaseSubscription";
+// import { useSupabaseSubscription } from "../../../hooks/useSupabaseSubscription"; // TODO: Migrar a WebSocket o polling
+
 export const CardMovimientosCajaLive = () => {
   const { dataempresa } = useEmpresaStore();
   const { mostrarmovimientoscajalive } = useMovCajaStore();
   const { data, isLoading, error } = useQuery({
     queryKey: ["mostrar movimientos caja live"],
-    queryFn: () => mostrarmovimientoscajalive({ _id_empresa: dataempresa?.id }),
+    queryFn: () => mostrarmovimientoscajalive({ idEmpresa: dataempresa?.id }),
     enabled: !!dataempresa,
+    refetchInterval: 5000, // Polling cada 5 segundos (temporal hasta implementar WebSocket)
   });
-  useSupabaseSubscription({
-    channelName: "public:movimientos_caja",
-    options: { event: "*", schema: "public", table: "movimientos_caja" },
-    queryKey: ["mostrar movimientos caja live"],  
-  });
+  
+  // TODO: Migrar suscripción Supabase a WebSocket o Server-Sent Events
+  // useSupabaseSubscription({
+  //   channelName: "public:movimientos_caja",
+  //   options: { event: "*", schema: "public", table: "movimientos_caja" },
+  //   queryKey: ["mostrar movimientos caja live"],  
+  // });
   if (isLoading) return <BarLoader color="#6d6d6d" />;
   if (error) return <span>error...{error.message} </span>;
 

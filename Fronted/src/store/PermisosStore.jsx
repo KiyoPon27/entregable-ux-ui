@@ -54,15 +54,21 @@ export const usePermisosStore = create((set, get) => ({
         // Mapear respuesta para que coincida con la estructura esperada:
         // Supabase devolvía: { modulos: { link: '/...', ... } }
         // Java devuelve: { modulo: { enlace: '/...', ... } }
-        // Adaptamos los nombres de propiedades (enlace -> link, nombre -> label, etc si necesario)
+        // Adaptamos con fallbacks robustos
         
         const adapted = response.data.map(perm => {
-            const modulo = perm.modulo || {};
+            // Soportar ambos formatos: modulo (Java) o modulos (Supabase legacy)
+            const modulo = perm?.modulo || perm?.modulos || {};
+            
             return {
                 ...perm,
                 modulos: {
                     ...modulo,
-                    link: modulo.enlace // Frontend expects 'link'
+                    // Soportar tanto 'link' (frontend) como 'enlace' (backend)
+                    link: modulo.link || modulo.enlace || '#',
+                    // Asegurar que otros campos críticos existan
+                    nombre: modulo.nombre || 'Sin nombre',
+                    icono: modulo.icono || 'icon-default'
                 }
             };
         });
@@ -71,6 +77,7 @@ export const usePermisosStore = create((set, get) => ({
         return adapted;
     } catch (e) {
         console.error("Error fetching permisos globales", e);
+        set({ dataPermisosGlobales: [] });
         return [];
     }
   },
@@ -79,23 +86,28 @@ export const usePermisosStore = create((set, get) => ({
     try {
       const response = await api.get(`/permisos/usuario/${p.id_usuario}`);
       // Filtrar para mostrar solo los de configuración (#configuracion)
-      // Y adaptar estructura
-      console.log("Raw permisos response:", response.data); 
+      // Y adaptar estructura con fallbacks robustos
+      
       const adapted = response.data
-        .filter(perm => perm.modulo?.etiquetas?.includes("#configuracion"))
+        .filter(perm => {
+          const modulo = perm?.modulo || perm?.modulos || {};
+          const etiquetas = modulo.etiquetas || modulo.tags || '';
+          return etiquetas.includes("#configuracion");
+        })
         .map(perm => {
-            const modulo = perm.modulo || {};
+            const modulo = perm?.modulo || perm?.modulos || {};
             return {
                 ...perm,
                 modulos: {
                     ...modulo,
-                    link: modulo.enlace,
-                    state: true // Frontend uses 'state' for CSS class ?
+                    link: modulo.link || modulo.enlace || '#',
+                    nombre: modulo.nombre || 'Sin nombre',
+                    icono: modulo.icono || 'icon-default',
+                    state: true // Frontend uses 'state' for CSS class
                 }
             };
         });
       
-      console.log("Adapted permisos configuracion:", adapted);
       set({ dataPermisosConfiguracion: adapted });
       return adapted;
     } catch (error) {

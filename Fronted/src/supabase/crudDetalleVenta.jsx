@@ -9,8 +9,8 @@ export async function InsertarDetalleVentas(p) {
         precioVenta: p._precio_venta,
         precioCompra: p._precio_compra,
         descripcion: p._descripcion,
-        idSucursal: p._id_sucursal,
-        idAlmacen: p._id_almacen
+        idSucursal: p.idSucursal,
+        idAlmacen: p.idAlmacen
     };
     await api.post("/detalle-ventas", payload);
   } catch (error) {
@@ -33,12 +33,12 @@ export async function EditarCantidadDetalleVenta(p) {
 export async function MostrarDetalleVenta(p) {
   try {
     const response = await api.get(`/detalle-ventas/venta/${p.id_venta}`);
-    // Map response to match Supabase structure:
-    // Supabase: { ..., ventas: {...}, productos: {...} }
-    // Spring: { ..., venta: {...}, producto: {...} }
+    // Backend devuelve camelCase + snake_case para compatibilidad
+    // Mapear para compatibilidad con el store existente
     const data = response.data.map(d => ({
         ...d,
-        ventas: d.venta,
+        // Mapear relaciones si es necesario
+        ventas: d.venta || (d.id_venta ? { id: d.id_venta } : null),
         productos: d.producto
     }));
     return data;
