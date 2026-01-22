@@ -5,9 +5,11 @@ import api from "../api/api";
  * Backend endpoints: /api/reportes
  */
 
-export async function ObtenerStockBajoMinimo(idEmpresa) {
+export async function ObtenerStockBajoMinimo({ sucursalId, almacenId }) {
   try {
-    const response = await api.get(`/reportes/stock-bajo-minimo?idEmpresa=${idEmpresa}`);
+    const response = await api.get(`/reportes/stock-bajo-minimo`, {
+      params: { sucursalId, almacenId }
+    });
     return response.data || [];
   } catch (error) {
     console.error("Error al obtener stock bajo mínimo:", error);

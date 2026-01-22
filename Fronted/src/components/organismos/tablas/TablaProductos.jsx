@@ -64,9 +64,9 @@ export function TablaProductos({
       accessorKey: "nombre",
       header: "Descripcion",
       cell: (info) => (
-        <td data-title="DESCRIPCION" className="ContentCell">
+        <div data-title="DESCRIPCION" className="ContentCell">
           <span>{info.getValue()}</span>
-        </td>
+        </div>
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -79,9 +79,9 @@ export function TablaProductos({
       accessorKey: "precioVenta",
       header: "P. venta",
       cell: (info) => (
-        <td data-title="P. venta" className="ContentCell">
-          <span>{info.getValue()}</span>
-        </td>
+        <div data-title="P. venta" className="ContentCell">
+          <span>S/. {info.getValue()}</span>
+        </div>
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -94,9 +94,9 @@ export function TablaProductos({
       accessorKey: "precioCompra",
       header: "P. compra",
       cell: (info) => (
-        <td data-title="P. compra" className="ContentCell">
-          <span>{info.getValue()}</span>
-        </td>
+        <div data-title="P. compra" className="ContentCell">
+          <span>S/. {info.getValue()}</span>
+        </div>
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -109,9 +109,24 @@ export function TablaProductos({
       accessorKey: "seVendePor",
       header: "Se vende por",
       cell: (info) => (
-        <td data-title="Se vende por" className="ContentCell">
+        <div data-title="Se vende por" className="ContentCell">
           <span>{info.getValue()}</span>
-        </td>
+        </div>
+      ),
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
+      accessorKey: "tipoComprobante",
+      header: "Tipo",
+      cell: (info) => (
+        <div data-title="Tipo" className="ContentCell">
+          <span>{info.getValue() || "FACTURADO"}</span>
+        </div>
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -124,24 +139,25 @@ export function TablaProductos({
       accessorKey: "manejaInventarios",
       header: "Inventarios",
       cell: (info) => (
-        <td data-title="Inventarios" className="ContentCell">
+        <div data-title="Inventarios" className="ContentCell">
           <Checkbox1 isChecked={info.getValue()} onChange={() => {}} disabled={true}/>
-        </td>
+        </div>
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
+        // Filtrar por inventarios: true (check azul) o false (gris)
         if (filterStatuses.length === 0) return true;
         const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
+        return filterStatuses.includes(status);
       },
     },
     {
       accessorKey: "stockTotal",
       header: "Stock",
       cell: (info) => (
-        <td data-title="Stock" className="ContentCell">
+        <div data-title="Stock" className="ContentCell">
           <span>{info.getValue() ?? 0}</span>
-        </td>
+        </div>
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -159,7 +175,8 @@ export function TablaProductos({
         <div data-title="Acciones" className="ContentCell">
           <ContentAccionesTabla
             funcionEditar={() => editar(info.row.original)}
-            funcionEliminar={() => eliminar(info.row.original)}
+            // Ocultamos el botón de eliminar (calavera) porque el estado se controla solo por inventarios
+            funcionEliminar={null}
           />
         </div>
       ),

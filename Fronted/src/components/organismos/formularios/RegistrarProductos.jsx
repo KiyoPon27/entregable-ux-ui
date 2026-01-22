@@ -40,6 +40,9 @@ export function RegistrarProductos({
   const [isChecked1, setIsChecked1] = useState(true);
   const [isChecked2, setIsChecked2] = useState(false);
   const [sevendepor, setSevendepor] = useState("UNIDAD");
+  const [tipoComprobante, setTipoComprobante] = useState("FACTURADO");
+  const [isCheckedFacturado, setIsCheckedFacturado] = useState(true);
+  const [isCheckedManualidad, setIsCheckedManualidad] = useState(false);
   const [stock, setStock] = useState("");
   const [stockMinimo, setStockMinimo] = useState("");
   const [ubicacion, setUbicacion] = useState("");
@@ -52,6 +55,20 @@ export function RegistrarProductos({
       setIsChecked1(false);
       setIsChecked2(true);
       setSevendepor("GRANEL");
+    }
+  };
+  const handleTipoComprobanteChange = (tipo) => {
+    console.log("🔵 handleTipoComprobanteChange llamado con tipo:", tipo);
+    if (tipo === 1) {
+      setIsCheckedFacturado(true);
+      setIsCheckedManualidad(false);
+      setTipoComprobante("FACTURADO");
+      console.log("✅ Configurado a FACTURADO");
+    } else {
+      setIsCheckedFacturado(false);
+      setIsCheckedManualidad(true);
+      setTipoComprobante("MANUALIDAD");
+      console.log("✅ Configurado a MANUALIDAD");
     }
   };
   //
@@ -99,6 +116,7 @@ export function RegistrarProductos({
         id_almacen: almacenSelectItem?.id,
         id_producto: dataSelect?.id,
       }),
+    enabled: !!dataSelect?.id, // Solo ejecutar cuando hay un producto seleccionado
   });
   const {
     data: dataAlmacenes,
@@ -139,6 +157,7 @@ export function RegistrarProductos({
   };
   async function insertar(data) {
     validarVacios(data);
+    console.log("🚀 Insertando producto. tipoComprobante actual:", tipoComprobante);
     if (accion === "Editar") {
       const p = {
         _id: dataSelect.id,
@@ -151,8 +170,9 @@ export function RegistrarProductos({
         idEmpresa: dataempresa.id,
         _sevende_por: sevendepor,
         _maneja_inventarios: stateInventarios,
+        tipoComprobante: tipoComprobante,
       };
-      console.log(p);
+      console.log("📦 Payload EDITAR:", p);
       await editarProductos(p);
       if (stateInventarios) {
         if (!dataStockXAlmacenYProducto) {
@@ -178,7 +198,9 @@ export function RegistrarProductos({
         _sevende_por: sevendepor,
         _maneja_inventarios: stateInventarios,
         _maneja_multiprecios: false,
+        tipoComprobante: tipoComprobante,
       };
+      console.log("📦 Payload CREAR:", p);
 
       const id_producto_nuevo = await insertarProductos(p);
       if (stateInventarios) {
@@ -286,6 +308,9 @@ export function RegistrarProductos({
       dataSelect.seVendePor === "UNIDAD"
         ? handleCheckboxChange(1)
         : handleCheckboxChange(0);
+      dataSelect.tipoComprobante === "FACTURADO"
+        ? handleTipoComprobanteChange(1)
+        : handleTipoComprobanteChange(2);
       dataSelect.manejaInventarios
         ? setStateInventarios(true)
         : setStateInventarios(false);
@@ -435,6 +460,20 @@ export function RegistrarProductos({
                 <Checkbox1
                   isChecked={isChecked2}
                   onChange={() => handleCheckboxChange(2)}
+                />
+              </ContainerSelector>
+
+              <label>Tipo de comprobante: </label>
+              <ContainerSelector>
+                <label>FACTURADO </label>
+                <Checkbox1
+                  isChecked={isCheckedFacturado}
+                  onChange={() => handleTipoComprobanteChange(1)}
+                />
+                <label>MANUALIDAD </label>
+                <Checkbox1
+                  isChecked={isCheckedManualidad}
+                  onChange={() => handleTipoComprobanteChange(2)}
                 />
               </ContainerSelector>
 

@@ -14,7 +14,10 @@ export const useReportStore = create((set) => ({
     return data;
   },
   reportStockBajoMinimo: async (p) => {
-    const data = await ObtenerStockBajoMinimo(p.idEmpresa);
+    const data = await ObtenerStockBajoMinimo({
+      sucursalId: p.sucursal_id,
+      almacenId: p.almacen_id
+    });
     return data;
   },
   reportVentasPorSucursal: async (p) => {

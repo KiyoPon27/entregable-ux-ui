@@ -9,7 +9,7 @@ export function Buscador({ setBuscador }) {
     <Container>
       <section className="content">
         <v.iconobuscar className="icono" />
-        <input placeholder="...buscar" onChange={buscar} />
+        <input className="input-grande" placeholder="...buscar" onChange={buscar} />
       </section>
     </Container>
   );
@@ -32,12 +32,21 @@ const Container = styled.div`
       font-size: 18px;
     }
     input {
-      font-size: 18px;
+      font-size: 20px;
       width: 100%;
+      min-width: 320px;
+      max-width: 500px;
       outline: none;
       background: none;
       border: 0;
       color: ${(props) => props.theme.text};
+      padding: 10px 8px;
+    }
+    .input-grande {
+      font-size: 22px;
+      min-width: 350px;
+      max-width: 600px;
+      padding: 14px 12px;
     }
   }
 `;

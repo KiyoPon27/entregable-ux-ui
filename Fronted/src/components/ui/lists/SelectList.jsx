@@ -33,7 +33,7 @@ export const SelectList = ({
                 onClick={() => handleSelect(item)}
                 isSelected={item === selected}
               >
-                {item === selected && <CheckMark>✔</CheckMark>}
+            <Arrow $isOpen={isOpen}><Icon icon="iconamoon:arrow-up-2-bold" width="24" height="24" /></Arrow>
                 {item?.[displayField]}
               </DropdownItem>
             );
@@ -56,7 +56,7 @@ const DropdownHeader = styled.div`
   color: ${({ theme }) => theme.text};
   padding: 8px 15px;
   border: 1px solid #333;
-  border-radius: 5px;
+      transform: ${({ $isOpen }) => ($isOpen ? "rotate(180deg)" : "rotate(0deg)")};
   cursor: pointer;
   display: flex;
   justify-content: space-between;

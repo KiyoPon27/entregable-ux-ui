@@ -14,7 +14,10 @@ export async function InsertarProductos(p) {
       seVendePor: (p._sevende_por || 'UNIDAD').toUpperCase(),
       manejaInventarios: p._maneja_inventarios === 1 || p._maneja_inventarios === true,
       manejaMultiprecios: p._maneja_multiprecios === 1 || p._maneja_multiprecios === true,
+      tipoComprobante: p.tipoComprobante || 'FACTURADO',
     };
+    
+    console.log('🚨 PRODUCTO A ENVIAR AL BACKEND:', producto);
 
     const response = await api.post("/productos", producto);
     return response.data;
@@ -79,6 +82,7 @@ export async function EditarProductos(p) {
       seVendePor: (p._sevende_por || 'UNIDAD').toUpperCase(),
       manejaInventarios: p._maneja_inventarios === 1 || p._maneja_inventarios === true,
       manejaMultiprecios: p._maneja_multiprecios === 1 || p._maneja_multiprecios === true,
+      tipoComprobante: p.tipoComprobante || 'FACTURADO',
     };
 
     await api.put(`/productos/${p._id}`, producto);

@@ -195,23 +195,23 @@ const ReportStockBajoMinimo = () => {
   );
 
   const renderTableRow = (rowData) => (
-    <View style={styles.row} key={rowData.codigo_articulo}>
-      <Text style={styles.codeCell}>{rowData.codigo_articulo}</Text>
-      <Text style={styles.descriptionCell}>{rowData.descripcion_articulo}</Text>
+    <View style={styles.row} key={rowData.codigoArticulo + rowData.descripcionArticulo}>
+      <Text style={styles.codeCell}>{rowData.codigoArticulo}</Text>
+      <Text style={styles.descriptionCell}>{rowData.descripcionArticulo}</Text>
       <Text style={styles.numberCell}>
         {typeof rowData.stock === "number"
           ? rowData.stock.toFixed(2)
           : rowData.stock}
       </Text>
       <Text style={styles.numberCell}>
-        {typeof rowData.stock === "number"
-          ? rowData.stock_minimo.toFixed(2)
-          : rowData.stock_minimo}
+        {typeof rowData.stockMinimo === "number"
+          ? rowData.stockMinimo.toFixed(2)
+          : rowData.stockMinimo}
       </Text>
       <Text style={styles.numberCell}>
-        {typeof rowData.precio_costo === "number"
-          ? rowData.precio_costo.toFixed(2)
-          : rowData.precio_costo}
+        {typeof rowData.precioCosto === "number"
+          ? rowData.precioCosto.toFixed(2)
+          : rowData.precioCosto}
       </Text>
       <Text style={styles.numberCell}>
         {typeof rowData.total === "number"
@@ -245,6 +245,9 @@ const ReportStockBajoMinimo = () => {
   // Use sample data for preview if no data is available
   const displayData = data?.length > 0 ? data : sampleData;
 
+  // Enumerar los productos
+  // No enumerar los productos
+
   return (
     <Container className="main">
       {
@@ -272,13 +275,11 @@ const ReportStockBajoMinimo = () => {
                     {/* Total general */}
                     <View style={styles.row}>
                       <Text style={styles.totalLabelCell}>TOTAL</Text>
-                      <Text style={styles.numberCell}>
-                        {totalStock.toFixed(2)}
-                      </Text>
+                      <Text style={styles.numberCell}>{totalStock.toFixed(2)}</Text>
                       <Text style={styles.numberCell}></Text>
-                      <Text style={styles.numberCell}>
-                        {totalValor.toFixed(2)}
-                      </Text>
+                      <Text style={styles.numberCell}></Text>
+                      <Text style={styles.numberCell}></Text>
+                      <Text style={styles.numberCell}>{totalValor.toFixed(2)}</Text>
                     </View>
                   </View>
                 </View>

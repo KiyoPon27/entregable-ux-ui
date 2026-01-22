@@ -27,7 +27,7 @@ public class ReporteService {
             .filter(stock -> stock.getAlmacen() != null && stock.getAlmacen().getId().equals(almacenId))
             .filter(stock -> stock.getAlmacen().getSucursal() != null && stock.getAlmacen().getSucursal().getId().equals(sucursalId))
             .filter(stock -> stock.getStock() != null && stock.getStockMinimo() != null)
-            .filter(stock -> stock.getStock().compareTo(stock.getStockMinimo()) < 0)
+            .filter(stock -> stock.getStock().compareTo(stock.getStockMinimo()) <= 0)
             .map(stock -> {
                 var producto = stock.getProducto();
                 BigDecimal stockActual = stock.getStock() != null ? stock.getStock() : BigDecimal.ZERO;
