@@ -14,4 +14,5 @@ public class ConfirmarVentaDTO {
     private Long idCliente;
     private LocalDateTime fecha;
     private BigDecimal montoTotal;
+    private String pagoCon; // Nuevo campo para método de pago
 }

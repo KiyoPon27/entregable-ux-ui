@@ -94,15 +94,34 @@ export function PantallaIngresoSalidaDinero() {
           .map((item, index) => {
             return (
               <article className="box" key={index}>
-                <Btn1
-                  imagen={item.icono != "-" ? item.icono : null}
-                  titulo={item.nombre}
-                  border="0"
-                  height="70px"
-                  width="100%"
-                  funcion={() => handleMetodoClick(item)}
-                  bgcolor={item.id === selectedMetodo?.id ? "#FFD700" : "#FFF"}
-                />
+                {
+                  (() => {
+                    const nombre = item.nombre || "";
+                    // colores por método
+                    const colors = {
+                      Efectivo: { bg: "#16a34a", color: "#ffffff" },
+                      Tarjeta: { bg: "#0ea5e9", color: "#ffffff" },
+                      Yape: { bg: "#7c3aed", color: "#ffffff" },
+                      Transferencia: { bg: "#ffffff", color: "#111111" },
+                    };
+                    const def = colors[nombre] || { bg: "#ffffff", color: "#111111" };
+                    const isSelected = item.id === selectedMetodo?.id;
+                    const bg = isSelected ? "#FFD700" : def.bg;
+                    const textColor = isSelected ? "#111111" : def.color;
+                    return (
+                      <Btn1
+                        icono={item.icono != "-" ? item.icono : null}
+                        titulo={item.nombre}
+                        border="0"
+                        height="70px"
+                        width="100%"
+                        funcion={() => handleMetodoClick(item)}
+                        bgcolor={bg}
+                        color={textColor}
+                      />
+                    );
+                  })()
+                }
               </article>
             );
           })}

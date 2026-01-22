@@ -69,14 +69,15 @@ public class Venta {
     @Column(name = "nro_comprobante")
     private String nroComprobante;
     
-    @Column(name = "tipo_comprobante")
-    private String tipoComprobante; // 'FACTURA' o 'BOLETA'
-    
-    /* 
-       Optional: relationship to DetalleVenta 
-       Mapped by "venta" field in DetalleVenta
-    */
-    @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<DetalleVenta> detalles;
+     @Column(name = "tipo_comprobante")
+     private String tipoComprobante; // 'FACTURA' o 'BOLETA'
+
+
+     /* 
+         Optional: relationship to DetalleVenta 
+         Mapped by "venta" field in DetalleVenta
+     */
+     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
+     @JsonIgnore
+     private List<DetalleVenta> detalles;
 }

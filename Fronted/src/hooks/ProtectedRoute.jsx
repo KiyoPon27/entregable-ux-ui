@@ -3,9 +3,10 @@ import { UserAuth } from "../context/AuthContent";
 import { usePermisosStore } from "../store/PermisosStore";
 import { useQuery } from "@tanstack/react-query";
 import { useUsuariosStore } from "../store/UsuariosStore";
+import { Spinner1 } from "../components/moleculas/Spinner1";
 
 export const ProtectedRoute = ({ children, accessBy }) => {
-  const { user } = UserAuth();
+  const { user, checking } = UserAuth();
   const {mostrarPermisosGlobales } = usePermisosStore();
   const location = useLocation();
   const {datausuarios} = useUsuariosStore()
@@ -21,6 +22,11 @@ export const ProtectedRoute = ({ children, accessBy }) => {
   });
   if(isLoadingPermisosGlobales){
     return <span>cargando permisos...</span>
+  }
+
+  // Si aún estamos comprobando la sesión, no redirigir: mostrar carga
+  if (checking === true) {
+    return <Spinner1 />;
   }
   const hasPermission = dataPermisosGlobales?.some(
     (item) => item.modulos?.link === location.pathname

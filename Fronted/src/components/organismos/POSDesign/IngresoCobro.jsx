@@ -141,6 +141,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
   });
   async function ConfirmarVenta() {
     if (restante === 0) {
+      // Obtener el monto pagado en efectivo
+      const montoEfectivo = valoresPago["Efectivo"] || 0;
       const pventas = {
         _id_venta: idventa,
         idUsuario: datausuarios?.id,
@@ -151,6 +153,7 @@ export const IngresoCobro = forwardRef((props, ref) => {
         _id_cliente: cliproItemSelect?.id || null,
         _fecha: fechaActual,
         _monto_total: total,
+        pagoCon: montoEfectivo,
       };
       console.log("confirmarVenta", pventas);
       const dataVentaConfirmada = await confirmarVenta(pventas);

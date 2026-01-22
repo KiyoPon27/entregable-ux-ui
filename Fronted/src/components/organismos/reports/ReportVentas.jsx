@@ -178,7 +178,8 @@ const ReportVentas = () => {
   });
 
   // proporciones por columna
-  const COL = { id: 10, fecha: 16, total: 12, imp: 10, sub: 12, pago: 10, cant: 8, cajero: 12, estado: 10 };
+  // Eliminar columna pago
+  const COL = { id: 11, fecha: 18, total: 13, imp: 11, sub: 13, cant: 8, cajero: 13, estado: 13 };
   const cw = (p) => ({ flexBasis: `${p}%`, flexGrow: 0, flexShrink: 0 });
 
   return (
@@ -233,16 +234,15 @@ const ReportVentas = () => {
             {/* Tabla */}
             <View style={styles.table}>
               <View style={styles.thead}>
-                <Text style={[styles.th, cw(COL.id)]}>ID VENTA</Text>
-                <Text style={[styles.th, cw(COL.fecha)]}>FECHA</Text>
-                <Text style={[styles.th, cw(COL.total), styles.right]}>MONTO TOTAL</Text>
-                <Text style={[styles.th, cw(COL.imp), styles.right]}>IMPUESTOS</Text>
-                <Text style={[styles.th, cw(COL.sub), styles.right]}>SUBTOTAL</Text>
-                <Text style={[styles.th, cw(COL.pago)]}>PAGO CON</Text>
-                <Text style={[styles.th, cw(COL.cant), styles.center]}>CANT.</Text>
-                <Text style={[styles.th, cw(COL.cajero)]}>CAJERO</Text>
-                <Text style={[styles.th, cw(COL.estado)]}>ESTADO</Text>
-              </View>
+                  <Text style={[styles.th, cw(COL.id)]}>ID VENTA</Text>
+                  <Text style={[styles.th, cw(COL.fecha)]}>FECHA</Text>
+                  <Text style={[styles.th, cw(COL.total), styles.right]}>MONTO TOTAL</Text>
+                  <Text style={[styles.th, cw(COL.imp), styles.right]}>IMPUESTOS</Text>
+                  <Text style={[styles.th, cw(COL.sub), styles.right]}>SUBTOTAL</Text>
+                  <Text style={[styles.th, cw(COL.cant), styles.center]}>CANT.</Text>
+                  <Text style={[styles.th, cw(COL.cajero)]}>CAJERO</Text>
+                  <Text style={[styles.th, cw(COL.estado)]}>ESTADO</Text>
+                </View>
 
               {rows.length === 0 ? (
                 <Text style={styles.empty}>No hay ventas para el rango seleccionado.</Text>
@@ -254,7 +254,6 @@ const ReportVentas = () => {
                     <Text style={[styles.td, cw(COL.total), styles.right]}>{n(r.montoTotal)}</Text>
                     <Text style={[styles.td, cw(COL.imp), styles.right]}>{n(r.totalImpuestos)}</Text>
                     <Text style={[styles.td, cw(COL.sub), styles.right]}>{n(r.subtotal)}</Text>
-                    <Text style={[styles.td, cw(COL.pago)]}>{r.pagoCon}</Text>
                     <Text style={[styles.td, cw(COL.cant), styles.center]}>{r.cantidadProductos ?? 0}</Text>
                     <Text style={[styles.td, cw(COL.cajero)]}>{r.cajero}</Text>
                     <Text style={[styles.td, cw(COL.estado)]}>{r.estado}</Text>
@@ -269,7 +268,6 @@ const ReportVentas = () => {
                   <Text style={[styles.td, cw(COL.total), styles.right, styles.totalText]}>{n(totalVentas)}</Text>
                   <Text style={[styles.td, cw(COL.imp), styles.right, styles.totalText]}>{n(totalImpuestos)}</Text>
                   <Text style={[styles.td, cw(COL.sub)]}></Text>
-                  <Text style={[styles.td, cw(COL.pago)]}></Text>
                   <Text style={[styles.td, cw(COL.cant), styles.center, styles.totalText]}>{totalProductos}</Text>
                   <Text style={[styles.td, cw(COL.cajero)]}></Text>
                   <Text style={[styles.td, cw(COL.estado)]}></Text>

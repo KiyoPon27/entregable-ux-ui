@@ -31,15 +31,25 @@ export function AreaTecladoPos() {
     <Container $stateMetodosPago={stateMetodosPago}>
       <section className="areatipopago">
         {datametodospago?.map((item, index) => {
+          const nombre = item.nombre || "";
+          const colors = {
+            Efectivo: { bg: "#16a34a", color: "#ffffff" },
+            Tarjeta: { bg: "#0ea5e9", color: "#ffffff" },
+            Yape: { bg: "#7c3aed", color: "#ffffff" },
+            Transferencia: { bg: "#ffffff", color: "#111111" },
+          };
+          const def = colors[nombre] || { bg: "#ffffff", color: "#111111" };
           return (
             <article className="box" key={index}>
               <Btn1
-                imagen={item.icono != "-" ? item.icono : null}
+                icono={item.icono != "-" ? item.icono : null}
                 funcion={() => ValidarPermisocobrar(item)}
                 titulo={item.nombre}
                 border="0"
                 height="70px"
                 width="100%"
+                bgcolor={def.bg}
+                color={def.color}
               />
             </article>
           );
@@ -76,19 +86,20 @@ const Container = styled.div`
   }
   .areatipopago {
     display: ${({ $stateMetodosPago }) => ($stateMetodosPago ? "flex" : "none")};
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    align-items: stretch;
     @media ${Device.desktop} {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
     }
     .box {
-      flex: 1 1 40%;
-      display: flex;
-      gap: 10px;
+      width: 100%;
+      display: block;
+      gap: 0;
     }
   }
   .totales {
