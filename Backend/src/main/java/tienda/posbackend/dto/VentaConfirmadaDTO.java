@@ -22,4 +22,5 @@ public class VentaConfirmadaDTO {
     private Long idUsuario;
     private Long idCliente;
     private Long idSucursal;
+    private String pagoCon; // Nuevo campo para método de pago
 }

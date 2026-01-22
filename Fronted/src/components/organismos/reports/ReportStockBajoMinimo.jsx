@@ -185,19 +185,21 @@ const ReportStockBajoMinimo = () => {
 
   const renderTableHeader = () => (
     <View style={styles.row}>
+      <Text style={styles.headerNumberCell}>N°</Text>
       <Text style={styles.headerCodeCell}>CÓDIGO</Text>
       <Text style={styles.headerDescriptionCell}>PRODUCTO</Text>
       <Text style={styles.headerNumberCell}>STOCK</Text>
       <Text style={styles.headerNumberCell}>STOCK MINIMO</Text>
-      <Text style={styles.headerNumberCell}>PRECIO COSTO</Text>
+      <Text style={styles.headerNumberCell}>P. COSTO</Text>
       <Text style={styles.headerNumberCell}>TOTAL</Text>
     </View>
   );
 
-  const renderTableRow = (rowData) => (
+  const renderTableRow = (rowData, idx) => (
     <View style={styles.row} key={rowData.codigoArticulo + rowData.descripcionArticulo}>
+      <Text style={styles.numberCell}>{idx + 1}</Text>
       <Text style={styles.codeCell}>{rowData.codigoArticulo}</Text>
-      <Text style={styles.descriptionCell}>{rowData.descripcionArticulo}</Text>
+      <Text style={{...styles.descriptionCell, textAlign: "center"}}>{rowData.descripcionArticulo}</Text>
       <Text style={styles.numberCell}>
         {typeof rowData.stock === "number"
           ? rowData.stock.toFixed(2)
@@ -270,7 +272,7 @@ const ReportStockBajoMinimo = () => {
   
                   <View style={styles.table}>
                     {renderTableHeader()}
-                    {displayData.map((item) => renderTableRow(item))}
+                    {displayData.map((item, idx) => renderTableRow(item, idx))}
   
                     {/* Total general */}
                     <View style={styles.row}>

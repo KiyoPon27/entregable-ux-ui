@@ -25,4 +25,25 @@ api.interceptors.request.use(
   }
 );
 
+// Interceptor de respuesta: si recibimos 401/403 limpiamos sesión y redirigimos a login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    if (status === 401 || status === 403) {
+      try {
+        localStorage.removeItem('token');
+        // opcional: limpiar otros datos relacionados
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_rol');
+      } catch (e) {}
+      // redirigir al login (evitar bucles en dev y asegurar que la app monte de nuevo)
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

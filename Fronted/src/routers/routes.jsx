@@ -184,6 +184,8 @@ export function MyRoutes() {
         }
       />
       <Route path="*" element={<PageNot />} />
+      {/* Compatibilidad con URLs antiguas: /home -> / (se aplicará la protección) */}
+      <Route path="/home" element={<Navigate to="/" replace />} />
       <Route
         path="/configuracion/clientes"
         element={

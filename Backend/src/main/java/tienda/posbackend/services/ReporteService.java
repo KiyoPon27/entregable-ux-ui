@@ -90,7 +90,6 @@ public class ReporteService {
             .map(venta -> {
                 var usuario = venta.getUsuario();
                 String cajero = usuario != null ? usuario.getNombres() : "Sin usuario";
-                
                 return ReporteVentaSucursalDTO.builder()
                     .idVenta(venta.getId())
                     .fecha(venta.getFecha())
