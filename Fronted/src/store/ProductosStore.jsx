@@ -49,7 +49,9 @@ export const useProductosStore = create((set, get) => ({
           seVendePor: (p._sevende_por ?? p.sevende_por ?? 'UNIDAD').toUpperCase(),
           manejaInventarios: Boolean(p._maneja_inventarios ?? p.maneja_inventarios ?? false),
           manejaMultiprecios: Boolean(p._maneja_multiprecios ?? p.maneja_multiprecios ?? false),
+          tipoComprobante: p.tipoComprobante ?? 'FACTURADO',
         };
+        console.log('🔥 STORE insertarProductos - FINAL:', producto);
         const response = await api.post("/productos", producto);
         const { mostrarProductos, parametros } = get();
         await mostrarProductos(parametros);
@@ -82,7 +84,9 @@ export const useProductosStore = create((set, get) => ({
           seVendePor: (p._sevende_por ?? p.sevende_por ?? 'UNIDAD').toUpperCase(),
           manejaInventarios: Boolean(p._maneja_inventarios ?? p.maneja_inventarios ?? false),
           manejaMultiprecios: Boolean(p._maneja_multiprecios ?? p.maneja_multiprecios ?? false),
+          tipoComprobante: p.tipoComprobante ?? 'FACTURADO',
         };
+        console.log('🔥 STORE editarProductos - producto a enviar:', producto);
         await api.put(`/productos/${id}`, producto);
         const { mostrarProductos, parametros } = get();
         await mostrarProductos(parametros);

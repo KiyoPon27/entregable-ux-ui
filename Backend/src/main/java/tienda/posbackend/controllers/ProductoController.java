@@ -34,8 +34,8 @@ public class ProductoController {
 
     @GetMapping("/empresa/{empresaId}")
     public List<Producto> listarPorEmpresa(@PathVariable Long empresaId) {
-        // Solo listar productos activos
-        List<Producto> productos = productoRepository.findByEmpresaIdAndEstado(empresaId, "ACTIVO");
+        // Listar todos los productos de la empresa, sin filtrar por estado
+        List<Producto> productos = productoRepository.findByEmpresaId(empresaId);
         // Calcular stock total para cada producto
         for (Producto producto : productos) {
             List<Stock> stocks = stockRepository.findByProductoId(producto.getId());
@@ -89,6 +89,9 @@ public class ProductoController {
         if (producto.getManejaMultiprecios() == null) {
             producto.setManejaMultiprecios(false);
         }
+        if (producto.getTipoComprobante() == null) {
+            producto.setTipoComprobante("FACTURADO");
+        }
 
         return ResponseEntity.ok(productoRepository.save(producto));
     }
@@ -109,6 +112,7 @@ public class ProductoController {
         producto.setSeVendePor(details.getSeVendePor() != null ? details.getSeVendePor() : "unidad");
         producto.setManejaInventarios(details.getManejaInventarios() != null ? details.getManejaInventarios() : true);
         producto.setManejaMultiprecios(details.getManejaMultiprecios() != null ? details.getManejaMultiprecios() : false);
+        producto.setTipoComprobante(details.getTipoComprobante() != null ? details.getTipoComprobante() : "FACTURADO");
         
         if (details.getCategoria() != null && details.getCategoria().getId() != null) {
              Categoria categoria = categoriaRepository.findById(details.getCategoria().getId())
@@ -127,8 +131,8 @@ public class ProductoController {
         Producto producto = productoRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         
-        // Soft delete: Cambiar estado a ELIMINADO en lugar de borrar físicamente
-        producto.setEstado("ELIMINADO");
+        // Soft delete: Cambiar estado a DESHABILITADO en lugar de borrar físicamente
+        producto.setEstado("DESHABILITADO");
         producto.setManejaInventarios(false);
         productoRepository.save(producto);
         

@@ -68,5 +68,5 @@ public class Producto {
         return empresa != null ? empresa.getId() : null;
     }
     
-    // Todo: Add image column if added to DB later.
+    
 }
