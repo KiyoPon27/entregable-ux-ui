@@ -61,8 +61,11 @@ export const IngresoCobro = forwardRef((props, ref) => {
   const { datadetalleventa } = useDetalleVentasStore();
   const { dataComprobantes, itemComprobanteSelect, setItemComprobanteSelect } =
     useSerializacionStore();
-  //mostrar data de impresoras
-  const { dataImpresorasPorCaja } = useImpresorasStore();
+  //mostrar data de impresoras por usuario
+  const { dataImpresorasPorUsuario } = useImpresorasStore();
+  // Estados para RUC/DNI y Número de Comprobante
+  const [rucDni, setRucDni] = useState("");
+  const [nroComprobante, setNroComprobante] = useState("");
   //#region Clientes
   const {
     buscarCliPro,
@@ -140,6 +143,33 @@ export const IngresoCobro = forwardRef((props, ref) => {
     },
   });
   async function ConfirmarVenta() {
+    // Validar campos requeridos solo para Factura y Boleta, no para Ticket
+    const tipoComprobanteNombre = itemComprobanteSelect?.tipoComprobante?.nombre;
+    
+    // Solo validar si NO es Ticket
+    if (tipoComprobanteNombre !== "Ticket") {
+      if (!rucDni || rucDni.trim() === "") {
+        toast.error(`El campo ${tipoComprobanteNombre === "Factura" ? "RUC" : "DNI"} es obligatorio`);
+        return;
+      }
+      
+      if (!nroComprobante || nroComprobante.trim() === "") {
+        toast.error("El Número de Comprobante es obligatorio");
+        return;
+      }
+      
+      // Validar formato de RUC/DNI
+      if (tipoComprobanteNombre === "Factura" && rucDni.length !== 11) {
+        toast.error("El RUC debe tener 11 dígitos");
+        return;
+      }
+      
+      if (tipoComprobanteNombre === "Boleta" && rucDni.length !== 8) {
+        toast.error("El DNI debe tener 8 dígitos");
+        return;
+      }
+    }
+    
     if (restante === 0) {
       // Obtener el monto pagado en efectivo
       const montoEfectivo = valoresPago["Efectivo"] || 0;
@@ -155,6 +185,13 @@ export const IngresoCobro = forwardRef((props, ref) => {
         _monto_total: total,
         pagoCon: montoEfectivo,
       };
+      
+      // Solo agregar nroComprobante y rucDni si NO es Ticket
+      if (tipoComprobanteNombre !== "Ticket") {
+        pventas._nro_comprobante = nroComprobante;
+        pventas._ruc_dni = rucDni;
+      }
+      
       console.log("confirmarVenta", pventas);
       const dataVentaConfirmada = await confirmarVenta(pventas);
       const nuevosMetodosPago = [];
@@ -182,12 +219,12 @@ export const IngresoCobro = forwardRef((props, ref) => {
         dataempresa: dataempresa,
         productos: datadetalleventa,
         dataventas: dataVentaConfirmada,
-        nombreComprobante: itemComprobanteSelect?.tipo_comprobantes?.nombre,
+        nombreComprobante: itemComprobanteSelect?.tipoComprobante?.nombre,
         nombrecajero: datausuarios?.nombres,
         dataCliente: cliproItemSelect,
         metodosPago: nuevosMetodosPago,
       };
-      dataImpresorasPorCaja?.state
+      dataImpresorasPorUsuario?.estado
         ? imprimirDirectoTicket(pPrint)
         : imprimirConVentanaEmergente(pPrint);
     } else {
@@ -199,9 +236,9 @@ export const IngresoCobro = forwardRef((props, ref) => {
     await ticket("print", p);
   };
   const imprimirDirectoTicket = async (p) => {
-    if (dataImpresorasPorCaja?.name === "-") {
+    if (!dataImpresorasPorUsuario?.nombre || dataImpresorasPorUsuario?.nombre === "-") {
       return toast.error(
-        "Impresora no reconocida, configura tu impresora desde modulo de configuración"
+        "Impresora no configurada. Ve a Configuración → Impresoras para seleccionar tu impresora"
       );
     }
     const response = await ticket("b64", p);
@@ -219,7 +256,7 @@ export const IngresoCobro = forwardRef((props, ref) => {
     });
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("printerName", dataImpresorasPorCaja?.name);
+    formData.append("printerName", dataImpresorasPorUsuario?.nombre);
     const responseApi = await fetch("http://localhost:5075/api/print-ticket", {
       method: "POST",
       body: formData,
@@ -254,6 +291,13 @@ export const IngresoCobro = forwardRef((props, ref) => {
   useEffect(() => {
     calcularVueltoYRestante();
   }, [precioVenta, tipocobro, valoresPago]);
+  
+  // Limpiar campos de RUC/DNI y nroComprobante cuando cambia el tipo de comprobante
+  useEffect(() => {
+    setRucDni("");
+    setNroComprobante("");
+  }, [itemComprobanteSelect]);
+  
   return (
     <Container className={tipocobro === "Mixto" ? "mixto" : ""}>
       {mutation.isPending ? (
@@ -264,8 +308,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
           <section className="area1">
             <span className="tipocobro">{tipocobro}</span>
             <section>
-              <span>
-                {itemComprobanteSelect?.tipo_comprobantes?.nombre}:{" "}
+              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                {itemComprobanteSelect?.tipoComprobante?.nombre || 'COMPROBANTE'}:{" "}
                 <strong>
                   {itemComprobanteSelect?.serie}-
                   {itemComprobanteSelect?.correlativo}{" "}
@@ -276,18 +320,22 @@ export const IngresoCobro = forwardRef((props, ref) => {
             <section className="areacomprobantes">
               {dataComprobantes?.map((item, index) => {
                 const isSelected = itemComprobanteSelect?.id === item?.id;
+                const nombre = item?.tipoComprobante?.nombre;
+                // Definir orden: Factura=1, Boleta=2, Ticket=3
+                const orderValue = nombre === "Factura" ? 1 : nombre === "Boleta" ? 2 : 3;
                 return (
                   <ComprobanteBox 
                     key={index}
                     $isSelected={isSelected}
+                    $order={orderValue}
                     onClick={() => setItemComprobanteSelect(item)}
                   >
                     <div className="comprobante-icon">
                       <Icon 
                         icon={
-                          item?.tipo_comprobantes?.nombre === "Factura" 
+                          nombre === "Factura" 
                             ? "mdi:invoice-text-outline" 
-                            : item?.tipo_comprobantes?.nombre === "Boleta"
+                            : nombre === "Boleta"
                             ? "mdi:receipt-text-outline" 
                             : "mdi:ticket-percent-outline"
                         } 
@@ -295,13 +343,46 @@ export const IngresoCobro = forwardRef((props, ref) => {
                     </div>
                     <div className="comprobante-info">
                       <span className="comprobante-nombre">
-                        {item?.tipo_comprobantes?.nombre}
+                        {nombre}
                       </span>
                     </div>
                   </ComprobanteBox>
                 );
               })}
             </section>
+            
+            {/* Inputs para RUC/DNI y Número de Comprobante - Solo visible para Factura y Boleta */}
+            {itemComprobanteSelect?.tipoComprobante?.nombre !== "Ticket" && (
+              <section className="area-datos-comprobante">
+                <InputText textalign="left">
+                  <input
+                    onChange={(e) => setRucDni(e.target.value)}
+                    value={rucDni}
+                    className="form__field"
+                    type="text"
+                    placeholder=" "
+                    maxLength={itemComprobanteSelect?.tipoComprobante?.nombre === "Factura" ? 11 : 8}
+                  />
+                  <label className="form__label">
+                    {itemComprobanteSelect?.tipoComprobante?.nombre === "Factura" ? "RUC" : "DNI"}
+                  </label>
+                </InputText>
+                
+                <InputText textalign="left">
+                  <input
+                    onChange={(e) => setNroComprobante(e.target.value)}
+                    value={nroComprobante}
+                    className="form__field"
+                    type="text"
+                    placeholder=" "
+                  />
+                  <label className="form__label">
+                    N° Comprobante (Ej: F001-0001)
+                  </label>
+                </InputText>
+              </section>
+            )}
+            
             <span>cliente</span>
             <EditButton
               onClick={() => setStateBuscadorClientes(!stateBuscadorClientes)}
@@ -465,6 +546,17 @@ const Container = styled.div`
       width: 100%;
       justify-content: center;
     }
+    .area-datos-comprobante {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 0;
+      
+      input {
+        font-size: 18px;
+      }
+    }
     .tipocobro {
       position: absolute;
       right: 6px;
@@ -576,6 +668,7 @@ const ComprobanteBox = styled.div`
   box-shadow: ${props => props.$isSelected 
     ? '0 4px 15px rgba(102, 126, 234, 0.4)' 
     : '0 2px 8px rgba(0, 0, 0, 0.08)'};
+  order: ${props => props.$order || 0};
   
   &:hover {
     transform: translateY(-2px);

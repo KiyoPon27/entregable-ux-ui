@@ -25,7 +25,7 @@ import { useMostrarAlmacenesXSucursalQuery } from "../../tanstack/AlmacenesStack
 import { useMostrarStockXAlmacenesYProductoQuery } from "../../tanstack/StockStack";
 import { useMostrarMetodosPagoQuery } from "../../tanstack/MetodosPagoStack";
 import { useMostrarSerializacionesVentasQuery } from "../../tanstack/SerializacionStack";
-import { useMostrasrImpresorasPorCajaQuery } from "../../tanstack/ImpresorasStack";
+import { useMostrarImpresorasPorUsuarioQuery } from "../../tanstack/ImpresorasStack";
 export function POSTemplate() {
   const { statePantallaCobro } = useVentasStore();
   const { stateIngresoSalida, stateCierreCaja } = useCierreCajaStore();
@@ -36,7 +36,7 @@ export function POSTemplate() {
     useMostrarStockXAlmacenesYProductoQuery();
    
     const {isLoading: isLoadingSerializacionesVentas} = useMostrarSerializacionesVentasQuery()
-    const {isLoading:isLoadingImpresoras} = useMostrasrImpresorasPorCajaQuery()
+    const {isLoading:isLoadingImpresoras} = useMostrarImpresorasPorUsuarioQuery()
   return (
     <Container>
       {stateModal && <SelectAlmacenModal />}

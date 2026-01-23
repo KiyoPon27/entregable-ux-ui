@@ -8,10 +8,12 @@ import { BarLoader } from "react-spinners";
 import { Switch } from "../ui/toggles/Switch";
 import { SelectList } from "../ui/lists/SelectList";
 import { toast, Toaster } from "sonner";
-import { useAsignacionCajaSucursalStore } from "../../store/AsignacionCajaSucursalStore";
+import { useUsuariosStore } from "../../store/UsuariosStore";
 import { useState } from "react";
 import ticket from "../../reports/TicketPrueba";
 import {HeaderImpresoras} from "../organismos/ImpresorasDesign/HeaderImpresoras"
+import { useMostrarImpresorasPorUsuarioQuery } from "../../tanstack/ImpresorasStack";
+
 export const ImpresorasTemplate = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const {
@@ -22,27 +24,16 @@ export const ImpresorasTemplate = () => {
     selectImpresora,
     setSelectImpresora,
     editarImpresoras,
-    mostrarImpresoraXCaja,
+    insertarImpresoras,
+    mostrarImpresoraXUsuario,
   } = useImpresorasStore();
-  const { sucursalesItemSelectAsignadas } = useAsignacionCajaSucursalStore();
+  const { datausuarios } = useUsuariosStore();
+  
+  // Asegurar que las impresoras se carguen
+  const { isLoading: isLoadingImpresorasUsuario, data: dataImpresorasPorUsuario } = useMostrarImpresorasPorUsuarioQuery();
+  
   const queryClient = useQueryClient();
-  //mostrar impresoras por caja
-  const {
-    data: dataImpresorasPorCaja,
-    isLoading: isLoadingImpresoras,
-    error: errorImpresoras,
-  } = useQuery({
-    queryKey: [
-      "mostrar impresora por caja",
-      {
-        id_caja: sucursalesItemSelectAsignadas?.id_caja,
-      },
-    ],
-    queryFn: () =>
-      mostrarImpresoraXCaja({
-        id_caja: sucursalesItemSelectAsignadas?.id_caja,
-      }),
-  });
+  
   //mostrar datos de Pc local
   const {
     data: dataPcLocal,
@@ -62,28 +53,44 @@ export const ImpresorasTemplate = () => {
     queryFn: mostrarListaImpresoraLocales,
     enabled: !!dataPcLocal,
   });
-  //editar impresoras
+  //editar o crear impresoras
   const { mutate: doEditar, isPending } = useMutation({
     mutationKey: ["editar impresoras"],
-    mutationFn: editar,
+    mutationFn: guardarImpresora,
     onError: (error) => {
-      toast.error("Error al editar impresoras" + error.message);
+      toast.error("Error al guardar impresora: " + error.message);
     },
     onSuccess: () => {
       toast.success("Datos guardados");
-      queryClient.invalidateQueries(["mostrar impresora por caja"]);
+      queryClient.invalidateQueries(["mostrar impresora por usuario"]);
     },
   });
-  async function editar() {
-    const p = {
-      id: dataImpresorasPorCaja?.id,
-      state: statePrintDirecto,
-      pc_name: dataPcLocal?.machineName,
-      ip_local: dataPcLocal?.localIPs[0],
-      name: selectImpresora?.name,
+  
+  async function guardarImpresora() {
+    // Validar que se haya seleccionado una impresora cuando está activado
+    if (statePrintDirecto && !selectImpresora?.name) {
+      throw new Error("Debes seleccionar una impresora de la lista");
+    }
+    
+    const datosImpresora = {
+      id_usuario: datausuarios?.id,
+      estado: statePrintDirecto,
+      nombre_pc: dataPcLocal?.machineName || "-",
+      ip_local: dataPcLocal?.localIPs?.[0] || "-",
+      nombre: selectImpresora?.name || "-",
     };
-    console.log("editar", p);
-    await editarImpresoras(p);
+    
+    // Si ya existe impresora, EDITAR; si no, CREAR
+    if (dataImpresorasPorUsuario?.id) {
+      console.log("Editando impresora:", dataImpresorasPorUsuario.id);
+      await editarImpresoras({
+        ...datosImpresora,
+        id: dataImpresorasPorUsuario.id,
+      });
+    } else {
+      console.log("Creando nueva impresora para usuario:", datausuarios?.id);
+      await insertarImpresoras(datosImpresora);
+    }
   }
   const probarTicket = async () => {
     const response = await ticket("b64");
@@ -123,11 +130,13 @@ export const ImpresorasTemplate = () => {
     link.click();
     document.body.removeChild(link);
   };
-  const isLoading = isLocadingDatosPc;
+  const isLoading = isLocadingDatosPc || isLoadingImpresorasUsuario;
   const error = errorDatosPc;
+  
   if (isLoading) {
     return <BarLoader color="#b7b7b7" />;
   }
+  
   return (
     <Container>
       <Toaster />

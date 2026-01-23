@@ -22,9 +22,6 @@ export function RegistrarCategorias({
   const { insertarCategorias, editarCategoria } = useCategoriasStore();
   const { dataempresa } = useEmpresaStore();
   const [currentColor, setColor] = useState("#F44336");
-  const [file, setFile] = useState([]);
-  const ref = useRef(null);
-  const [fileurl, setFileurl] = useState();
   function elegirColor(color) {
     setColor(color.hex);
   }
@@ -63,7 +60,7 @@ export function RegistrarCategorias({
         color: currentColor,
         id: dataSelect.id,
       };
-      result = await editarCategoria(p, dataSelect.icono, file);
+      result = await editarCategoria(p, dataSelect.icono, null);
     } else {
       const p = {
         nombre: ConvertirCapitalize(data.descripcion),
@@ -71,31 +68,15 @@ export function RegistrarCategorias({
         icono: "-",
         id_empresa: dataempresa.id,
       };
-      result = await insertarCategorias(p, file);
+      result = await insertarCategorias(p, null);
     }
     
     // Retornar el resultado para que onSuccess pueda evaluarlo
     return result;
   }
-  function abrirImagenes() {
-    ref.current.click();
-  }
-  function prepararImagen(e) {
-    let filelocal = e.target.files;
-    let fileReaderlocal = new FileReader();
-    fileReaderlocal.readAsDataURL(filelocal[0]);
-    const tipoimg = e.target.files[0];
-    setFile(tipoimg);
-    if (fileReaderlocal && filelocal && filelocal.length) {
-      fileReaderlocal.onload = function load() {
-        setFileurl(fileReaderlocal.result);
-      };
-    }
-  }
   useEffect(() => {
     if (accion === "Editar") {
       setColor(dataSelect.color);
-      setFileurl(dataSelect.icono);
     }
   }, []);
   return (
@@ -117,28 +98,6 @@ export function RegistrarCategorias({
               <span onClick={onClose}>x</span>
             </section>
           </div>
-          <PictureContainer>
-            {fileurl != "-" ? (
-              <div className="ContentImage">
-                <img src={fileurl}></img>
-              </div>
-            ) : (
-              <Icono>{<v.iconoimagenvacia />}</Icono>
-            )}
-
-            <Btn1
-              funcion={abrirImagenes}
-              titulo="+imagen(opcional)"
-              color="#5f5f5f"
-              bgcolor="rgb(183, 183, 182)"
-              icono={<v.iconosupabase />}
-            />
-            <input
-              type="file"
-              ref={ref}
-              onChange={(e) => prepararImagen(e)}
-            ></input>
-          </PictureContainer>
           <form className="formulario" onSubmit={handleSubmit(handlesub)}>
             <section className="form-subcontainer">
               <article>
@@ -251,28 +210,5 @@ const ContentTitle = styled.div`
     padding: 2px;
     width: 40px;
     font-size: 28px;
-  }
-`;
-const PictureContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  border: 2px dashed #f9d70b;
-  border-radius: 5px;
-  background-color: rgba(249, 215, 11, 0.1);
-  padding: 8px;
-  position: relative;
-  gap: 3px;
-  margin-bottom: 8px;
-
-  .ContentImage {
-    overflow: hidden;
-    img {
-      width: 100%;
-      object-fit: contain;
-    }
-  }
-  input {
-    display: none;
   }
 `;

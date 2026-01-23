@@ -17,7 +17,7 @@ public interface SerializacionComprobanteRepository extends JpaRepository<Serial
     @Query("SELECT s FROM SerializacionComprobante s WHERE s.sucursal.empresa.id = :empresaId ORDER BY s.sucursal.id, s.id ASC")
     List<SerializacionComprobante> findByEmpresaId(@Param("empresaId") Long empresaId);
     
-    @Query("SELECT s FROM SerializacionComprobante s WHERE s.sucursal.id = :sucursalId AND s.tipoComprobante.destino = :destino ORDER BY s.id ASC")
+    @Query("SELECT s FROM SerializacionComprobante s WHERE s.sucursal.id = :sucursalId AND s.tipoComprobante.destino = :destino ORDER BY s.porDefecto DESC, s.id ASC")
     List<SerializacionComprobante> findBySucursalIdAndDestino(@Param("sucursalId") Long sucursalId, @Param("destino") String destino);
     
     Optional<SerializacionComprobante> findBySucursalIdAndPorDefectoTrue(Long sucursalId);

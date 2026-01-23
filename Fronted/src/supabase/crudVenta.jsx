@@ -71,7 +71,9 @@ export async function ConfirmarVenta(p) {
         idSucursal: p.idSucursal ?? p.id_sucursal,
         idCliente: p._id_cliente ?? p.id_cliente,
         fecha: p._fecha ?? p.fecha,
-        montoTotal: p._monto_total ?? p.monto_total
+        montoTotal: p._monto_total ?? p.monto_total,
+        nroComprobante: p._nro_comprobante ?? p.nro_comprobante,
+        rucDni: p._ruc_dni ?? p.ruc_dni, // ✅ AGREGADO: Enviar RUC/DNI al backend
     };
     
     const response = await api.post(`/ventas/${p._id_venta ?? p.id_venta ?? p.id}/confirmar`, payload);

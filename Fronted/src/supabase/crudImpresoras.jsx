@@ -14,12 +14,12 @@ export async function EditarImpresoras(p) {
   }
 }
 
-export async function MostrarImpresoraXCaja(p) {
+export async function MostrarImpresoraXUsuario(p) {
   try {
-    const response = await api.get(`/impresoras/caja/${p.id_caja}`);
+    const response = await api.get(`/impresoras/usuario/${p.id_usuario}`);
     return response.data || null;
   } catch (error) {
-    console.error("Error al mostrar impresora por caja:", error);
+    console.error("Error al mostrar impresora por usuario:", error);
     return null;
   }
 }
@@ -27,7 +27,7 @@ export async function MostrarImpresoraXCaja(p) {
 export async function InsertarImpresora(p) {
   try {
     const body = {
-      caja: { id: p.id_caja },
+      usuario: { id: p.id_usuario },
       nombrePc: p.nombre_pc || p.pc_name || "-",
       ipLocal: p.ip_local || "-",
       estado: p.estado === true || p.state === true,

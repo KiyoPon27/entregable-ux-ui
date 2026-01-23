@@ -25,6 +25,7 @@ public class VentaService {
     private final SerializacionComprobanteService serializacionComprobanteService;
     private final UsuarioRepository usuarioRepository;
     private final ClienteProveedorRepository clienteProveedorRepository;
+    private final TipoComprobanteRepository tipoComprobanteRepository; // ✅ AGREGADO
 
     @Transactional
     public void eliminar(Long id) {
@@ -72,6 +73,10 @@ public class VentaService {
             cliente = clienteProveedorRepository.findById(1L)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente genérico no encontrado. Debe existir un cliente con ID 1."));
         }
+        
+        // ✅ OBTENER EL NOMBRE DEL TIPO DE COMPROBANTE
+        TipoComprobante tipoComprobante = tipoComprobanteRepository.findById(dto.getIdTipoComprobante())
+            .orElseThrow(() -> new ResourceNotFoundException("Tipo de comprobante no encontrado con ID: " + dto.getIdTipoComprobante()));
 
         // NOTA IMPORTANTE: El stock YA FUE DESCONTADO al insertar/editar cada detalle de venta
         // No se descuenta aquí para evitar doble deducción
@@ -106,12 +111,17 @@ public class VentaService {
             }
         }
 
-        // Generar número de comprobante
-        String nuevoComprobante = serializacionComprobanteService.generarNumero(
-            dto.getIdTipoComprobante(),
-            dto.getSerie(),
-            dto.getIdSucursal()
-        );
+        // Usar número de comprobante del DTO si está presente, sino generar automáticamente
+        String nuevoComprobante;
+        if (dto.getNroComprobante() != null && !dto.getNroComprobante().trim().isEmpty()) {
+            nuevoComprobante = dto.getNroComprobante();
+        } else {
+            nuevoComprobante = serializacionComprobanteService.generarNumero(
+                dto.getIdTipoComprobante(),
+                dto.getSerie(),
+                dto.getIdSucursal()
+            );
+        }
 
         // Actualizar la venta
         venta.setEstado("confirmada");
@@ -121,6 +131,8 @@ public class VentaService {
         venta.setCliente(cliente);
         venta.setFecha(dto.getFecha());
         venta.setMontoTotal(dto.getMontoTotal());
+        venta.setRucDni(dto.getRucDni()); // Guardar RUC/DNI
+        venta.setTipoComprobante(tipoComprobante.getNombre()); // ✅ GUARDAR TIPO DE COMPROBANTE (FACTURA, BOLETA, TICKET)
         
         Venta ventaGuardada = ventaRepository.save(venta);
         
@@ -136,5 +148,39 @@ public class VentaService {
             .idCliente(ventaGuardada.getCliente() != null ? ventaGuardada.getCliente().getId() : null)
             .idSucursal(ventaGuardada.getSucursal() != null ? ventaGuardada.getSucursal().getId() : null)
             .build();
+    }
+    
+    @Transactional(readOnly = true)
+    public List<Venta> filtrarFacturas(Long empresaId, String tipo, LocalDateTime fechaInicio, LocalDateTime fechaFin, String buscador) {
+        return ventaRepository.findFacturasConFiltros(empresaId, tipo, fechaInicio, fechaFin, buscador);
+    }
+    
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> obtenerEstadisticasFacturas(Long empresaId, LocalDateTime fechaInicio, LocalDateTime fechaFin) {
+        // Totales generales
+        BigDecimal totalVentas = ventaRepository.sumTotalVentas(empresaId, fechaInicio, fechaFin);
+        if (totalVentas == null) totalVentas = BigDecimal.ZERO;
+        
+        // Facturas
+        Long countFacturas = ventaRepository.countByTipoComprobante(empresaId, "FACTURA", fechaInicio, fechaFin);
+        BigDecimal totalFacturas = ventaRepository.sumTotalByTipoComprobante(empresaId, "FACTURA", fechaInicio, fechaFin);
+        if (totalFacturas == null) totalFacturas = BigDecimal.ZERO;
+        
+        // Boletas
+        Long countBoletas = ventaRepository.countByTipoComprobante(empresaId, "BOLETA", fechaInicio, fechaFin);
+        BigDecimal totalBoletas = ventaRepository.sumTotalByTipoComprobante(empresaId, "BOLETA", fechaInicio, fechaFin);
+        if (totalBoletas == null) totalBoletas = BigDecimal.ZERO;
+        
+        // Tickets
+        Long countTickets = ventaRepository.countByTipoComprobante(empresaId, "TICKET", fechaInicio, fechaFin);
+        BigDecimal totalTickets = ventaRepository.sumTotalByTipoComprobante(empresaId, "TICKET", fechaInicio, fechaFin);
+        if (totalTickets == null) totalTickets = BigDecimal.ZERO;
+        
+        return java.util.Map.of(
+            "totalVentas", totalVentas,
+            "facturas", java.util.Map.of("count", countFacturas, "total", totalFacturas),
+            "boletas", java.util.Map.of("count", countBoletas, "total", totalBoletas),
+            "tickets", java.util.Map.of("count", countTickets, "total", totalTickets)
+        );
     }
 }

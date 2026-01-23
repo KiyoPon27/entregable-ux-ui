@@ -3,13 +3,12 @@ package tienda.posbackend.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tienda.posbackend.entities.Caja;
 import tienda.posbackend.entities.Impresora;
+import tienda.posbackend.entities.Usuario;
 import tienda.posbackend.exceptions.ResourceNotFoundException;
-import tienda.posbackend.repositories.CajaRepository;
 import tienda.posbackend.repositories.ImpresoraRepository;
+import tienda.posbackend.repositories.UsuarioRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -20,10 +19,10 @@ public class ImpresoraService {
     private ImpresoraRepository impresoraRepository;
 
     @Autowired
-    private CajaRepository cajaRepository;
+    private UsuarioRepository usuarioRepository;
 
-    public List<Impresora> listarPorCaja(Long cajaId) {
-        return impresoraRepository.findByCajaId(cajaId);
+    public Optional<Impresora> obtenerPorUsuario(Long usuarioId) {
+        return impresoraRepository.findByUsuarioId(usuarioId);
     }
 
     public Impresora obtenerPorId(Long id) {
@@ -31,24 +30,20 @@ public class ImpresoraService {
                 .orElseThrow(() -> new ResourceNotFoundException("Impresora no encontrada con ID: " + id));
     }
 
-    public Optional<Impresora> obtenerImpresoraActivaPorCaja(Long cajaId) {
-        return impresoraRepository.findByCajaIdAndEstadoTrue(cajaId);
-    }
-
     @Transactional
     public Impresora crear(Impresora impresora) {
-        // Validar que venga la caja
-        if (impresora.getCaja() == null || impresora.getCaja().getId() == null) {
-            throw new IllegalArgumentException("Debe especificar una caja");
+        // Validar que venga el usuario
+        if (impresora.getUsuario() == null || impresora.getUsuario().getId() == null) {
+            throw new IllegalArgumentException("Debe especificar un usuario");
         }
 
-        Long cajaId = impresora.getCaja().getId();
+        Long usuarioId = impresora.getUsuario().getId();
         
-        // Buscar y asignar la caja
-        Caja caja = cajaRepository.findById(cajaId)
-                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada con ID: " + cajaId));
+        // Buscar y asignar el usuario
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + usuarioId));
         
-        impresora.setCaja(caja);
+        impresora.setUsuario(usuario);
 
         // Establecer valores por defecto si no vienen
         if (impresora.getNombrePc() == null) {

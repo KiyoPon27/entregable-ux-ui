@@ -56,6 +56,11 @@ export const LinksArray = [
     label: "Compras",
     icon: "noto:shopping-bags",
     to: "/compras",
+  },
+  {
+    label: "Facturas",
+    icon: "noto:receipt",
+    to: "/facturas",
   }
  
 ];

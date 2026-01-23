@@ -90,12 +90,12 @@ const TicketVenta = async (output, data) => {
           image: logoempresa,
           width: 120,
           alignment: "center",
-          margin: [0, 5, 0, 10],
+          margin: [0, 0, 0, 5],
         }]
       : [{
           text: data.dataempresa?.nombre || "EMPRESA",
           style: "logoPlaceholder",
-          margin: [0, 5, 0, 10],
+          margin: [0, 0, 0, 5],
         }]
     ),
     {
@@ -166,7 +166,7 @@ const TicketVenta = async (output, data) => {
           [
             { text: "NOMBRES: ", style: "tClientLabel" },
             {
-              text: data.dataCliente?.nombres || "Generico",
+              text: data.dataCliente?.nombres || "Publico General",
               style: "tClientValue",
               colSpan: 3,
             },

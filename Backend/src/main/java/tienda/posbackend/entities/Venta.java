@@ -70,7 +70,10 @@ public class Venta {
     private String nroComprobante;
     
      @Column(name = "tipo_comprobante")
-     private String tipoComprobante; // 'FACTURA' o 'BOLETA'
+     private String tipoComprobante; // 'FACTURA' o 'BOLETA' o 'TICKET'
+     
+     @Column(name = "ruc_dni")
+     private String rucDni; // RUC o DNI del cliente
 
 
      /* 

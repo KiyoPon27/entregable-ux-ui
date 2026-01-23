@@ -8,7 +8,6 @@ import tienda.posbackend.entities.Impresora;
 import tienda.posbackend.services.ImpresoraService;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,20 +19,13 @@ public class ImpresoraController {
     @Autowired
     private ImpresoraService impresoraService;
 
-    @GetMapping("/caja/{cajaId}")
-    public ResponseEntity<List<Impresora>> listarPorCaja(@PathVariable Long cajaId) {
-        return ResponseEntity.ok(impresoraService.listarPorCaja(cajaId));
-    }
-
-    @GetMapping("/caja/{cajaId}/activa")
-    public ResponseEntity<?> obtenerImpresoraActiva(@PathVariable Long cajaId) {
-        Optional<Impresora> impresora = impresoraService.obtenerImpresoraActivaPorCaja(cajaId);
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<?> obtenerPorUsuario(@PathVariable Long usuarioId) {
+        Optional<Impresora> impresora = impresoraService.obtenerPorUsuario(usuarioId);
         if (impresora.isPresent()) {
             return ResponseEntity.ok(impresora.get());
         } else {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "No hay impresora activa para esta caja");
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(null);
         }
     }
 

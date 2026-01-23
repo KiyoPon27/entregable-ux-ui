@@ -68,31 +68,19 @@ export function TablaCategorias({
   }
   const columns = [
     {
-      accessorKey: "icono",
-      header: "Icono", 
+      accessorKey: "index",
+      header: "#", 
       enableSorting: false,
       cell: (info) => (
-        <div data-title="Color" className="ContentCell">
-          {
-            info.getValue()!="-"?(   <ImagenContent imagen={info.getValue()}/>):(<Icono>
-              {<v.iconoimagenvacia/>}
-            </Icono>)
-          }
-    
+        <div data-title="#" className="ContentCell">
+          <span>{info.row.index + 1}</span>
         </div>
       ),
-
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
+      enableColumnFilter: false,
     },
-   
     {
       accessorKey: "nombre",
-      header: "Descripcion",
+      header: "Categoría",
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {

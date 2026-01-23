@@ -86,13 +86,6 @@ public class CajaService {
         
         Caja nuevaCaja = cajaRepository.save(caja);
 
-        // Trigger logic: Insert Impresora
-        Impresora impresora = new Impresora();
-        impresora.setCaja(nuevaCaja);
-        impresora.setEstado(false);
-        impresora.setNombre("Impresora de " + nuevaCaja.getDescripcion()); // Nombre descriptivo basado en la caja
-        impresoraRepository.save(impresora);
-
         // Logic: Auto-assign creation user to this box IF ID provided
         if (idUsuarioCreador != null) {
              Usuario usuario = usuarioRepository.findById(idUsuarioCreador).orElse(null);
@@ -161,12 +154,6 @@ public class CajaService {
         List<AsignacionSucursal> asignaciones = asignacionSucursalRepository.findByCajaId(id);
         if (!asignaciones.isEmpty()) {
             asignacionSucursalRepository.deleteAll(asignaciones);
-        }
-        
-        // Eliminar impresoras asociadas
-        List<Impresora> impresoras = impresoraRepository.findByCajaId(id);
-        if (!impresoras.isEmpty()) {
-            impresoraRepository.deleteAll(impresoras);
         }
         
         // Finalmente eliminar la caja

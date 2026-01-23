@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Compras } from "../pages/Compras";
 import { ReporteCompras } from "../pages/ReporteCompras";
+import { ReporteFacturas } from "../pages/ReporteFacturas";
 import {
   Categorias,
   Configuraciones,
@@ -101,6 +102,16 @@ export function MyRoutes() {
           <Layout>
             <ProtectedRoute accessBy="authenticated">
               <ReporteCompras />
+            </ProtectedRoute>
+          </Layout>
+        }
+      />
+      <Route
+        path="/facturas"
+        element={
+          <Layout>
+            <ProtectedRoute accessBy="authenticated">
+              <ReporteFacturas />
             </ProtectedRoute>
           </Layout>
         }

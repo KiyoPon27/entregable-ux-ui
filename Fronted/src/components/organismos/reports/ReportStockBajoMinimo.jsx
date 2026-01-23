@@ -32,6 +32,7 @@ const ReportStockBajoMinimo = () => {
         sucursal_id: sucursalesItemSelect?.id,
         almacen_id: almacenSelectItem?.id,
       }),
+    enabled: !!sucursalesItemSelect?.id && !!almacenSelectItem?.id,
     refetchOnWindowFocus: false,
   });
 

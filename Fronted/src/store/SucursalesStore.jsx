@@ -11,7 +11,7 @@ export const useSucursalesStore = create((set) => ({
   accion: "",
   setAccion: (p) => set({ accion: p }),
   
-  sucursalesItemSelect: [],
+  sucursalesItemSelect: null,
   selectSucursal: (p) => {
     set({ sucursalesItemSelect: p });
   },
@@ -19,7 +19,9 @@ export const useSucursalesStore = create((set) => ({
   mostrarSucursales: async (p) => {
     const response = await MostrarSucursales(p);
     set({ dataSucursales: response });
-    set({ sucursalesItemSelect: response[0] });
+    if (response && response.length > 0) {
+      set({ sucursalesItemSelect: response[0] });
+    }
     return response;
   },
 

@@ -50,6 +50,7 @@ export function PantallaCobro() {
                 setStatePrintDirecto();
                 mutate();
               }}
+              disabled={isPending}
             />
           </ContentSwich>
         </article>

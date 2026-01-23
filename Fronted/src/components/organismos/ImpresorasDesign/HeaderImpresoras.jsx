@@ -1,26 +1,27 @@
 import styled from "styled-components";
-import { useAsignacionCajaSucursalStore } from "../../../store/AsignacionCajaSucursalStore";
 import { useImpresorasStore } from "../../../store/ImpresorasStore";
+import { useUsuariosStore } from "../../../store/UsuariosStore";
 
 export const HeaderImpresoras = () => {
-  const { sucursalesItemSelectAsignadas } = useAsignacionCajaSucursalStore();
-  const {dataImpresorasPorCaja} = useImpresorasStore()
+  const {dataImpresorasPorUsuario} = useImpresorasStore()
+  const {datausuarios} = useUsuariosStore()
+  
   return (
     <Container>
       <SubContainer>
-        <ContainerSucursal>
-          <span>sucursal asignada:</span>
-          <span>caja asignada:</span>
-        </ContainerSucursal>
-        <ContainerCaja>
-          <span>{sucursalesItemSelectAsignadas?.sucursales.nombre} </span>
-          <span>{sucursalesItemSelectAsignadas?.caja.descripcion} </span>
-        </ContainerCaja>
+        <ContainerInfo>
+          <span>Usuario:</span>
+          <span>PC:</span>
+        </ContainerInfo>
+        <ContainerData>
+          <span>{datausuarios?.nombres || "Sin asignar"} </span>
+          <span>{dataImpresorasPorUsuario?.nombrePc || "-"} </span>
+        </ContainerData>
 
       </SubContainer>
-      <CommandText>
-      ▲ ~ PC: {dataImpresorasPorCaja?.pc_name}
-      </CommandText>
+      <InfoText>
+        💡 Tu configuración de impresora se guarda automáticamente y está disponible en todas las cajas
+      </InfoText>
     </Container>
   );
 };
@@ -29,7 +30,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 15px;
   padding: 20px;
   position: relative;
   border-top: solid 1px ${({ theme }) => theme.bg};
@@ -40,23 +41,23 @@ const SubContainer = styled.div`
   display: flex;
   gap: 12px;
 `;
-const ContainerSucursal = styled.div`
+const ContainerInfo = styled.div`
   display: flex;
   gap: 10px;
   flex-direction: column;
   text-align: end;
   font-weight: bold;
 `;
-const ContainerCaja = styled.div`
+const ContainerData = styled.div`
   display: flex;
   gap: 10px;
   flex-direction: column;
   text-align: start;
 `;
-const CommandText = styled.p`
-  color: #666;
-  font-family: monospace;
-  font-size: 14px;
+const InfoText = styled.p`
+  color: #28a745;
+  font-size: 13px;
   margin: 0;
-
+  text-align: center;
+  font-weight: 500;
 `;

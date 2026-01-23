@@ -36,7 +36,7 @@ export function AreaTecladoPos() {
             Efectivo: { bg: "#16a34a", color: "#ffffff" },
             Tarjeta: { bg: "#0ea5e9", color: "#ffffff" },
             Yape: { bg: "#7c3aed", color: "#ffffff" },
-            Transferencia: { bg: "#ffffff", color: "#111111" },
+            Mixto: { bg: "#f59e0b", color: "#ffffff" },
           };
           const def = colors[nombre] || { bg: "#ffffff", color: "#111111" };
           return (

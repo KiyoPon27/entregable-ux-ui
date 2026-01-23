@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import {
   EditarImpresoras,
-  MostrarImpresoraXCaja,
+  MostrarImpresoraXUsuario,
+  InsertarImpresora,
 } from "../supabase/crudImpresoras";
 const fetchWithTimeout = (url, timeout = 5000) => {
   return new Promise((resolve, reject) => {
@@ -18,7 +19,7 @@ const fetchWithTimeout = (url, timeout = 5000) => {
   });
 };
 export const useImpresorasStore = create((set, get) => ({
-  dataImpresorasPorCaja: null,
+  dataImpresorasPorUsuario: null,
   selectImpresora: {
     name: "seleccione una impresora",
   },
@@ -55,17 +56,22 @@ export const useImpresorasStore = create((set, get) => ({
   editarImpresoras: async (p) => {
     await EditarImpresoras(p);
   },
-  mostrarImpresoraXCaja: async (p) => {
-    const response = await MostrarImpresoraXCaja(p);
+  insertarImpresoras: async (p) => {
+    const response = await InsertarImpresora(p);
+    set(() => ({ dataImpresorasPorUsuario: response }));
+    return response;
+  },
+  mostrarImpresoraXUsuario: async (p) => {
+    const response = await MostrarImpresoraXUsuario(p);
     set(() => ({
-      dataImpresorasPorCaja: response,
-      statePrintDirecto: response?.state,
+      dataImpresorasPorUsuario: response,
+      statePrintDirecto: response?.estado,
       selectImpresora:
-        response?.name === "-"
+        response?.nombre === "-"
           ? {
               name: "seleccione una impresora",
             }
-          : response,
+          : { name: response?.nombre },
     }));
     return response;
   },

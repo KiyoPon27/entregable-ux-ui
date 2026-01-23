@@ -19,8 +19,21 @@ export const useSerializacionStore = create((set) => ({
 
   mostrarSerializacionesVentas: async (p) => {
     const data = await MostrarSerializacionesVentas(p);
+    
+    // Validar que haya datos
+    if (!data || data.length === 0) {
+      console.warn("No hay comprobantes configurados para ventas");
+      set({ dataComprobantes: [] });
+      set({ itemComprobanteSelect: null });
+      return [];
+    }
+    
+    // Buscar el comprobante marcado como por defecto
+    const porDefecto = data.find(item => item.porDefecto === true);
+    
     set({ dataComprobantes: data });
-    set({ itemComprobanteSelect: data[0] });
+    set({ itemComprobanteSelect: porDefecto || data[0] });
+    
     return data;
   },
   editarSerializacionDefault: async (p) => {

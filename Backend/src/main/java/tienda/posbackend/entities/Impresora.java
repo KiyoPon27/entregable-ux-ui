@@ -12,9 +12,9 @@ public class Impresora {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_caja", nullable = false)
+    @JoinColumn(name = "id_usuario", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private Caja caja;
+    private Usuario usuario;
 
     @Column(name = "nombre_pc", columnDefinition = "VARCHAR(255) DEFAULT '-'")
     private String nombrePc;
@@ -45,12 +45,12 @@ public class Impresora {
         this.id = id;
     }
 
-    public Caja getCaja() {
-        return caja;
+    public Usuario getUsuario() {
+        return usuario;
     }
 
-    public void setCaja(Caja caja) {
-        this.caja = caja;
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
     public String getNombrePc() {

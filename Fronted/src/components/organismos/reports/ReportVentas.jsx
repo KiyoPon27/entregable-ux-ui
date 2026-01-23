@@ -33,6 +33,7 @@ const ReportVentas = () => {
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,
       }),
+    enabled: !!sucursalesItemSelect?.id,
     refetchOnWindowFocus: false,
   });
 
