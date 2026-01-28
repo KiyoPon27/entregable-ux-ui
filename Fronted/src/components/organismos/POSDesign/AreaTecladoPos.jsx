@@ -54,17 +54,21 @@ export function AreaTecladoPos() {
             </article>
           );
         })}
+        {/* Botón Factura SUNAT siempre visible */}
+        <article className="box" key="factura-sunat">
+          <Btn1
+            icono={<img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style={{width:'28px',height:'28px'}} alt="Factura SUNAT" />} // Puedes cambiar el ícono si tienes uno propio
+            funcion={() => window.open("https://e-menu.sunat.gob.pe/cl-ti-itmenu/MenuInternet.htm?pestana=*&agrupacion=*", "_blank")}
+            titulo="Factura SUNAT"
+            border="0"
+            height="70px"
+            width="100%"
+            bgcolor="#1976d2"
+            color="#fff"
+          />
+        </article>
       </section>
       <section className="totales">
-        {/* <div className="subtotal">
-          <span>
-            Sub total: <strong>$ 9.99</strong>{" "}
-          </span>
-          <span>IGV (18%): $ 0.00</span>
-          <span>
-            Sub total: <strong>$ 9.99</strong>{" "}
-          </span>
-        </div> */}
         <TotalPos />
       </section>
     </Container>

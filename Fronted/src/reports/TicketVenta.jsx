@@ -314,7 +314,7 @@ const TicketVenta = async (output, data) => {
     },
     //NOTA DE PIE - Usar configuración de pie_pagina_ticket
     {
-      text: data.dataempresa?.pie_pagina_ticket || "¡Gracias por su compra!",
+      text: data.dataempresa?.pie_pagina_ticket || data.dataempresa?.piePaginaTicket || "¡Gracias por su compra!",
       style: "header",
       alignment: "center",
       margin: [0, 10, 0, 5],

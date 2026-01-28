@@ -162,7 +162,6 @@ public class SerializacionComprobanteService {
         SerializacionComprobante serializacion = serializacionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Serialización no encontrada con ID: " + id));
 
-        // TODO: Validar que no tenga ventas asociadas antes de eliminar
         serializacionRepository.delete(serializacion);
     }
 }

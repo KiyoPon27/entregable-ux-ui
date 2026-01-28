@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEmpresaStore } from "..";
+import { useEmpresaStore, UserAuth } from "..";
 import { toast } from "sonner";
 import { useGlobalStore } from "../store/GlobalStore";
 
@@ -32,7 +32,8 @@ export const useUpdateEmpresaMutation = ( ) => {
 export const useUpdateEmpresaTicketMutation = () => {
   const {file} = useGlobalStore();
   const queryClient = useQueryClient();
-  const { dataempresa, editarEmpresa } = useEmpresaStore();
+  const { dataempresa, editarEmpresa, mostrarempresa } = useEmpresaStore();
+  const { user } = UserAuth();
   
   return useMutation({
     mutationKey: ["editar empresa ticket"],
@@ -41,14 +42,14 @@ export const useUpdateEmpresaTicketMutation = () => {
       console.log("🏢 Empresa actual:", dataempresa);
       console.log("📁 Archivo seleccionado:", file);
       
-      // SOLO enviar campos relacionados con el ticket, NO modificar datos de la empresa
+      // Enviar en camelCase para que el backend lo reconozca
       const p = {
         id: dataempresa?.id,
-        nombre_moneda: data?.nombre_moneda,
-        pie_pagina_ticket: data?.pie_pagina_ticket,
+        nombreMoneda: data?.nombre_moneda,      // camelCase
+        piePaginaTicket: data?.pie_pagina_ticket  // camelCase
       };
       
-      console.log("📦 Objeto a enviar (solo ticket config):", p);
+      console.log("📦 Objeto a enviar (camelCase):", p);
       await editarEmpresa(p, dataempresa?.logo, file);
     },
     onError: (error) => {
@@ -56,9 +57,16 @@ export const useUpdateEmpresaTicketMutation = () => {
       const errorMsg = error?.message || "Error al guardar los cambios";
       toast.error(errorMsg);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("✅ Configuración guardada correctamente");
-      queryClient.invalidateQueries(["mostrar empresa"]);
+      
+      // Invalidar la query de React Query
+      await queryClient.invalidateQueries(["mostrar empresa", user?.id]);
+      
+      // Recargar los datos en el store de Zustand
+      await mostrarempresa({ _id_usuario: user?.id });
+      
+      console.log("✅ Datos de empresa recargados");
     },
   });
 };

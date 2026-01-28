@@ -76,9 +76,11 @@ export function TablaInventarios({
       },
     },
     {
-      accessorKey: "almacen.sucursal.nombre",
+      // Usar accessorFn y comprobaciones nulas para evitar errores cuando falta `almacen` o `sucursal`
+      accessorFn: (row) => row?.almacen?.sucursal?.nombre ?? "",
+      id: "almacen.sucursal.nombre",
       header: "Sucursal",
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => <span>{info.getValue() ?? ""}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -87,9 +89,10 @@ export function TablaInventarios({
       },
     },
     {
-      accessorKey: "almacen.nombre",
+      accessorFn: (row) => row?.almacen?.nombre ?? "",
+      id: "almacen.nombre",
       header: "Almacen",
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => <span>{info.getValue() ?? ""}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;

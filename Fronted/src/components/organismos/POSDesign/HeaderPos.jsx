@@ -15,11 +15,11 @@ import {
 import { v } from "../../../styles/variables";
 import { Device } from "../../../styles/breakpoints";
 import { Icon } from "@iconify/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 
 import { useFormattedDate } from "../../../hooks/useFormattedDate";
 import { useCierreCajaStore } from "../../../store/CierreCajaStore";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { SelectList } from "../../ui/lists/SelectList";
 import { useStockStore } from "../../../store/StockStore";
@@ -43,11 +43,65 @@ export function HeaderPos() {
   const { dataCierreCaja } = useCierreCajaStore();
   const { almacenSelectItem, dataAlmacenesXsucursal, setAlmacenSelectItem } =
     useAlmacenesStore();
-  const { insertarDetalleVentas } = useDetalleVentasStore();
+  const { insertarDetalleVentas, mostrardetalleventa } = useDetalleVentasStore();
   const queryClient = useQueryClient();
 
   const buscadorRef = useRef(null);
   const fechaactual = useFormattedDate();
+
+  // Obtener detalles de venta para calcular recomendación
+  const { data: items } = useQuery({
+    queryKey: ["mostrar detalle venta", { id_venta: idventa }],
+    queryFn: () => mostrardetalleventa({ id_venta: idventa }),
+    enabled: idventa > 0,
+  });
+
+  // Calcular recomendación de tipo de comprobante
+  const recomendacion = useMemo(() => {
+    if (!items || items.length === 0) return null;
+    
+    let facturados = 0;
+    let manualidades = 0;
+    
+    items.forEach(item => {
+      const tipo = item.productos?.tipoComprobante;
+      const cantidad = parseFloat(item.cantidad) || 1;
+      
+      if (tipo === 'FACTURADO') facturados += cantidad;
+      else if (tipo === 'MANUALIDAD') manualidades += cantidad;
+    });
+    
+    if (facturados === 0 && manualidades === 0) return null;
+    
+    if (facturados > manualidades) {
+      return {
+        tipo: 'FACTURA',
+        icon: 'mdi:file-document',
+        mensaje: 'Se recomienda FACTURA',
+        color: '#059669',
+        bg: '#d1fae5',
+        detalle: `${facturados} unidad${facturados > 1 ? 'es' : ''} facturada${facturados > 1 ? 's' : ''}`
+      };
+    } else if (manualidades > facturados) {
+      return {
+        tipo: 'TICKET',
+        icon: 'mdi:receipt',
+        mensaje: 'Se recomienda TICKET',
+        color: '#7c3aed',
+        bg: '#ede9fe',
+        detalle: `${manualidades} unidad${manualidades > 1 ? 'es' : ''} de manualidad`
+      };
+    } else {
+      return {
+        tipo: 'MIXTO',
+        icon: 'mdi:scale-balance',
+        mensaje: 'Productos mixtos',
+        color: '#d97706',
+        bg: '#fef3c7',
+        detalle: `${facturados} facturada${facturados > 1 ? 's' : ''}, ${manualidades} manualidad${manualidades > 1 ? 'es' : ''}`
+      };
+    }
+  }, [items]);
 
   function focusclick() {
     buscadorRef.current.focus();
@@ -317,8 +371,15 @@ export function HeaderPos() {
           </InputText2>
         </article>
         <article className="area2">
-
-
+          {recomendacion && (
+            <Recomendacion $color={recomendacion.color} $bg={recomendacion.bg}>
+              <Icon icon={recomendacion.icon} width="20" height="20" />
+              <div className="contenido">
+                <span className="mensaje">{recomendacion.mensaje}</span>
+                <span className="detalle">{recomendacion.detalle}</span>
+              </div>
+            </Recomendacion>
+          )}
         </article>
       </section>
     </Header>
@@ -441,6 +502,69 @@ const Contentuser = styled.div`
     @media ${Device.laptop} {
       display: flex;
       flex-direction: column;
+    }
+  }
+`;
+
+const Recomendacion = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background-color: ${props => props.$bg};
+  border: 2px solid ${props => props.$color};
+  color: ${props => props.$color};
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  animation: slideIn 0.4s ease-out;
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+
+  .contenido {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    
+    .mensaje {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    
+    .detalle {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.85;
+    }
+  }
+
+  @media ${Device.tablet} {
+    padding: 12px 18px;
+    
+    .contenido {
+      .mensaje {
+        font-size: 15px;
+      }
+      
+      .detalle {
+        font-size: 12px;
+      }
     }
   }
 `;

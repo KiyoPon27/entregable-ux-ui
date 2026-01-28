@@ -110,7 +110,6 @@ public class MetodoPagoService {
             throw new IllegalStateException("Este método de pago es del sistema y no se puede eliminar");
         }
         
-        // TODO: En futuro validar si tiene movimientos de caja asociados
         
         metodoPagoRepository.deleteById(id);
     }

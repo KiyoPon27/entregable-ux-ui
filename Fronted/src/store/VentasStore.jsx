@@ -48,6 +48,11 @@ export const useVentasStore = create((set, get) => ({
   },
   eliminarventasIncompletas: async (p) => {
     await EliminarVentasIncompletas(p);
+    set({ idventa: 0, items: [], total: 0 });
+    try {
+      // Llama al método de reset en el store de detalles
+      require("./DetalleVentasStore.jsx").useDetalleVentasStore.getState().resetDetalleState();
+    } catch (e) {}
   },
   eliminarVenta: async (p) => {
     const { resetState } = get();

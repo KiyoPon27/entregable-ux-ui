@@ -31,24 +31,18 @@ public class DetalleVentaService {
         // Obtener el producto para validaciones
         Producto producto = productoRepository.findById(dto.getIdProducto())
             .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
-        
+
         // Buscar si ya existe un detalle con el mismo producto y almacén en esta venta
         Optional<DetalleVenta> existing = detalleVentaRepository
                 .findByVentaId(dto.getIdVenta()).stream()
-                .filter(d -> d.getProducto().getId().equals(dto.getIdProducto()) && 
-                             // Safe comparison for almacen (both could be null)
+                .filter(d -> d.getProducto().getId().equals(dto.getIdProducto()) &&
                              ((d.getAlmacen() == null && dto.getIdAlmacen() == null) ||
-                              (d.getAlmacen() != null && dto.getIdAlmacen() != null && 
+                              (d.getAlmacen() != null && dto.getIdAlmacen() != null &&
                                d.getAlmacen().getId().equals(dto.getIdAlmacen()))))
                 .findFirst();
 
         BigDecimal cantidadNecesaria = dto.getCantidad();
-        
-        // Si ya existe el detalle, la cantidad necesaria es la adicional
-        if (existing.isPresent()) {
-            cantidadNecesaria = dto.getCantidad(); // Cantidad adicional que se quiere agregar
-        }
-        
+
         // 1️⃣ VALIDAR Y DESCONTAR STOCK SI EL PRODUCTO MANEJA INVENTARIOS
         if (Boolean.TRUE.equals(producto.getManejaInventarios())) {
             if (dto.getIdAlmacen() == null) {
@@ -56,20 +50,20 @@ public class DetalleVentaService {
                     "El producto '" + producto.getNombre() + "' maneja inventarios. Debe especificar un almacén"
                 );
             }
-            
+
             // Obtener el stock actual
             Stock stock = stockRepository.findByProductoIdAndAlmacenId(
-                dto.getIdProducto(), 
+                dto.getIdProducto(),
                 dto.getIdAlmacen()
             );
-            
+
             if (stock == null) {
                 throw new BusinessRuleException(
-                    "No existe registro de stock para '" + producto.getNombre() + 
+                    "No existe registro de stock para '" + producto.getNombre() +
                     "' en el almacén especificado"
                 );
             }
-            
+
             // Validar que haya stock suficiente
             if (stock.getStock().compareTo(cantidadNecesaria) < 0) {
                 throw new BusinessRuleException(
@@ -78,23 +72,13 @@ public class DetalleVentaService {
                     "Disponible: " + stock.getStock()
                 );
             }
-            
+
             // Descontar el stock inmediatamente
             stock.setStock(stock.getStock().subtract(cantidadNecesaria));
             stockRepository.save(stock);
-            
-            // Registrar movimiento de stock
-            MovimientoStock movimiento = new MovimientoStock();
-            movimiento.setAlmacen(stock.getAlmacen());
-            movimiento.setProducto(producto);
-            movimiento.setTipoMovimiento("salida");
-            movimiento.setCantidad(cantidadNecesaria);
-            movimiento.setFecha(LocalDateTime.now());
-            movimiento.setDetalle("Agregado a detalle de venta (ID venta: " + dto.getIdVenta() + ")");
-            movimiento.setOrigen("ventas");
-            movimientoStockRepository.save(movimiento);
+            // NO registrar movimiento aquí, se hará agrupado al final
         }
-        
+
         // 2️⃣ INSERTAR O ACTUALIZAR EL DETALLE DE VENTA
         if (existing.isPresent()) {
             // Actualizar cantidad del detalle existente
@@ -106,19 +90,19 @@ public class DetalleVentaService {
         } else {
             // Crear nuevo detalle
             DetalleVenta detalle = new DetalleVenta();
-            
+
             Venta venta = ventaRepository.findById(dto.getIdVenta())
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
             detalle.setVenta(venta);
-            
+
             detalle.setProducto(producto);
-            
+
             if (dto.getIdSucursal() != null) {
                 Sucursal sucursal = sucursalRepository.findById(dto.getIdSucursal())
                     .orElse(null);
                 detalle.setSucursal(sucursal);
             }
-            
+
             if (dto.getIdAlmacen() != null) {
                 Almacen almacen = almacenRepository.findById(dto.getIdAlmacen())
                     .orElseThrow(() -> new ResourceNotFoundException("Almacen no encontrado"));
@@ -131,10 +115,10 @@ public class DetalleVentaService {
             detalle.setDescripcion(dto.getDescripcion());
             detalle.setTotal(dto.getCantidad().multiply(dto.getPrecioVenta()));
             detalle.setEstado("nuevo"); // Default
-            
+
             detalleVentaRepository.save(detalle);
         }
-        
+
         // 3️⃣ ACTUALIZAR TOTALES DE LA VENTA
         actualizarTotalesVenta(dto.getIdVenta());
     }
@@ -173,32 +157,12 @@ public class DetalleVentaService {
                         );
                     }
                     stock.setStock(stock.getStock().subtract(diferencia));
-                    
-                    // Registrar movimiento de salida
-                    MovimientoStock movimiento = new MovimientoStock();
-                    movimiento.setAlmacen(stock.getAlmacen());
-                    movimiento.setProducto(detalle.getProducto());
-                    movimiento.setTipoMovimiento("salida");
-                    movimiento.setCantidad(diferencia);
-                    movimiento.setFecha(LocalDateTime.now());
-                    movimiento.setDetalle("Incremento de cantidad en detalle de venta");
-                    movimiento.setOrigen("ventas");
-                    movimientoStockRepository.save(movimiento);
+                    // Nota: No registrar movimiento aquí. Movimientos se registran al confirmar la venta.
                 } else {
                     // Decremento de cantidad: devolver al stock
                     BigDecimal cantidadDevolver = diferencia.abs();
                     stock.setStock(stock.getStock().add(cantidadDevolver));
-                    
-                    // Registrar movimiento de entrada
-                    MovimientoStock movimiento = new MovimientoStock();
-                    movimiento.setAlmacen(stock.getAlmacen());
-                    movimiento.setProducto(detalle.getProducto());
-                    movimiento.setTipoMovimiento("entrada");
-                    movimiento.setCantidad(cantidadDevolver);
-                    movimiento.setFecha(LocalDateTime.now());
-                    movimiento.setDetalle("Decremento de cantidad en detalle de venta");
-                    movimiento.setOrigen("ventas");
-                    movimientoStockRepository.save(movimiento);
+                    // Nota: No registrar movimiento aquí. Movimientos se registran al confirmar la venta.
                 }
                 stockRepository.save(stock);
             }
@@ -231,17 +195,7 @@ public class DetalleVentaService {
                 // Incrementar stock (devolver lo que se había descontado)
                 stock.setStock(stock.getStock().add(detalle.getCantidad()));
                 stockRepository.save(stock);
-                
-                // Registrar movimiento de entrada
-                MovimientoStock movimiento = new MovimientoStock();
-                movimiento.setAlmacen(detalle.getAlmacen());
-                movimiento.setProducto(producto);
-                movimiento.setTipoMovimiento("entrada");
-                movimiento.setCantidad(detalle.getCantidad());
-                movimiento.setFecha(LocalDateTime.now());
-                movimiento.setDetalle("Devolución por eliminación de detalle venta (ID venta: " + idVenta + ")");
-                movimiento.setOrigen("ventas");
-                movimientoStockRepository.save(movimiento);
+                // Nota: No registrar movimiento aquí. Movimientos se registran al confirmar la venta.
             }
         }
         
@@ -293,6 +247,7 @@ public class DetalleVentaService {
                 .precioCompra(detalle.getProducto().getPrecioCompra())
                 .codigoBarras(detalle.getProducto().getCodigoBarras())
                 .codigoInterno(detalle.getProducto().getCodigoInterno())
+                .tipoComprobante(detalle.getProducto().getTipoComprobante())
                 .build();
         }
         

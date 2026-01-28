@@ -138,7 +138,6 @@ public class EmpresaService {
         Empresa empresa = empresaRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada con ID: " + id));
         
-        // TODO: Validar que no tenga sucursales, productos, ventas, etc.
         // Por ahora permitimos la eliminación
         empresaRepository.delete(empresa);
     }

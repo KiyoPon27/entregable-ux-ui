@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { InputText } from "../formularios/InputText";
@@ -24,7 +24,34 @@ import { useImpresorasStore } from "../../../store/ImpresorasStore";
 import ticket from "../../../reports/TicketVenta";
 import { RegistrarClientesProveedores } from "../formularios/RegistrarClientesProveedores";
 import { useGlobalStore } from "../../../store/GlobalStore";
+const GlobalErrorInputStyle = createGlobalStyle`
+  .error-input {
+      border: 2px solid #e57373 !important;
+      background: #fff6f6 !important;
+      box-shadow: 0 0 0 2px #ffcdd2, 0 2px 8px rgba(229, 115, 115, 0.08);
+      transition: border 0.2s, box-shadow 0.2s;
+      animation: shakeError 0.18s 1;
+  }
+    @keyframes shakeError {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-2px); }
+      100% { transform: translateX(0); }
+    }
+`;
+
 export const IngresoCobro = forwardRef((props, ref) => {
+  // Estado para saber si se visitó SUNAT (ya no se usará para bloquear el botón de cobrar)
+  // Inyectar estilos globales para error-input
+  // styled-components se encarga de no duplicar
+  // eslint-disable-next-line react/jsx-no-undef
+  // eslint-disable-next-line react/jsx-pascal-case
+  // eslint-disable-next-line no-unused-expressions
+
+  const [sunatVisitado, setSunatVisitado] = useState(false);
+  // Estado para advertencia de confirmación
+  // Eliminado showConfirm, no se requiere confirmación extra
   const fechaActual = useFormattedDate();
   const {
     tipocobro,
@@ -66,6 +93,10 @@ export const IngresoCobro = forwardRef((props, ref) => {
   // Estados para RUC/DNI y Número de Comprobante
   const [rucDni, setRucDni] = useState("");
   const [nroComprobante, setNroComprobante] = useState("");
+  // Estados para errores de validación
+  const [errorRucDni, setErrorRucDni] = useState("");
+  const [errorNroComprobante, setErrorNroComprobante] = useState("");
+  const [mensajeCamposObligatorios, setMensajeCamposObligatorios] = useState("");
   //#region Clientes
   const {
     buscarCliPro,
@@ -191,7 +222,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
         pventas._nro_comprobante = nroComprobante;
         pventas._ruc_dni = rucDni;
       }
-      
+
+      // Eliminada confirmación para Factura/Boleta, el flujo es igual para todos
       console.log("confirmarVenta", pventas);
       const dataVentaConfirmada = await confirmarVenta(pventas);
       const nuevosMetodosPago = [];
@@ -292,14 +324,25 @@ export const IngresoCobro = forwardRef((props, ref) => {
     calcularVueltoYRestante();
   }, [precioVenta, tipocobro, valoresPago]);
   
-  // Limpiar campos de RUC/DNI y nroComprobante cuando cambia el tipo de comprobante
+  // Limpiar campos y advertencias de error cuando cambia el tipo de comprobante
   useEffect(() => {
     setRucDni("");
     setNroComprobante("");
+    setErrorRucDni("");
+    setErrorNroComprobante("");
   }, [itemComprobanteSelect]);
   
+  // Lógica para mostrar/ocultar botón SUNAT y texto dinámico
+  const tipoComprobante = itemComprobanteSelect?.tipoComprobante?.nombre;
+  const mostrarBotonSunat = tipoComprobante === "Factura" || tipoComprobante === "Boleta";
+  const textoBotonSunat = tipoComprobante === "Factura" ? "Factura SUNAT" : tipoComprobante === "Boleta" ? "Boleta SUNAT" : "";
+  // El botón de cobrar siempre está habilitado
+  const cobrarHabilitado = true;
+
   return (
-    <Container className={tipocobro === "Mixto" ? "mixto" : ""}>
+    <>
+      <GlobalErrorInputStyle />
+      <Container className={tipocobro === "Mixto" ? "mixto" : ""}>
       {mutation.isPending ? (
         <span>guardando...🐖</span>
       ) : (
@@ -356,9 +399,16 @@ export const IngresoCobro = forwardRef((props, ref) => {
               <section className="area-datos-comprobante">
                 <InputText textalign="left">
                   <input
-                    onChange={(e) => setRucDni(e.target.value)}
+                    onChange={(e) => {
+                      // Solo permitir números
+                      const soloNumeros = e.target.value.replace(/[^0-9]/g, "");
+                      setRucDni(soloNumeros);
+                      setErrorRucDni("");
+                    }}
                     value={rucDni}
-                    className="form__field"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className={`form__field${errorRucDni ? ' error-input' : ''}`}
                     type="text"
                     placeholder=" "
                     maxLength={itemComprobanteSelect?.tipoComprobante?.nombre === "Factura" ? 11 : 8}
@@ -366,20 +416,26 @@ export const IngresoCobro = forwardRef((props, ref) => {
                   <label className="form__label">
                     {itemComprobanteSelect?.tipoComprobante?.nombre === "Factura" ? "RUC" : "DNI"}
                   </label>
+                  {errorRucDni && <span style={{ color: '#d32f2f', fontSize: '13px' }}>{errorRucDni}</span>}
                 </InputText>
-                
                 <InputText textalign="left">
                   <input
-                    onChange={(e) => setNroComprobante(e.target.value)}
+                    onChange={(e) => {
+                      setNroComprobante(e.target.value);
+                      setErrorNroComprobante("");
+                      setMensajeCamposObligatorios("");
+                    }}
                     value={nroComprobante}
-                    className="form__field"
+                    className={`form__field${errorNroComprobante ? ' error-input' : ''}`}
                     type="text"
                     placeholder=" "
                   />
                   <label className="form__label">
                     N° Comprobante (Ej: F001-0001)
                   </label>
+                  {errorNroComprobante && <span style={{ color: '#d32f2f', fontSize: '13px' }}>{errorNroComprobante}</span>}
                 </InputText>
+                {mensajeCamposObligatorios && <div style={{ color: '#d32f2f', fontWeight: 600, marginTop: 6 }}>{mensajeCamposObligatorios}</div>}
               </section>
             )}
             
@@ -448,14 +504,47 @@ export const IngresoCobro = forwardRef((props, ref) => {
           </section>
           <Linea />
           <section className="area4">
-            <Btn1
-              funcion={() => mutation.mutateAsync()}
-              border="2px"
-              titulo="COBRAR (enter)"
-              bgcolor="#0aca21"
-              color="#ffffff"
-              width="100%"
-            />
+            <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+              {/* Botón SUNAT interno eliminado, solo queda COBRAR */}
+              <Btn1
+                funcion={() => {
+                  // Validación previa de campos obligatorios
+                  let hayError = false;
+                  setErrorRucDni("");
+                  setErrorNroComprobante("");
+                  setMensajeCamposObligatorios("");
+                  if (tipoComprobante === "Factura" || tipoComprobante === "Boleta") {
+                    if (!rucDni.trim()) {
+                      setErrorRucDni(`El campo ${tipoComprobante === "Factura" ? "RUC" : "DNI"} es obligatorio`);
+                      hayError = true;
+                    } else if (tipoComprobante === "Factura" && rucDni.length !== 11) {
+                      setErrorRucDni("El RUC debe tener 11 dígitos");
+                      hayError = true;
+                    } else if (tipoComprobante === "Boleta" && rucDni.length !== 8) {
+                      setErrorRucDni("El DNI debe tener 8 dígitos");
+                      hayError = true;
+                    }
+                    if (!nroComprobante.trim()) {
+                      setErrorNroComprobante("El N° Comprobante es obligatorio");
+                      hayError = true;
+                    }
+                    if (hayError) {
+                      return;
+                    }
+                  }
+                  // El flujo de cobro es directo para todos los comprobantes
+                  mutation.mutateAsync();
+                }}
+                border="2px"
+                titulo="COBRAR (enter)"
+                bgcolor="#0aca21"
+                color="#ffffff"
+                width={"100%"}
+                disabled={false}
+              />
+            </div>
+
+            {/* Modal de confirmación eliminado, el flujo de cobro es directo para todos los comprobantes */}
           </section>
           {stateBuscadorClientes && (
             <PanelBuscador
@@ -478,7 +567,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
           )}
         </>
       )}
-    </Container>
+      </Container>
+    </>
   );
 });
 const Container = styled.div`

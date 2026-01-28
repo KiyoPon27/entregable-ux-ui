@@ -50,5 +50,6 @@ public class DetalleVentaResponseDTO {
         private BigDecimal precioCompra;
         private String codigoBarras;
         private String codigoInterno;
+        private String tipoComprobante; // 'FACTURADO' o 'MANUALIDAD'
     }
 }

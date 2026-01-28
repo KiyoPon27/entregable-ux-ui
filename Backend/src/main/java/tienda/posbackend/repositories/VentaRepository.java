@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface VentaRepository extends JpaRepository<Venta, Long> {
+       // Buscar ventas por estado, usuario y cierreCaja
+       List<Venta> findByEstadoAndUsuarioIdAndCierreCajaId(String estado, Long usuarioId, Long cierreCajaId);
     List<Venta> findByEmpresaId(Long empresaId);
     List<Venta> findByUsuarioId(Long usuarioId);
     List<Venta> findBySucursalId(Long sucursalId);

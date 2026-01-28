@@ -157,6 +157,15 @@ export function RegistrarProductos({
   };
   async function insertar(data) {
     validarVacios(data);
+    
+    // Validar que precio de compra no sea mayor o igual al precio de venta
+    const precioCompra = parseFloat(data.precio_compra);
+    const precioVenta = parseFloat(data.precio_venta);
+    
+    if (precioCompra >= precioVenta) {
+      throw new Error("El precio de compra debe ser menor al precio de venta");
+    }
+    
     console.log("🚀 Insertando producto. tipoComprobante actual:", tipoComprobante);
     if (accion === "Editar") {
       const p = {

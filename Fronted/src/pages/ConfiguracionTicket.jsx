@@ -22,8 +22,8 @@ export const ConfiguracionTicket = () => {
     reset,
   } = useForm({
     defaultValues: {
-      nombre_moneda: dataempresa?.nombre_moneda || "",
-      pie_pagina_ticket: dataempresa?.pie_pagina_ticket || "",
+      nombre_moneda: dataempresa?.nombre_moneda || dataempresa?.nombreMoneda || "Soles",
+      pie_pagina_ticket: dataempresa?.pie_pagina_ticket || dataempresa?.piePaginaTicket || "",
     },
   });
   const { mutate, isPending } = useUpdateEmpresaTicketMutation();
@@ -35,8 +35,8 @@ export const ConfiguracionTicket = () => {
   useEffect(() => {
     if (dataempresa) {
       reset({
-        nombre_moneda: dataempresa.nombre_moneda || "",
-        pie_pagina_ticket: dataempresa.pie_pagina_ticket || "",
+        nombre_moneda: dataempresa.nombre_moneda || dataempresa.nombreMoneda || "Soles",
+        pie_pagina_ticket: dataempresa.pie_pagina_ticket || dataempresa.piePaginaTicket || "",
       });
     }
   }, [dataempresa, reset]);

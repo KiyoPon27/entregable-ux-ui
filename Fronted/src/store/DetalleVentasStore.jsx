@@ -16,6 +16,9 @@ function calcularTotal(items) {
   );
 }
 export const useDetalleVentasStore = create((set, get) => ({
+    resetDetalleState: () => {
+      set({ datadetalleventa: [], total: 0 });
+    },
   datadetalleventa: [],
   parametros: {},
   total: 0,

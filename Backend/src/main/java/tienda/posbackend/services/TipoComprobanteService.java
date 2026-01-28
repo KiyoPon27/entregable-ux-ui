@@ -66,7 +66,6 @@ public class TipoComprobanteService {
         TipoComprobante tipoComprobante = tipoComprobanteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tipo de comprobante no encontrado con ID: " + id));
 
-        // TODO: Validar que no tenga serializaciones asociadas antes de eliminar
         tipoComprobanteRepository.delete(tipoComprobante);
     }
 }

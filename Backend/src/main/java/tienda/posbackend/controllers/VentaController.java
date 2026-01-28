@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.dto.ConfirmarVentaDTO;
 import tienda.posbackend.dto.VentaConfirmadaDTO;
+import tienda.posbackend.dto.VentaDetalleCompletoDTO;
 import tienda.posbackend.entities.Venta;
 import tienda.posbackend.services.VentaService;
 
@@ -69,5 +70,13 @@ public class VentaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
         Map<String, Object> estadisticas = ventaService.obtenerEstadisticasFacturas(empresaId, fechaInicio, fechaFin);
         return ResponseEntity.ok(estadisticas);
+    }
+    
+    @GetMapping("/{id}/detalle-completo")
+    public ResponseEntity<VentaDetalleCompletoDTO> obtenerDetalleCompleto(@PathVariable Long id) {
+        System.out.println("🔍 GET /ventas/" + id + "/detalle-completo");
+        VentaDetalleCompletoDTO detalle = ventaService.obtenerDetalleCompleto(id);
+        System.out.println("✅ Detalle completo obtenido: " + detalle.getNombreComprobante());
+        return ResponseEntity.ok(detalle);
     }
 }

@@ -211,7 +211,7 @@ public class SucursalService {
             throw new ResourceNotFoundException("Sucursal no encontrada con ID: " + id);
         }
         
-        // TODO: Agregar validación si tiene cajas, almacenes o ventas asociadas
+     
         // Por ahora permitimos la eliminación
         
         sucursalRepository.deleteById(id);

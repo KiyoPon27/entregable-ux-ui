@@ -84,7 +84,14 @@ export function AreaDetalleventaPos() {
         return (
           <Itemventa key={index}>
             <article className="contentdescripcion">
-              <span className="descripcion">{item.descripcion}</span>
+              <div className="header-producto">
+                <span className="descripcion">{item.descripcion}</span>
+                {item.productos?.tipoComprobante && (
+                  <TipoComprobanteTag $tipo={item.productos.tipoComprobante}>
+                    {item.productos.tipoComprobante}
+                  </TipoComprobanteTag>
+                )}
+              </div>
               <span className="importe">
                 <strong>precio unit:</strong>
                 🪵
@@ -268,6 +275,12 @@ const Itemventa = styled.section`
     flex-direction: column;
     gap: 8px;
     width: 100%;
+    .header-producto {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .descripcion {
       font-weight: 700;
       font-size: 20px;
@@ -322,6 +335,12 @@ const Itemventa = styled.section`
       flex-direction: column;
       gap: 8px;
       width: 100%;
+      .header-producto {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
       .descripcion {
         font-weight: 700;
         font-size: 20px;
@@ -347,4 +366,26 @@ const Itemventa = styled.section`
       }
     }
   }
+`;
+
+const TipoComprobanteTag = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  background-color: ${({ $tipo }) => 
+    $tipo === 'FACTURADO' ? '#dcfce7' : 
+    $tipo === 'MANUALIDAD' ? '#fef3c7' : 
+    '#f3f4f6'};
+  color: ${({ $tipo }) => 
+    $tipo === 'FACTURADO' ? '#166534' : 
+    $tipo === 'MANUALIDAD' ? '#92400e' : 
+    '#4b5563'};
+  border: 1px solid ${({ $tipo }) => 
+    $tipo === 'FACTURADO' ? '#bbf7d0' : 
+    $tipo === 'MANUALIDAD' ? '#fde68a' : 
+    '#e5e7eb'};
 `;

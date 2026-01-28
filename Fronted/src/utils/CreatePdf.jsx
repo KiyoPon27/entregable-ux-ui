@@ -48,7 +48,17 @@ const createPdf = async (props, output = "print") => {
             message: "Documento enviado a impresión.",
           });
         });
-        return
+        return;
+      } else if (output === "download") {
+        //DESCARGAR PDF
+        const pdfMakeCreatePdf = pdfMake.createPdf(docDefinition);
+        pdfMakeCreatePdf.download(`ticket_${Date.now()}.pdf`);
+        resolve({
+          success: true,
+          content: null,
+          message: "Archivo descargado correctamente.",
+        });
+        return;
       }
       reject({
         success: false,

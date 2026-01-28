@@ -173,9 +173,8 @@ export function RegistrarInventario() {
                     <input
                       className="form__field"
                       type="number"
-                      {...register("precio_compra", {
-                        required: true,
-                      })}
+                      disabled
+                      {...register("precio_compra")}
                     />
                     <label className="form__label">Precio costo</label>
                     {errors.precio_compra?.type === "required" && (
@@ -188,9 +187,8 @@ export function RegistrarInventario() {
                     <input
                       className="form__field"
                       type="number"
-                      {...register("precio_venta", {
-                        required: true,
-                      })}
+                      disabled
+                      {...register("precio_venta")}
                     />
                     <label className="form__label">Precio venta</label>
                     {errors.precio_venta?.type === "required" && (

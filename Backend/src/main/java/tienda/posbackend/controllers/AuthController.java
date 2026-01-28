@@ -95,7 +95,6 @@ public class AuthController {
         empresaRepository.findByUsuarioId(usuario.getId()).ifPresent(context::setEmpresa);
         // Si no encuentra por usuario, intentar buscar la primera empresa (caso empleado)
         // Por ahora lo dejamos simple: solo si es dueño. 
-        // TODO: Mejorar lógica para empleados que pertenecen a una empresa pero no son dueños directos (usar asignacion_sucursal -> sucursal -> empresa)
         
         if (context.getEmpresa() == null) {
              asignacionSucursalRepository.findByUsuarioId(usuario.getId()).stream()

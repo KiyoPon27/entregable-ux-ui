@@ -1,6 +1,6 @@
 package tienda.posbackend.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -25,7 +25,6 @@ public class Empresa {
     @Column(name = "simbolo_moneda")
     private String simboloMoneda;
 
-    @JsonIgnore
     @Column(columnDefinition = "TEXT")
     private String logo;
 

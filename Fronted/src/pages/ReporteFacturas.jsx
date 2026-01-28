@@ -8,7 +8,13 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import api from "../api/api";
 import { v } from "../styles/variables";
-import { BsSearch, BsEye, BsFilter } from "react-icons/bs";
+import { BsSearch, BsEye, BsFilter, BsDownload } from "react-icons/bs";
+import { DatePicker } from "antd";
+import dayjs from "dayjs";
+import TicketVenta from "../reports/TicketVenta";
+import { toast } from "sonner";
+
+const { RangePicker } = DatePicker;
 
 export function ReporteFacturas() {
   const { dataempresa } = useEmpresaStore();
@@ -18,34 +24,64 @@ export function ReporteFacturas() {
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
   const [modalDetalle, setModalDetalle] = useState(false);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [descargandoPDF, setDescargandoPDF] = useState(false);
+  
+  // Estados para el selector de fechas
+  const [dates, setDates] = useState([]);
+  const [singleDate, setSingleDate] = useState(null);
+  const [activeRange, setActiveRange] = useState("7 días");
 
   // Calcular fechas según el filtro - MEMOIZADO para evitar bucles infinitos
   const { fechaInicio, fechaFin } = useMemo(() => {
-    const hoy = new Date();
-    let fechaInicio = new Date();
-    let fechaFin = new Date();
+    // Si hay un rango de fechas seleccionado
+    if (dates && dates.length === 2 && dates[0] && dates[1]) {
+      return {
+        fechaInicio: dates[0].toDate(),
+        fechaFin: dates[1].toDate()
+      };
+    }
+    
+    // Si hay una fecha única seleccionada
+    if (singleDate) {
+      const start = singleDate.startOf('day').toDate();
+      const end = singleDate.endOf('day').toDate();
+      return { fechaInicio: start, fechaFin: end };
+    }
+
+    // Rangos predefinidos
+    const hoy = dayjs();
+    let fechaInicio = dayjs();
+    let fechaFin = dayjs();
 
     switch (filtroFecha) {
       case "hoy":
-        fechaInicio.setHours(0, 0, 0, 0);
-        fechaFin.setHours(23, 59, 59, 999);
+        fechaInicio = hoy.startOf('day');
+        fechaFin = hoy.endOf('day');
         break;
       case "7dias":
-        fechaInicio.setDate(hoy.getDate() - 7);
+        fechaInicio = hoy.subtract(7, 'day').startOf('day');
+        fechaFin = hoy.endOf('day');
         break;
       case "30dias":
-        fechaInicio.setDate(hoy.getDate() - 30);
+        fechaInicio = hoy.subtract(30, 'day').startOf('day');
+        fechaFin = hoy.endOf('day');
         break;
       case "12meses":
-        fechaInicio.setMonth(hoy.getMonth() - 12);
+        fechaInicio = hoy.subtract(12, 'month').startOf('day');
+        fechaFin = hoy.endOf('day');
         break;
+      case "todo":
+        return { fechaInicio: null, fechaFin: null };
       default:
-        fechaInicio = null;
-        fechaFin = null;
+        fechaInicio = hoy.subtract(7, 'day').startOf('day');
+        fechaFin = hoy.endOf('day');
     }
 
-    return { fechaInicio, fechaFin };
-  }, [filtroFecha]); // Solo recalcular cuando cambia el filtro de fecha
+    return { 
+      fechaInicio: fechaInicio.toDate(), 
+      fechaFin: fechaFin.toDate() 
+    };
+  }, [filtroFecha, dates, singleDate]);
 
   // Query para obtener facturas filtradas
   const { data: facturasData, isLoading: loadingFacturas, error: errorFacturas } = useQuery({
@@ -112,6 +148,51 @@ export function ReporteFacturas() {
     enabled: !!dataempresa?.id,
   });
 
+  // Funciones para manejar rangos de fechas
+  const setPresetRange = (days, rangeName) => {
+    const startDate = dayjs().subtract(days, "day").startOf("day");
+    const endDate = dayjs().endOf("day");
+    setDates([startDate, endDate]);
+    setActiveRange(rangeName);
+    setSingleDate(null);
+    setFiltroFecha("custom");
+  };
+
+  const selectToday = () => {
+    const today = dayjs().startOf("day");
+    setSingleDate(today);
+    setDates([]);
+    setActiveRange("Hoy");
+    setFiltroFecha("hoy");
+  };
+
+  const selectTodo = () => {
+    setDates([]);
+    setSingleDate(null);
+    setActiveRange("Todo");
+    setFiltroFecha("todo");
+  };
+
+  const handleDateChange = (val) => {
+    setDates(val || []);
+    setActiveRange("Rango");
+    setFiltroFecha("custom");
+  };
+
+  const handleSingleDateChange = (date) => {
+    setSingleDate(date);
+    setDates([]);
+    setActiveRange("Por Día");
+    setFiltroFecha("custom");
+  };
+
+  const limpiarFechasFiltro = () => {
+    setDates([]);
+    setSingleDate(null);
+    setActiveRange("7 días");
+    setFiltroFecha("7dias");
+  };
+
   const obtenerColorTipo = (tipo) => {
     switch (tipo) {
       case "FACTURA":
@@ -128,6 +209,40 @@ export function ReporteFacturas() {
   const handleVerDetalle = (venta) => {
     setVentaSeleccionada(venta);
     setModalDetalle(true);
+  };
+
+  const handleDescargarPDF = async () => {
+    if (!ventaSeleccionada) {
+      toast.error("No hay venta seleccionada");
+      return;
+    }
+
+    setDescargandoPDF(true);
+    try {
+      console.log("🎫 Descargando PDF de venta ID:", ventaSeleccionada.id);
+      
+      // Obtener detalle completo de la venta desde el backend
+      const response = await api.get(`/ventas/${ventaSeleccionada.id}/detalle-completo`);
+      const detalleCompleto = response.data;
+      
+      console.log("✅ Detalle completo recibido:", detalleCompleto);
+      
+      // Agregar el nombre del cajero en el formato que espera TicketVenta
+      const dataParaPDF = {
+        ...detalleCompleto,
+        nombrecajero: detalleCompleto.dataventas?.usuario?.nombres || "Sin cajero"
+      };
+      
+      // Regenerar el PDF usando TicketVenta
+      await TicketVenta("download", dataParaPDF);
+      
+      toast.success("PDF descargado correctamente");
+    } catch (error) {
+      console.error("❌ Error al descargar PDF:", error);
+      toast.error("Error al generar el PDF: " + (error.response?.data?.message || error.message));
+    } finally {
+      setDescargandoPDF(false);
+    }
   };
 
   return (
@@ -169,20 +284,72 @@ export function ReporteFacturas() {
               </FilterSelect>
             </FilterGroup>
 
-            <FilterGroup>
-              <FilterLabel>Periodo:</FilterLabel>
-              <FilterSelect value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)}>
-                <option value="hoy">Hoy</option>
-                <option value="7dias">Últimos 7 días</option>
-                <option value="30dias">Últimos 30 días</option>
-                <option value="12meses">Últimos 12 meses</option>
-              </FilterSelect>
-            </FilterGroup>
+            <DateFilterSection>
+              <FilterLabel>Período:</FilterLabel>
+              <DateButtonGroup>
+                <DateRangeButton
+                  $isActive={activeRange === "Todo"}
+                  onClick={selectTodo}
+                >
+                  Todo
+                </DateRangeButton>
+                <DateRangeButton
+                  $isActive={activeRange === "Hoy"}
+                  onClick={selectToday}
+                >
+                  Hoy
+                </DateRangeButton>
+                <DateRangeButton
+                  $isActive={activeRange === "7 días"}
+                  onClick={() => setPresetRange(7, "7 días")}
+                >
+                  Últimos 7 días
+                </DateRangeButton>
+                <DateRangeButton
+                  $isActive={activeRange === "30 días"}
+                  onClick={() => setPresetRange(30, "30 días")}
+                >
+                  Últimos 30 días
+                </DateRangeButton>
+                <DateRangeButton
+                  $isActive={activeRange === "12 meses"}
+                  onClick={() => setPresetRange(365, "12 meses")}
+                >
+                  Últimos 12 meses
+                </DateRangeButton>
+                <DateRangeButton
+                  $isActive={activeRange === "Por Día"}
+                  onClick={() => setActiveRange("Por Día")}
+                >
+                  Por Día
+                </DateRangeButton>
+              </DateButtonGroup>
+
+              {(activeRange === "30 días" ||
+                activeRange === "12 meses" ||
+                activeRange === "7 días" ||
+                activeRange === "Rango") && (
+                <StyledRangePicker
+                  format="YYYY-MM-DD"
+                  onChange={handleDateChange}
+                  value={dates}
+                  placeholder={["Fecha inicio", "Fecha fin"]}
+                />
+              )}
+              {activeRange === "Por Día" && (
+                <StyledDatePicker
+                  format="YYYY-MM-DD"
+                  onChange={handleSingleDateChange}
+                  value={singleDate}
+                  placeholder="Seleccionar fecha"
+                />
+              )}
+            </DateFilterSection>
 
             <ClearFiltersButton onClick={() => {
               setBuscador("");
               setFiltroTipo("");
-              setFiltroFecha("7dias");
+              limpiarFechasFiltro();
             }}>
               Limpiar Filtros
             </ClearFiltersButton>
@@ -348,11 +515,25 @@ export function ReporteFacturas() {
               <InfoGroup>
                 <InfoItem>
                   <label>
-                    {ventaSeleccionada.tipoComprobante === "FACTURA" ? "RUC:" : "DNI:"}
+                    {ventaSeleccionada.tipoComprobante?.toUpperCase() === "FACTURA" 
+                      ? "RUC:" 
+                      : ventaSeleccionada.tipoComprobante?.toUpperCase() === "BOLETA"
+                      ? "DNI:"
+                      : "Documento:"}
                   </label>
                   <span>
                     {ventaSeleccionada.rucDni || "-"}
                   </span>
+                  {ventaSeleccionada.tipoComprobante?.toUpperCase() === "FACTURA" && (
+                    <DocumentTypeHint>
+                      (Registro Único de Contribuyentes)
+                    </DocumentTypeHint>
+                  )}
+                  {ventaSeleccionada.tipoComprobante?.toUpperCase() === "BOLETA" && (
+                    <DocumentTypeHint>
+                      (Documento Nacional de Identidad)
+                    </DocumentTypeHint>
+                  )}
                 </InfoItem>
                 <InfoItem>
                   <label>Monto Total:</label>
@@ -377,6 +558,9 @@ export function ReporteFacturas() {
               </InfoGroup>
             </ModalBody>
             <ModalFooter>
+              <DownloadButton onClick={handleDescargarPDF} disabled={descargandoPDF}>
+                <BsDownload /> {descargandoPDF ? "Generando..." : "Descargar PDF"}
+              </DownloadButton>
               <button className="btn-secondary" onClick={() => setModalDetalle(false)}>
                 Cerrar
               </button>
@@ -392,8 +576,14 @@ const Container = styled.div`
   width: 100%;
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 30px;
+  padding: 15px;
   position: relative;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  
+  @media (min-width: 768px) {
+    padding: 30px;
+  }
   
   &::before {
     content: '';
@@ -411,15 +601,22 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding: 30px;
+  margin-bottom: 20px;
+  padding: 20px;
   background: white;
-  border-radius: 20px;
+  border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 15px;
   position: relative;
   z-index: 1;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 30px;
+    padding: 30px;
+    border-radius: 20px;
+    gap: 20px;
+  }
   
   &::before {
     content: '';
@@ -436,7 +633,7 @@ const Header = styled.div`
 const HeaderLeft = styled.div``;
 
 const Title = styled.h1`
-  font-size: 36px;
+  font-size: 24px;
   font-weight: 800;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
@@ -445,8 +642,13 @@ const Title = styled.h1`
   margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   animation: slideInLeft 0.6s ease-out;
+  
+  @media (min-width: 768px) {
+    font-size: 36px;
+    gap: 12px;
+  }
   
   @keyframes slideInLeft {
     from {
@@ -468,13 +670,19 @@ const Subtitle = styled.p`
 
 const FilterContainer = styled.div`
   background: white;
-  border-radius: 20px;
-  padding: 25px;
-  margin-bottom: 30px;
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 20px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   position: relative;
   z-index: 1;
   animation: fadeInUp 0.6s ease-out;
+  
+  @media (min-width: 768px) {
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 30px;
+  }
   
   @keyframes fadeInUp {
     from {
@@ -498,9 +706,13 @@ const SearchSection = styled.div`
 const SearchInputWrapper = styled.div`
   position: relative;
   flex: 1;
-  min-width: 300px;
+  min-width: 200px;
   display: flex;
   align-items: center;
+  
+  @media (min-width: 768px) {
+    min-width: 300px;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -611,13 +823,19 @@ const ClearFiltersButton = styled.button`
 
 const StatsContainer = styled.div`
   background: white;
-  border-radius: 20px;
-  padding: 30px;
-  margin-bottom: 30px;
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 20px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   position: relative;
   z-index: 1;
   animation: fadeInUp 0.7s ease-out;
+  
+  @media (min-width: 768px) {
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+  }
   
   @keyframes fadeInUp {
     from {
@@ -633,8 +851,13 @@ const StatsContainer = styled.div`
 
 const StatsRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
 `;
 
 const StatCard = styled.div`
@@ -694,12 +917,37 @@ const StatValue = styled.div`
 
 const TableContainer = styled.div`
   background: white;
-  border-radius: 20px;
-  padding: 30px;
+  border-radius: 16px;
+  padding: 15px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   position: relative;
   z-index: 1;
   animation: fadeInUp 0.8s ease-out;
+  overflow-x: auto;
+  
+  @media (min-width: 768px) {
+    border-radius: 20px;
+    padding: 30px;
+  }
+  
+  /* Estilizar scrollbar */
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  }
   
   @keyframes fadeInUp {
     from {
@@ -715,21 +963,27 @@ const TableContainer = styled.div`
 
 const Table = styled.table`
   width: 100%;
+  min-width: 700px;
   border-collapse: separate;
   border-spacing: 0;
 `;
 
 const Th = styled.th`
   text-align: left;
-  padding: 16px;
+  padding: 12px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   color: #1f2937;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
   border-bottom: 3px solid #667eea;
+  
+  @media (min-width: 768px) {
+    padding: 16px;
+    font-size: 13px;
+  }
   
   &:first-child {
     border-top-left-radius: 12px;
@@ -741,11 +995,16 @@ const Th = styled.th`
 `;
 
 const Td = styled.td`
-  padding: 16px;
+  padding: 12px;
   color: #374151;
-  font-size: 14px;
+  font-size: 13px;
   border-bottom: 1px solid #f3f4f6;
   transition: background 0.2s ease;
+  
+  @media (min-width: 768px) {
+    padding: 16px;
+    font-size: 14px;
+  }
   
   tr:hover & {
     background: #f9fafb;
@@ -958,6 +1217,14 @@ const InfoItem = styled.div`
   }
 `;
 
+const DocumentTypeHint = styled.div`
+  font-size: 10px;
+  color: #9ca3af;
+  font-style: italic;
+  margin-top: 2px;
+  font-weight: 400;
+`;
+
 const ModalFooter = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -986,5 +1253,143 @@ const ModalFooter = styled.div`
         transform: translateY(-2px);
       }
     }
+  }
+`;
+
+const DownloadButton = styled.button`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+// Nuevos componentes para el selector de fechas
+const DateFilterSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 100%;
+  
+  @media (min-width: 768px) {
+    min-width: 600px;
+  }
+`;
+
+const DateButtonGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+`;
+
+const DateRangeButton = styled.button`
+  color: ${({ $isActive }) => ($isActive ? "white" : "#374151")};
+  background: ${({ $isActive }) =>
+    $isActive ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "white"};
+  border: 2px solid ${({ $isActive }) => ($isActive ? "#667eea" : "#e5e7eb")};
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: ${({ $isActive }) => ($isActive ? "700" : "500")};
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: ${({ $isActive }) =>
+    $isActive ? "0 4px 12px rgba(102, 126, 234, 0.3)" : "none"};
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+  }
+`;
+
+const StyledRangePicker = styled(RangePicker)`
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #667eea !important;
+  }
+
+  &.ant-picker-focused {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+  }
+
+  .ant-picker-input > input {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .ant-picker-input input::placeholder {
+    color: #9ca3af;
+  }
+
+  .ant-picker-suffix {
+    color: #667eea;
+  }
+
+  .ant-picker-separator {
+    color: #667eea;
+  }
+`;
+
+const StyledDatePicker = styled(DatePicker)`
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #667eea !important;
+  }
+
+  &.ant-picker-focused {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+  }
+
+  .ant-picker-input > input {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .ant-picker-input input::placeholder {
+    color: #9ca3af;
+  }
+
+  .ant-picker-suffix {
+    color: #667eea;
   }
 `;

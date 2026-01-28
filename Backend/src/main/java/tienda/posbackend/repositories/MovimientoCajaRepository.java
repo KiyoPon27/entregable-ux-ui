@@ -26,4 +26,9 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
            "WHERE s.empresa.id = :idEmpresa " +
            "ORDER BY mc.fechaMovimiento DESC")
     List<MovimientoCaja> findByEmpresaIdOrderByFechaDesc(@Param("idEmpresa") Long idEmpresa);
+    
+    @Query("SELECT mc FROM MovimientoCaja mc " +
+           "LEFT JOIN FETCH mc.metodoPago mp " +
+           "WHERE mc.venta.id = :idVenta")
+    List<MovimientoCaja> findByVentaId(@Param("idVenta") Long idVenta);
 }

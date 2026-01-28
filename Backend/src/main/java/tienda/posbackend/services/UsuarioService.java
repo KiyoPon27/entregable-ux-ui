@@ -184,7 +184,6 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + id));
 
-        // TODO: Validar que no tenga ventas, movimientos, cierres, etc.
         usuarioRepository.delete(usuario);
     }
 }
