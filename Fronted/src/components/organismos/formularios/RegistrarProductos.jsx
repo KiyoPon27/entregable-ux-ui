@@ -314,9 +314,17 @@ export function RegistrarProductos({
       })
       setRandomCodeinterno(dataSelect.codigoInterno);
       setRandomCodebarras(dataSelect.codigoBarras);
-      dataSelect.seVendePor === "UNIDAD"
-        ? handleCheckboxChange(1)
-        : handleCheckboxChange(0);
+      // Normalizar y comprobar de forma segura el valor de seVendePor
+      const sellBy = (dataSelect?.seVendePor || "").toString().toUpperCase();
+      if (sellBy === "UNIDAD") {
+        handleCheckboxChange(1);
+      } else if (sellBy === "GRANEL") {
+        // usar 2 para mantener coherencia con el resto del código
+        handleCheckboxChange(2);
+      } else {
+        // valor desconocido -> mantener el valor guardado (por defecto UNIDAD)
+        handleCheckboxChange(1);
+      }
       dataSelect.tipoComprobante === "FACTURADO"
         ? handleTipoComprobanteChange(1)
         : handleTipoComprobanteChange(2);

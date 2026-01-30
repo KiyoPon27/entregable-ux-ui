@@ -1,4 +1,5 @@
-package tienda.posbackend.repositories;
+
+       package tienda.posbackend.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

@@ -16,6 +16,7 @@ import { v } from "../../../styles/variables";
 import { Device } from "../../../styles/breakpoints";
 import { Icon } from "@iconify/react";
 import { useEffect, useRef, useState, useMemo } from "react";
+import api from "../../../api/api";
 
 import { useFormattedDate } from "../../../hooks/useFormattedDate";
 import { useCierreCajaStore } from "../../../store/CierreCajaStore";
@@ -242,10 +243,37 @@ export function HeaderPos() {
     const value = Math.max(0, parseFloat(e.target.value));
     setCantidadInput(value);
   };
+  // Antes: eliminábamos ventas incompletas al montar el header, lo que
+  // provocaba que el carrito/pedido se borrara al navegar. Ahora solo
+  // eliminamos ventas incompletas cuando el usuario recarga o cierra la
+  // página (F5 / refresh), manteniendo el carrito al navegar internamente.
   const { mutate } = useEliminarVentasIncompletasMutate();
   useEffect(() => {
     buscadorRef.current.focus();
-    mutate()
+
+    const handleBeforeUnload = (event) => {
+      try {
+        const token = localStorage.getItem("token");
+        const idUsuario = useUsuariosStore.getState().datausuarios?.id;
+        const idCierreCaja = useCierreCajaStore.getState().dataCierreCaja?.id;
+        if (!idUsuario || !idCierreCaja) return;
+        const base = api.defaults?.baseURL || "http://localhost:8080/api";
+        const url = `${base.replace(/\/$/, "")}/ventas/incompletas?idUsuario=${idUsuario}&idCierreCaja=${idCierreCaja}`;
+        // Usar fetch con keepalive para enviar la petición de borrado en unload
+        fetch(url, {
+          method: "DELETE",
+          keepalive: true,
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        }).catch(() => {});
+      } catch (e) {
+        // no hacer nada si falla
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
   // global barcode scanner: when a code is read, try to find the product and add it
@@ -310,12 +338,12 @@ export function HeaderPos() {
       <ContentSucursal>
         <div>
           <strong>SUCURSAL:&nbsp; </strong>{" "}
-          {dataCierreCaja.caja?.sucursales?.nombre}
+          {dataCierreCaja?.caja?.sucursales?.nombre || "-"}
         </div>
         |
         <div>
           <strong>CAJA:&nbsp; </strong>{" "}
-          {dataCierreCaja.caja?.descripcion}
+          {dataCierreCaja?.caja?.descripcion || "-"}
         </div>
 
       </ContentSucursal>

@@ -59,23 +59,25 @@ export async function MostrarCierreCajaPorEmpresa(p) {
 }
 
 export async function MostrarCierreCajaPorUsuario(p) {
+  // Validar parámetros
+  if (!p || !p.id_usuario) {
+    console.warn("MostrarCierreCajaPorUsuario: id_usuario faltante");
+    return null;
+  }
   try {
-      const response = await api.get(`/cierre-caja/usuario/${p.id_usuario}/abierta`);
-      const data = response.data;
-      if(data) {
-           // Map nested objects: caja, caja.sucursales
-           // Backend entities: caja -> sucursal (singular)
-           return {
-               ...data,
-               caja: {
-                   ...data.caja,
-                   sucursales: data.caja.sucursal // Alias for frontend
-               }
-           };
-      }
-      return data; 
+    const response = await api.get(`/cierre-caja/usuario/${p.id_usuario}/abierta`);
+    const data = response.data;
+    if (!data) return null;
+    // Asegurar que la estructura esperada exista antes de mapear
+    const caja = data.caja || data.cierreCaja?.caja || null;
+    const sucursal = caja?.sucursal || caja?.sucursales || null;
+    return {
+      ...data,
+      caja: caja ? { ...caja, sucursales: sucursal } : caja,
+    };
   } catch (error) {
-      console.error("Error al mostrar cierre caja por usuario:", error);
-      return null;
+    // Loguear y propagar el error para que la capa superior decida
+    console.error("Error al mostrar cierre caja por usuario:", error);
+    return null;
   }
 }

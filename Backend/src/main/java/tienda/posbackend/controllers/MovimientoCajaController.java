@@ -1,4 +1,5 @@
-package tienda.posbackend.controllers;
+
+    package tienda.posbackend.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,19 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @SuppressWarnings("null")
 public class MovimientoCajaController {
+
+        @GetMapping("/ventas-metodo-pago/{idCierreCaja}")
+        public ResponseEntity<?> obtenerVentasPorMetodoPago(@PathVariable Long idCierreCaja) {
+            List<Object[]> resultados = movimientoCajaRepository.sumVentasPorMetodoPago(idCierreCaja);
+            List<Map<String, Object>> response = new java.util.ArrayList<>();
+            for (Object[] row : resultados) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("metodo_pago", row[0]);
+                item.put("total", row[1]);
+                response.add(item);
+            }
+            return ResponseEntity.ok(response);
+        }
     
     private final MovimientoCajaRepository movimientoCajaRepository;
     private final CierreCajaRepository cierreCajaRepository;

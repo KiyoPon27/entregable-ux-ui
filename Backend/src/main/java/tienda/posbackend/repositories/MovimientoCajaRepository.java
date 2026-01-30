@@ -7,6 +7,15 @@ import tienda.posbackend.entities.MovimientoCaja;
 import java.util.List;
 
 public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, Long> {
+
+    // Sumar ventas por método de pago para un cierre de caja
+    @Query("SELECT mp.nombre, COALESCE(SUM(mc.monto), 0) " +
+           "FROM MovimientoCaja mc " +
+           "JOIN mc.metodoPago mp " +
+           "WHERE mc.cierreCaja.id = :idCierreCaja " +
+           "AND mc.tipoMovimiento = 'VENTA' " +
+           "GROUP BY mp.nombre")
+    List<Object[]> sumVentasPorMetodoPago(@Param("idCierreCaja") Long idCierreCaja);
     List<MovimientoCaja> findByCierreCajaId(Long cierreCajaId);
     
     @Query("SELECT mc.tipoMovimiento, SUM(mc.monto) " +

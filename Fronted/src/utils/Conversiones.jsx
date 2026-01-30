@@ -5,13 +5,18 @@ export function ConvertirCapitalize(input) {
   export function ConvertirMinusculas(input){
     return input.toLowerCase()
   }
-  export function FormatearNumeroDinero(numero,currency,iso){
-    if(currency===undefined){
-      return;
+  export function FormatearNumeroDinero(numero, currency, iso) {
+    if (currency === undefined) {
+      return "";
     }
-    const esiso="es-" + iso
-    const numeroconvertido=numero.toLocaleString(esiso,{style:"currency",currency:`${currency}` })
-    return numeroconvertido
+    // Si el número es null o undefined, usar 0
+    const safeNumber = (typeof numero === "number" && !isNaN(numero)) ? numero : 0;
+    const esiso = "es-" + iso;
+    try {
+      return safeNumber.toLocaleString(esiso, { style: "currency", currency: `${currency}` });
+    } catch (e) {
+      return safeNumber.toLocaleString("es-PE", { style: "currency", currency: "PEN" });
+    }
   }
   export  const urlToBase64 = async(imageUrl)=>{
     const response = await fetch(imageUrl)

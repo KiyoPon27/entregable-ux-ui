@@ -134,7 +134,9 @@ export function PantallaIngresoSalidaDinero() {
               className="form__field"
               placeholder="0.00"
               type="number"
-              {...register("monto", { required: true })}
+              step="0.01"
+              inputMode="decimal"
+              {...register("monto", { required: true, valueAsNumber: true })}
             />
             {errors.monto?.type === "required" && <p>Campon requerido</p>}
           </InputText2>

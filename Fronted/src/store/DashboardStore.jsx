@@ -1,10 +1,23 @@
 import { create } from "zustand";
 
+
+// Helpers para fechas por defecto (últimos 7 días)
+function getDefaultFechaFin() {
+  const hoy = new Date();
+  return hoy.toISOString().split("T")[0];
+}
+function getDefaultFechaInicio() {
+  const hoy = new Date();
+  const hace7 = new Date(hoy);
+  hace7.setDate(hoy.getDate() - 6);
+  return hace7.toISOString().split("T")[0];
+}
+
 export const useDashboardStore = create((set, get) => ({
-  fechaInicio: null,
-  fechaFin: null,
+  fechaInicio: getDefaultFechaInicio(),
+  fechaFin: getDefaultFechaFin(),
   setRangoFechas: (inicio, fin) => set({ fechaInicio: inicio, fechaFin: fin }),
-  limpiarFechas: () => set({ fechaInicio: null, fechaFin: null }),
+  limpiarFechas: () => set({ fechaInicio: getDefaultFechaInicio(), fechaFin: getDefaultFechaFin() }),
   setFechasAnteriores: () => {
     const { fechaInicio, fechaFin } = get(); // Obtiene las fechas actuales del estado
     if (!fechaInicio || !fechaFin) {
