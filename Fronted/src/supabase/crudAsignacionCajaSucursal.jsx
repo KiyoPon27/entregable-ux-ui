@@ -21,8 +21,19 @@ export async function MostrarSucursalCajaAsignada(p) {
 }
 
 export async function InsertarAsignacionCajaSucursal(p) {
-    // TODO: Implement Insert endpoint if needed
-    // const { error } = await supabase.from(tabla).insert(p);
+  // Espera: { id_sucursal, id_usuario, id_caja }
+  try {
+    const body = {
+      usuario: { id: p.id_usuario },
+      sucursal: { id: p.id_sucursal },
+      caja: p.id_caja ? { id: p.id_caja } : null
+    };
+    const response = await api.post("/asignacion-sucursal", body);
+    return response.data;
+  } catch (error) {
+    console.error("Error al insertar asignación sucursal/caja:", error);
+    throw new Error(error.response?.data?.message || error.message);
+  }
 }
 
 export async function MostrarUsuariosAsignados(p) {

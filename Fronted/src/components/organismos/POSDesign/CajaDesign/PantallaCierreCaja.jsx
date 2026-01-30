@@ -168,7 +168,7 @@ export function PantallaCierreCaja() {
                     En {item?.metodo_pago}:{" "}
                     <span>
                       {FormatearNumeroDinero(
-                        item?.monto,
+                        item?.total,
                         dataempresa?.currency,
                         dataempresa?.iso
                       )}{" "}

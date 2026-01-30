@@ -88,8 +88,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
   const { datadetalleventa } = useDetalleVentasStore();
   const { dataComprobantes, itemComprobanteSelect, setItemComprobanteSelect } =
     useSerializacionStore();
-  //mostrar data de impresoras por usuario
-  const { dataImpresorasPorUsuario } = useImpresorasStore();
+  //mostrar data de impresoras por usuario y estado local de imprimir directo
+  const { dataImpresorasPorUsuario, statePrintDirecto } = useImpresorasStore();
   // Estados para RUC/DNI y Número de Comprobante
   const [rucDni, setRucDni] = useState("");
   const [nroComprobante, setNroComprobante] = useState("");
@@ -233,18 +233,50 @@ export const IngresoCobro = forwardRef((props, ref) => {
           const metodoPago = dataMetodosPago.find(
             (item) => item.nombre === tipo
           );
-          const pmovcaja = {
-            tipo_movimiento: "ingreso",
-            monto: monto,
-            id_metodo_pago: metodoPago?.id,
-            descripcion: `Pago de venta con ${tipo}`,
-            id_usuario: datausuarios?.id,
-            id_cierre_caja: dataCierreCaja?.id,
-            id_ventas: idventa,
-            vuelto: tipo === "Efectivo" ? vuelto : 0,
-          };
-          await insertarMovCaja(pmovcaja);
-          nuevosMetodosPago.push({ tipo, monto, vuelto });
+          // Si es efectivo, solo ingresar en caja el monto neto (pago - vuelto)
+          if (tipo === "Efectivo") {
+            const montoNeto = Number(monto) - Number(vuelto || 0);
+            const pmovcajaVenta = {
+              tipo_movimiento: "VENTA",
+              monto: montoNeto > 0 ? montoNeto : 0,
+              id_metodo_pago: metodoPago?.id,
+              descripcion: `Pago de venta con ${tipo}`,
+              id_usuario: datausuarios?.id,
+              id_cierre_caja: dataCierreCaja?.id,
+              id_ventas: idventa,
+              vuelto: 0,
+            };
+            await insertarMovCaja(pmovcajaVenta);
+
+            // Registrar el vuelto como salida si aplica
+            if (Number(vuelto) > 0) {
+              const pmovcajaVuelto = {
+                tipo_movimiento: "salida",
+                monto: Number(vuelto),
+                id_metodo_pago: metodoPago?.id,
+                descripcion: `Vuelto por venta`,
+                id_usuario: datausuarios?.id,
+                id_cierre_caja: dataCierreCaja?.id,
+                id_ventas: idventa,
+              };
+              await insertarMovCaja(pmovcajaVuelto);
+            }
+
+            nuevosMetodosPago.push({ tipo, monto, vuelto });
+          } else {
+            const pmovcaja = {
+              tipo_movimiento: "VENTA",
+              monto: monto,
+              id_metodo_pago: metodoPago?.id,
+              descripcion: `Pago de venta con ${tipo}`,
+              id_usuario: datausuarios?.id,
+              id_cierre_caja: dataCierreCaja?.id,
+              id_ventas: idventa,
+              vuelto: 0,
+            };
+            await insertarMovCaja(pmovcaja);
+            nuevosMetodosPago.push({ tipo, monto, vuelto: 0 });
+          }
         }
       }
       const pPrint = {
@@ -256,7 +288,10 @@ export const IngresoCobro = forwardRef((props, ref) => {
         dataCliente: cliproItemSelect,
         metodosPago: nuevosMetodosPago,
       };
-      dataImpresorasPorUsuario?.estado
+      // Usar el estado local `statePrintDirecto` para decidir el comportamiento
+      // Esto permite que desde la pantalla de cobro se desactive temporalmente
+      // la impresión directa sin sobrescribir la configuración guardada en DB.
+      (typeof statePrintDirecto === "boolean" ? statePrintDirecto : dataImpresorasPorUsuario?.estado)
         ? imprimirDirectoTicket(pPrint)
         : imprimirConVentanaEmergente(pPrint);
     } else {

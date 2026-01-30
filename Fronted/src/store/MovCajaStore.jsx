@@ -74,16 +74,16 @@ export const useMovCajaStore = create((set, get) => ({
     const result = await MostrarVentasMetodoPagoMovCaja(p);
     //sumamos el total
     const totalMonto = result.reduce(
-      (total, item) => total + (item.monto || 0),
+      (total, item) => total + (item.total || 0),
       0
     );
     // Filtrar solo las ventas en efectivo
     const ventasEfectivo = result.filter(
       (item) => item.metodo_pago === "Efectivo"
     );
-    // Sumar la columna "monto" solo para ventas en efectivo
+    // Sumar la columna "total" solo para ventas en efectivo
     const totalEfectivo = ventasEfectivo.reduce(
-      (total, item) => total + (item.monto || 0),
+      (total, item) => total + (item.total || 0),
       0
     );
     set({ totalVentasMetodoPago: totalMonto });

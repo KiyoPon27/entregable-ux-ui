@@ -47,8 +47,10 @@ export function PantallaCobro() {
             <Switch
               state={statePrintDirecto}
               setState={() => {
+                // Solo alterna el estado local de impresión directa.
+                // No persistimos este cambio aquí para no sobrescribir
+                // la configuración guardada en la plantilla de impresoras.
                 setStatePrintDirecto();
-                mutate();
               }}
               disabled={isPending}
             />

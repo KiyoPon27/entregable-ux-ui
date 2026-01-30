@@ -49,6 +49,7 @@ export const useUsuariosStore = create((set) => ({
       throw new Error("No hay módulos seleccionados");
     }
 
+    // Crear usuario
     const dataUserNew = await InsertarUsuarios({
       nombres: p.nombres,
       nro_doc: p.nro_doc,
@@ -59,13 +60,15 @@ export const useUsuariosStore = create((set) => ({
       id_auth: null,
       id_tipodocumento: p.id_tipodocumento || null
     });
-    
-    // Comentado temporalmente hasta migrar asignación
-    // await InsertarAsignacionCajaSucursal({
-    //   id_sucursal: p.id_sucursal,
-    //   id_usuario: dataUserNew?.id,
-    //   id_caja: p.id_caja,
-    // });
+
+    // Asignar sucursal y caja si se proveen (debe venir de formulario o lógica superior)
+    if (p.id_sucursal && p.id_caja && dataUserNew?.id) {
+      await InsertarAsignacionCajaSucursal({
+        id_sucursal: p.id_sucursal,
+        id_usuario: dataUserNew.id,
+        id_caja: p.id_caja,
+      });
+    }
 
     // Insertar permisos en paralelo
     await Promise.all(
