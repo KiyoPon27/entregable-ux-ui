@@ -81,6 +81,7 @@ export function AreaDetalleventaPos() {
     <AreaDetalleventa className={items?.length > 0 ? "" : "animacion"}>
     {items?.length > 0 ? (
       items?.map((item, index) => {
+        const igvBase = Number(item.precio_venta || 0) / 1.18; // Precio sin IGV (division solicitada)
         return (
           <Itemventa key={index}>
             <article className="contentdescripcion">
@@ -101,6 +102,10 @@ export function AreaDetalleventaPos() {
                   dataempresa?.iso
                 )}
               </span>
+              {/* Mostrar división precio / 1.18 con 5 decimales (solo vista) */}
+              <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                <strong>IGV 18%:</strong>&nbsp;{(igvBase).toFixed(5)}
+              </div>
               <ContentTotalResponsive>
                 <span className="importerespo">
                   <strong>precio unit:</strong>

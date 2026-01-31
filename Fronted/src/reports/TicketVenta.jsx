@@ -56,32 +56,58 @@ const TicketVenta = async (output, data) => {
     console.error("❌ Error al procesar logo:", error);
     logoempresa = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
   }
-  const productTableBody = [
-    [
-      { text: "CANT.", style: "tProductsHeader", alignment: "center" },
-      { text: "DESCRIPCIÓN", style: "tProductsHeader", alignment: "left" },
-      { text: "PRECIO", style: "tProductsHeader", alignment: "right" },
-      { text: "TOTAL", style: "tProductsHeader", alignment: "right" },
-    ],
-    ...data.productos.map((item) => [
+  // Decidir si incluimos columna IGV en el PDF: sólo cuando pedimos 'download' (ReporteFacturas)
+  const includeIgvColumn = output === "download";
+  let sumaIgv = 0;
+  let productTableBody;
+
+  if (includeIgvColumn) {
+    const productRows = (data.productos || []).map((item) => {
+      const cantidad = item.cantidad || 1;
+      const precioUnit = Number(item.precio_venta || 0);
+      const totalLinea = Number(item.total || precioUnit * cantidad || 0);
+      // Calcular IGV: asumimos que precio_venta incluye IGV; IGV linea = total - total/1.18
+      const igvLinea = totalLinea - totalLinea / 1.18;
+      sumaIgv += igvLinea;
+
+      return [
+        { text: cantidad, style: "tProductsBody", alignment: "center" },
+        { text: item.productos?.nombre || "Producto", style: "tProductsBody", alignment: "left" },
+        { text: `${simboloMoneda} ${Number(precioUnit).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
+        { text: `${simboloMoneda} ${Number(igvLinea).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
+        { text: `${simboloMoneda} ${Number(totalLinea).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
+      ];
+    });
+
+    productTableBody = [
+      [
+        { text: "CANT.", style: "tProductsHeader", alignment: "center" },
+        { text: "DESCRIPCIÓN", style: "tProductsHeader", alignment: "left" },
+        { text: "PRECIO", style: "tProductsHeader", alignment: "right" },
+        { text: "IGV (18%)", style: "tProductsHeader", alignment: "right" },
+        { text: "TOTAL", style: "tProductsHeader", alignment: "right" },
+      ],
+      ...productRows,
+    ];
+  } else {
+    // Versión para impresión POS: no mostrar columna IGV
+    const productRows = (data.productos || []).map((item) => [
       { text: item.cantidad || 1, style: "tProductsBody", alignment: "center" },
-      { 
-        text: item.productos?.nombre || "Producto", 
-        style: "tProductsBody", 
-        alignment: "left" 
-      },
-      {
-        text: `${simboloMoneda} ${Number(item.precio_venta || 0).toFixed(2)}`,
-        style: "tProductsBody",
-        alignment: "right",
-      },
-      { 
-        text: `${simboloMoneda} ${Number(item.total || 0).toFixed(2)}`, 
-        style: "tProductsBody", 
-        alignment: "right" 
-      },
-    ]),
-  ];
+      { text: item.productos?.nombre || "Producto", style: "tProductsBody", alignment: "left" },
+      { text: `${simboloMoneda} ${Number(item.precio_venta || 0).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
+      { text: `${simboloMoneda} ${Number(item.total || 0).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
+    ]);
+
+    productTableBody = [
+      [
+        { text: "CANT.", style: "tProductsHeader", alignment: "center" },
+        { text: "DESCRIPCIÓN", style: "tProductsHeader", alignment: "left" },
+        { text: "PRECIO", style: "tProductsHeader", alignment: "right" },
+        { text: "TOTAL", style: "tProductsHeader", alignment: "right" },
+      ],
+      ...productRows,
+    ];
+  }
 
   const content = [
     //DATA EMPRESA - LOGO Y DATOS FISCALES
@@ -192,7 +218,7 @@ const TicketVenta = async (output, data) => {
     {
       margin: [0, 10, 0, 0],
       table: {
-        widths: ["15%", "40%", "22.5%", "22.5%"],
+        widths: includeIgvColumn ? ["12%", "40%", "16%", "16%", "16%"] : ["15%", "45%", "20%", "20%"],
         headerRows: 1,
         body: productTableBody,
       },
@@ -229,7 +255,7 @@ const TicketVenta = async (output, data) => {
               alignment: "right" 
             },
             {
-              text: `${simboloMoneda} ${Number(data.dataventas?.totalImpuestos || 0).toFixed(2)}`,
+              text: `${simboloMoneda} ${Number(data.dataventas?.totalImpuestos ?? sumaIgv).toFixed(2)}`,
               style: "tTotals",
               alignment: "right"
             },
