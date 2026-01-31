@@ -95,8 +95,6 @@ export const IngresoCobro = forwardRef((props, ref) => {
   const [nroComprobante, setNroComprobante] = useState("");
   // Estados para errores de validación
   const [errorRucDni, setErrorRucDni] = useState("");
-  const [errorNroComprobante, setErrorNroComprobante] = useState("");
-  const [mensajeCamposObligatorios, setMensajeCamposObligatorios] = useState("");
   //#region Clientes
   const {
     buscarCliPro,
@@ -177,24 +175,17 @@ export const IngresoCobro = forwardRef((props, ref) => {
     // Validar campos requeridos solo para Factura y Boleta, no para Ticket
     const tipoComprobanteNombre = itemComprobanteSelect?.tipoComprobante?.nombre;
     
-    // Solo validar si NO es Ticket
+    // Solo validar RUC/DNI para Factura y Boleta (no obligatorio el nro de comprobante)
     if (tipoComprobanteNombre !== "Ticket") {
       if (!rucDni || rucDni.trim() === "") {
         toast.error(`El campo ${tipoComprobanteNombre === "Factura" ? "RUC" : "DNI"} es obligatorio`);
         return;
       }
-      
-      if (!nroComprobante || nroComprobante.trim() === "") {
-        toast.error("El Número de Comprobante es obligatorio");
-        return;
-      }
-      
       // Validar formato de RUC/DNI
       if (tipoComprobanteNombre === "Factura" && rucDni.length !== 11) {
         toast.error("El RUC debe tener 11 dígitos");
         return;
       }
-      
       if (tipoComprobanteNombre === "Boleta" && rucDni.length !== 8) {
         toast.error("El DNI debe tener 8 dígitos");
         return;
@@ -217,9 +208,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
         pagoCon: montoEfectivo,
       };
       
-      // Solo agregar nroComprobante y rucDni si NO es Ticket
+      // Agregar ruc/dni si NO es Ticket. No enviar nro de comprobante (se genera en backend)
       if (tipoComprobanteNombre !== "Ticket") {
-        pventas._nro_comprobante = nroComprobante;
         pventas._ruc_dni = rucDni;
       }
 
@@ -282,7 +272,10 @@ export const IngresoCobro = forwardRef((props, ref) => {
       const pPrint = {
         dataempresa: dataempresa,
         productos: datadetalleventa,
-        dataventas: dataVentaConfirmada,
+        dataventas: {
+          ...dataVentaConfirmada,
+          _ruc_dni: rucDni || dataVentaConfirmada?._ruc_dni || dataVentaConfirmada?.ruc_dni,
+        },
         nombreComprobante: itemComprobanteSelect?.tipoComprobante?.nombre,
         nombrecajero: datausuarios?.nombres,
         dataCliente: cliproItemSelect,
@@ -364,7 +357,6 @@ export const IngresoCobro = forwardRef((props, ref) => {
     setRucDni("");
     setNroComprobante("");
     setErrorRucDni("");
-    setErrorNroComprobante("");
   }, [itemComprobanteSelect]);
   
   // Lógica para mostrar/ocultar botón SUNAT y texto dinámico
@@ -453,24 +445,6 @@ export const IngresoCobro = forwardRef((props, ref) => {
                   </label>
                   {errorRucDni && <span style={{ color: '#d32f2f', fontSize: '13px' }}>{errorRucDni}</span>}
                 </InputText>
-                <InputText textalign="left">
-                  <input
-                    onChange={(e) => {
-                      setNroComprobante(e.target.value);
-                      setErrorNroComprobante("");
-                      setMensajeCamposObligatorios("");
-                    }}
-                    value={nroComprobante}
-                    className={`form__field${errorNroComprobante ? ' error-input' : ''}`}
-                    type="text"
-                    placeholder=" "
-                  />
-                  <label className="form__label">
-                    N° Comprobante (Ej: F001-0001)
-                  </label>
-                  {errorNroComprobante && <span style={{ color: '#d32f2f', fontSize: '13px' }}>{errorNroComprobante}</span>}
-                </InputText>
-                {mensajeCamposObligatorios && <div style={{ color: '#d32f2f', fontWeight: 600, marginTop: 6 }}>{mensajeCamposObligatorios}</div>}
               </section>
             )}
             
@@ -543,30 +517,22 @@ export const IngresoCobro = forwardRef((props, ref) => {
               {/* Botón SUNAT interno eliminado, solo queda COBRAR */}
               <Btn1
                 funcion={() => {
-                  // Validación previa de campos obligatorios
-                  let hayError = false;
-                  setErrorRucDni("");
-                  setErrorNroComprobante("");
-                  setMensajeCamposObligatorios("");
-                  if (tipoComprobante === "Factura" || tipoComprobante === "Boleta") {
-                    if (!rucDni.trim()) {
-                      setErrorRucDni(`El campo ${tipoComprobante === "Factura" ? "RUC" : "DNI"} es obligatorio`);
-                      hayError = true;
-                    } else if (tipoComprobante === "Factura" && rucDni.length !== 11) {
-                      setErrorRucDni("El RUC debe tener 11 dígitos");
-                      hayError = true;
-                    } else if (tipoComprobante === "Boleta" && rucDni.length !== 8) {
-                      setErrorRucDni("El DNI debe tener 8 dígitos");
-                      hayError = true;
+                  // Validación previa: solo validar RUC/DNI para Factura/Boleta
+                    setErrorRucDni("");
+                    if (tipoComprobante === "Factura" || tipoComprobante === "Boleta") {
+                      if (!rucDni.trim()) {
+                        setErrorRucDni(`El campo ${tipoComprobante === "Factura" ? "RUC" : "DNI"} es obligatorio`);
+                        return;
+                      }
+                      if (tipoComprobante === "Factura" && rucDni.length !== 11) {
+                        setErrorRucDni("El RUC debe tener 11 dígitos");
+                        return;
+                      }
+                      if (tipoComprobante === "Boleta" && rucDni.length !== 8) {
+                        setErrorRucDni("El DNI debe tener 8 dígitos");
+                        return;
+                      }
                     }
-                    if (!nroComprobante.trim()) {
-                      setErrorNroComprobante("El N° Comprobante es obligatorio");
-                      hayError = true;
-                    }
-                    if (hayError) {
-                      return;
-                    }
-                  }
                   // El flujo de cobro es directo para todos los comprobantes
                   mutation.mutateAsync();
                 }}

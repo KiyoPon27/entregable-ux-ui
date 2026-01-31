@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.dto.ConfirmarVentaDTO;
 import tienda.posbackend.dto.VentaConfirmadaDTO;
 import tienda.posbackend.dto.VentaDetalleCompletoDTO;
+import tienda.posbackend.dto.VentaConMetodoPagoDTO;
 import tienda.posbackend.entities.Venta;
 import tienda.posbackend.services.VentaService;
 
@@ -53,13 +54,13 @@ public class VentaController {
     }
     
     @GetMapping("/facturas")
-    public ResponseEntity<List<Venta>> filtrarFacturas(
+    public ResponseEntity<List<VentaConMetodoPagoDTO>> filtrarFacturas(
             @RequestParam Long empresaId,
             @RequestParam(required = false) String tipo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin,
             @RequestParam(required = false) String buscador) {
-        List<Venta> facturas = ventaService.filtrarFacturas(empresaId, tipo, fechaInicio, fechaFin, buscador);
+        List<VentaConMetodoPagoDTO> facturas = ventaService.filtrarFacturas(empresaId, tipo, fechaInicio, fechaFin, buscador);
         return ResponseEntity.ok(facturas);
     }
     

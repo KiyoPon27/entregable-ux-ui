@@ -40,4 +40,6 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
            "LEFT JOIN FETCH mc.metodoPago mp " +
            "WHERE mc.venta.id = :idVenta")
     List<MovimientoCaja> findByVentaId(@Param("idVenta") Long idVenta);
+    
+    MovimientoCaja findFirstByVentaIdAndTipoMovimiento(Long ventaId, String tipoMovimiento);
 }

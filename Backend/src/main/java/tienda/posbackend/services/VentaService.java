@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import tienda.posbackend.dto.ConfirmarVentaDTO;
 import tienda.posbackend.dto.VentaConfirmadaDTO;
 import tienda.posbackend.dto.VentaDetalleCompletoDTO;
+import tienda.posbackend.dto.VentaConMetodoPagoDTO;
 import tienda.posbackend.dto.VentaDetalleCompletoDTO.*;
 import tienda.posbackend.entities.*;
 import tienda.posbackend.repositories.*;
@@ -231,8 +232,42 @@ public class VentaService {
     }
     
     @Transactional(readOnly = true)
-    public List<Venta> filtrarFacturas(Long empresaId, String tipo, LocalDateTime fechaInicio, LocalDateTime fechaFin, String buscador) {
-        return ventaRepository.findFacturasConFiltros(empresaId, tipo, fechaInicio, fechaFin, buscador);
+    public List<VentaConMetodoPagoDTO> filtrarFacturas(Long empresaId, String tipo, LocalDateTime fechaInicio, LocalDateTime fechaFin, String buscador) {
+        List<Venta> ventas = ventaRepository.findFacturasConFiltros(empresaId, tipo, fechaInicio, fechaFin, buscador);
+        return ventas.stream().map(venta -> {
+            VentaConMetodoPagoDTO dto = new VentaConMetodoPagoDTO();
+            dto.setId(venta.getId());
+            dto.setFecha(venta.getFecha());
+            dto.setMontoTotal(venta.getMontoTotal());
+            dto.setTotalImpuestos(venta.getTotalImpuestos());
+            dto.setNroComprobante(venta.getNroComprobante());
+            dto.setTipoComprobante(venta.getTipoComprobante());
+            dto.setRucDni(venta.getRucDni());
+            dto.setClienteNombre(venta.getCliente() != null ? venta.getCliente().getNombres() : "");
+
+            // Buscar todos los movimientos de caja de tipo VENTA para esta venta
+            List<MovimientoCaja> movimientos = movimientoCajaRepository.findByVentaId(venta.getId());
+            List<VentaConMetodoPagoDTO.MetodoPagoDetalle> detalles = new java.util.ArrayList<>();
+            java.util.Set<String> nombresMetodos = new java.util.HashSet<>();
+            for (MovimientoCaja mov : movimientos) {
+                if (mov.getTipoMovimiento() != null && mov.getTipoMovimiento().equals("VENTA") && mov.getMetodoPago() != null) {
+                    VentaConMetodoPagoDTO.MetodoPagoDetalle det = new VentaConMetodoPagoDTO.MetodoPagoDetalle();
+                    det.setNombre(mov.getMetodoPago().getNombre());
+                    det.setMonto(mov.getMonto());
+                    detalles.add(det);
+                    nombresMetodos.add(mov.getMetodoPago().getNombre());
+                }
+            }
+            dto.setMetodosPagoDetalle(detalles);
+            if (nombresMetodos.size() == 0) {
+                dto.setMetodoPago("-");
+            } else if (nombresMetodos.size() == 1) {
+                dto.setMetodoPago(nombresMetodos.iterator().next());
+            } else {
+                dto.setMetodoPago("Mixto");
+            }
+            return dto;
+        }).collect(Collectors.toList());
     }
     
     @Transactional(readOnly = true)
@@ -346,6 +381,7 @@ public class VentaService {
             .nroComprobante(venta.getNroComprobante())
             .fecha(venta.getFecha())
             .montoTotal(venta.getMontoTotal())
+            .rucDni(venta.getRucDni())
             .subTotal(venta.getSubTotal())
             .totalImpuestos(venta.getTotalImpuestos())
             .tipoComprobante(venta.getTipoComprobante())
@@ -379,6 +415,15 @@ public class VentaService {
                 .identificadorFiscal(cliente.getIdentificadorFiscal())
                 .build();
         }
+
+        // 11. Construir DTO de sucursal si existe
+        SucursalDTO sucursalDTO = null;
+        if (venta.getSucursal() != null) {
+            sucursalDTO = SucursalDTO.builder()
+                .id(venta.getSucursal().getId())
+                .nombre(venta.getSucursal().getNombre())
+                .build();
+        }
         
         // 9. Construir lista de métodos de pago
         List<MetodoPagoDTO> metodosPagoDTO = movimientos.stream()
@@ -395,6 +440,7 @@ public class VentaService {
             .dataventas(ventaDTO)
             .productos(productosDTO)
             .dataCliente(clienteDTO)
+            .sucursal(sucursalDTO)
             .metodosPago(metodosPagoDTO)
             .nombreComprobante(venta.getTipoComprobante() != null ? venta.getTipoComprobante().toUpperCase() : "TICKET")
             .build();

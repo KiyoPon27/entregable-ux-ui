@@ -14,10 +14,9 @@ import { useLocation } from "react-router-dom";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 function App() {
-  const { setTheme } = useThemeStore();
+  const { setTheme, themeStyle } = useThemeStore();
   const { datausuarios } = useUsuariosStore();
   const location = useLocation();
-  const themeStyle = datausuarios?.tema ==="light"?Light:Dark
   useEffect(() => {
     if (location.pathname === "/login") {
       setTheme({
@@ -26,21 +25,22 @@ function App() {
       });
     } else {
       if (datausuarios) {
-        const themeStyle = datausuarios?.tema === "light" ? Light : Dark;
+        const style = datausuarios?.tema === "light" ? Light : Dark;
         setTheme({
           tema: datausuarios?.tema,
-          style: themeStyle,
+          style: style,
         });
       }
     }
+    // Solo sincroniza con usuario al cargar, no al cambiar tema
+    // El toggle ahora sí funciona porque ThemeProvider depende de themeStyle
+    // eslint-disable-next-line
   }, [datausuarios]);
   return (
     <ThemeProvider theme={themeStyle}>
       <AuthContextProvider>
         <GlobalStyles />
-
         <MyRoutes />
-
         <ReactQueryDevtools initialIsOpen={true} />
       </AuthContextProvider>
     </ThemeProvider>

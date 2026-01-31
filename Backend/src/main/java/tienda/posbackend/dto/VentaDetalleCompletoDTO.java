@@ -26,6 +26,9 @@ public class VentaDetalleCompletoDTO {
     // Datos del cliente
     private ClienteDTO dataCliente;
     
+    // Sucursal asociada a la venta
+    private SucursalDTO sucursal;
+    
     // Métodos de pago
     private List<MetodoPagoDTO> metodosPago;
     
@@ -66,6 +69,7 @@ public class VentaDetalleCompletoDTO {
         private BigDecimal montoTotal;
         private BigDecimal subTotal;
         private BigDecimal totalImpuestos;
+        private String rucDni;
         private String tipoComprobante;
         private String estado;
         private UsuarioDTO usuario;
@@ -102,6 +106,15 @@ public class VentaDetalleCompletoDTO {
         private String nombres;
         private String identificador_fiscal;
         private String identificadorFiscal;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SucursalDTO {
+        private Long id;
+        private String nombre;
     }
     
     @Data

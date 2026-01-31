@@ -7,43 +7,33 @@ export function ToggleTema() {
   const { editarThemeUser, datausuarios } = useUsuariosStore();
   const { setTheme, theme } = useThemeStore();
   const queryClient = useQueryClient();
-  const editarTemaUser = async () => {
+
+  // Cambio inmediato local y luego guardar en backend
+  const handleToggle = () => {
     const themeUse = theme === "light" ? "dark" : "light";
-    const themeStyle = datausuarios?.tema === "light" ? Dark : Light;
+    const themeStyle = themeUse === "light" ? Light : Dark;
     setTheme({
       tema: themeUse,
       style: themeStyle,
     });
-    const p = {
-      id: datausuarios?.id,
-      tema: themeUse,
-    };
-
-    await editarThemeUser(p);
+    // Guardar preferencia en backend (no bloquea el toggle)
+    if (datausuarios?.id) {
+      editarThemeUser({ id: datausuarios.id, tema: themeUse })
+        .then(() => queryClient.invalidateQueries(["mostrar usuarios"]))
+        .catch((error) => console.log(`Error: ${error.message}`));
+    }
   };
-  const { mutate,isPending } = useMutation({
-    mutationKey: ["editar tema"],
-    mutationFn: editarTemaUser,
-    onError: (error) => {
-      console.log(`Error: ${error.message}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["mostrar usuarios"]);
-    },
-  });
 
   return (
     <Container>
       <div className="container">
-        {
-          isPending && <span>espera...</span>
-        }
         <label className="toggle">
           <input
             id="switch"
             className="input"
             type="checkbox"
-            onClick={mutate}
+            checked={theme === "dark"}
+            onChange={handleToggle}
           />
           <div className="icon icon--moon">
             <svg

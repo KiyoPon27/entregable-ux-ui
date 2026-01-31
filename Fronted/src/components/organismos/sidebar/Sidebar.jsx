@@ -73,7 +73,7 @@ export function Sidebar({ state, setState }) {
               <Icon
                 color="#CE82FF"
                 className="Linkicon"
-                icon="heroicons:ellipsis-horizontal-circle-solid"
+                icon="mdi:logout"
               />
               <span  className={state ? "label_ver" : "label_oculto"}>SALIR</span>
             </section>

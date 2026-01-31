@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useMetodosPagoStore } from "../store/MetodosPagoStore";
 import styled from "styled-components";
 import { Icon } from "@iconify/react";
 import { useQuery } from "@tanstack/react-query";
@@ -19,12 +20,21 @@ const { RangePicker } = DatePicker;
 export function ReporteFacturas() {
   const { dataempresa } = useEmpresaStore();
   const [filtroTipo, setFiltroTipo] = useState("");
+  const [filtroMetodoPago, setFiltroMetodoPago] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("7dias");
   const [buscador, setBuscador] = useState("");
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
   const [modalDetalle, setModalDetalle] = useState(false);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [descargandoPDF, setDescargandoPDF] = useState(false);
+
+  // Métodos de pago
+  const { dataMetodosPago, mostrarMetodosPago } = useMetodosPagoStore();
+  useEffect(() => {
+    if (dataempresa?.id) {
+      mostrarMetodosPago({ id_empresa: dataempresa.id });
+    }
+  }, [dataempresa?.id, mostrarMetodosPago]);
   
   // Estados para el selector de fechas
   const [dates, setDates] = useState([]);
@@ -85,12 +95,13 @@ export function ReporteFacturas() {
 
   // Query para obtener facturas filtradas
   const { data: facturasData, isLoading: loadingFacturas, error: errorFacturas } = useQuery({
-    queryKey: ["facturas", dataempresa?.id, filtroTipo, fechaInicio, fechaFin, buscador],
+    queryKey: ["facturas", dataempresa?.id, filtroTipo, filtroMetodoPago, fechaInicio, fechaFin, buscador],
     queryFn: async () => {
       const params = new URLSearchParams({
         empresaId: dataempresa?.id,
       });
       if (filtroTipo) params.append("tipo", filtroTipo);
+      if (filtroMetodoPago) params.append("metodoPago", filtroMetodoPago);
       if (fechaInicio) params.append("fechaInicio", fechaInicio.toISOString());
       if (fechaFin) params.append("fechaFin", fechaFin.toISOString());
       if (buscador) params.append("buscador", buscador);
@@ -98,36 +109,32 @@ export function ReporteFacturas() {
       const response = await api.get(
         `/ventas/facturas?${params.toString()}`
       );
-      
-      console.log("📊 URL completa:", `/ventas/facturas?${params.toString()}`);
-      console.log("📊 Tipo de response.data:", typeof response.data);
-      
       // IMPORTANTE: El backend puede devolver string JSON en lugar de objeto parseado
       let data;
       try {
         if (typeof response.data === 'string') {
-          console.log("⚠️ Respuesta es string, intentando parsear...");
-          console.log("📝 Primeros 500 caracteres:", response.data.substring(0, 500));
-          console.log("📝 Últimos 200 caracteres:", response.data.substring(response.data.length - 200));
           data = JSON.parse(response.data);
         } else {
           data = response.data;
         }
       } catch (parseError) {
-        console.error("❌ Error al parsear JSON:", parseError);
-        console.error("📄 Respuesta completa:", response.data);
         throw new Error(`Error al parsear respuesta del servidor: ${parseError.message}`);
       }
-      
-      console.log("✅ Datos parseados correctamente:", data);
-      console.log("📊 Es array:", Array.isArray(data));
       return data;
     },
     enabled: !!dataempresa?.id,
   });
 
   // Asegurar que facturas sea siempre un array
-  const facturas = Array.isArray(facturasData) ? facturasData : [];
+  const facturasRaw = Array.isArray(facturasData) ? facturasData : [];
+  // Aplicar filtro de tipo y método de pago en el frontend (por si el backend no filtra)
+  const facturas = facturasRaw.filter((venta) => {
+    // Filtro por tipo
+    const tipoOk = !filtroTipo || venta.tipoComprobante === filtroTipo;
+    // Filtro por método de pago
+    const metodoOk = !filtroMetodoPago || venta.metodoPago === filtroMetodoPago;
+    return tipoOk && metodoOk;
+  });
   console.log("📊 Facturas procesadas para mostrar:", facturas);
 
   // Query para estadísticas
@@ -207,8 +214,22 @@ export function ReporteFacturas() {
   };
 
   const handleVerDetalle = (venta) => {
-    setVentaSeleccionada(venta);
-    setModalDetalle(true);
+    // Solicitar detalle completo antes de mostrar el modal para asegurar cajero y sucursal
+    (async () => {
+      try {
+        const response = await api.get(`/ventas/${venta.id}/detalle-completo`);
+        const detalle = response.data;
+        // Normalizar nombre del cajero a un campo rápido para la plantilla si hace falta
+        if (detalle && detalle.dataventas && detalle.dataventas.usuario) {
+          detalle.nombrecajero = detalle.dataventas.usuario.nombres;
+        }
+        setVentaSeleccionada(detalle);
+        setModalDetalle(true);
+      } catch (err) {
+        console.error('Error al obtener detalle completo', err);
+        toast.error('No se pudo obtener detalle de la venta');
+      }
+    })();
   };
 
   const handleDescargarPDF = async () => {
@@ -219,23 +240,40 @@ export function ReporteFacturas() {
 
     setDescargandoPDF(true);
     try {
-      console.log("🎫 Descargando PDF de venta ID:", ventaSeleccionada.id);
-      
+      // Determinar ID de la venta robustamente: puede venir en ventaSeleccionada.id o en dataventas.id
+      const idVenta = ventaSeleccionada?.id || ventaSeleccionada?.dataventas?.id || ventaSeleccionada?.dataventas?.id;
+      if (!idVenta) {
+        toast.error("ID de venta no disponible para descargar PDF");
+        setDescargandoPDF(false);
+        return;
+      }
+
+      console.log("🎫 Descargando PDF de venta ID:", idVenta);
+
       // Obtener detalle completo de la venta desde el backend
-      const response = await api.get(`/ventas/${ventaSeleccionada.id}/detalle-completo`);
-      const detalleCompleto = response.data;
-      
+      const response = await api.get(`/ventas/${idVenta}/detalle-completo`);
+      let detalleCompleto = response.data;
+
+      // Algunos endpoints devuelven JSON como string; manejarlo
+      if (typeof detalleCompleto === "string") {
+        try {
+          detalleCompleto = JSON.parse(detalleCompleto);
+        } catch (e) {
+          console.warn("Respuesta detalle-completo no es JSON parseable", e);
+        }
+      }
+
       console.log("✅ Detalle completo recibido:", detalleCompleto);
-      
+
       // Agregar el nombre del cajero en el formato que espera TicketVenta
       const dataParaPDF = {
         ...detalleCompleto,
-        nombrecajero: detalleCompleto.dataventas?.usuario?.nombres || "Sin cajero"
+        nombrecajero: detalleCompleto?.dataventas?.usuario?.nombres || ventaSeleccionada?.nombrecajero || "Sin cajero",
       };
-      
+
       // Regenerar el PDF usando TicketVenta
       await TicketVenta("download", dataParaPDF);
-      
+
       toast.success("PDF descargado correctamente");
     } catch (error) {
       console.error("❌ Error al descargar PDF:", error);
@@ -274,6 +312,7 @@ export function ReporteFacturas() {
 
         {mostrarFiltros && (
           <FiltersSection>
+
             <FilterGroup>
               <FilterLabel>Tipo:</FilterLabel>
               <FilterSelect value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
@@ -281,6 +320,16 @@ export function ReporteFacturas() {
                 <option value="FACTURA">Facturas</option>
                 <option value="BOLETA">Boletas</option>
                 <option value="TICKET">Tickets</option>
+              </FilterSelect>
+            </FilterGroup>
+
+            <FilterGroup>
+              <FilterLabel>Método de Pago:</FilterLabel>
+              <FilterSelect value={filtroMetodoPago} onChange={(e) => setFiltroMetodoPago(e.target.value)}>
+                <option value="">Todos</option>
+                {dataMetodosPago && dataMetodosPago.map((metodo) => (
+                  <option key={metodo.id} value={metodo.nombre}>{metodo.nombre}</option>
+                ))}
               </FilterSelect>
             </FilterGroup>
 
@@ -370,7 +419,6 @@ export function ReporteFacturas() {
               )}
             </StatValue>
           </StatCard>
-          
           <StatCard>
             <StatLabel>Facturas ({estadisticas?.facturas?.count || 0})</StatLabel>
             <StatValue color="#8b5cf6">
@@ -381,7 +429,6 @@ export function ReporteFacturas() {
               )}
             </StatValue>
           </StatCard>
-
           <StatCard>
             <StatLabel>Boletas ({estadisticas?.boletas?.count || 0})</StatLabel>
             <StatValue color="#f59e0b">
@@ -392,7 +439,6 @@ export function ReporteFacturas() {
               )}
             </StatValue>
           </StatCard>
-
           <StatCard>
             <StatLabel>Tickets ({estadisticas?.tickets?.count || 0})</StatLabel>
             <StatValue color="#3b82f6">
@@ -403,6 +449,43 @@ export function ReporteFacturas() {
               )}
             </StatValue>
           </StatCard>
+          {/* Totales por método de pago */}
+          {/* Calcular totales por método de pago usando el desglose de cada factura */}
+          {dataMetodosPago && dataMetodosPago
+            .filter((metodo) => metodo.nombre.toLowerCase() !== 'mixto')
+            .map((metodo) => {
+              let totalMetodo = 0;
+              console.log(`\nMétodo de pago: ${metodo.nombre}`);
+              facturas.forEach((venta, idx) => {
+                console.log(`  Venta #${idx + 1} | ID: ${venta.id} | metodoPago: ${venta.metodoPago} | montoTotal: ${venta.montoTotal} | totalPagar: ${venta.totalPagar}`);
+                if (Array.isArray(venta.metodosPagoDetalle)) {
+                  console.log('    metodosPagoDetalle:', venta.metodosPagoDetalle);
+                  venta.metodosPagoDetalle.forEach((detalle, i) => {
+                    if (detalle.nombre === metodo.nombre) {
+                      console.log(`      [${i}] Suma detalle: ${detalle.monto} (nombre: ${detalle.nombre})`);
+                      totalMetodo += detalle.monto || 0;
+                    }
+                  });
+                } else if (venta.metodoPago === metodo.nombre) {
+                  // fallback por si no hay desglose
+                  console.log('    Suma por metodoPago directo:', venta.montoTotal);
+                  totalMetodo += venta.montoTotal || 0;
+                }
+              });
+              console.log(`  Total calculado para ${metodo.nombre}:`, totalMetodo);
+              return (
+                <StatCard key={metodo.id}>
+                  <StatLabel>{metodo.nombre}</StatLabel>
+                  <StatValue color="#059669">
+                    {FormatearNumeroDinero(
+                      totalMetodo,
+                      dataempresa?.currency,
+                      dataempresa?.iso
+                    )}
+                  </StatValue>
+                </StatCard>
+              );
+            })}
         </StatsRow>
       </StatsContainer>
 
@@ -432,6 +515,7 @@ export function ReporteFacturas() {
                 <Th>N° Comprobante</Th>
                 <Th>Tipo</Th>
                 <Th>RUC / DNI</Th>
+                <Th>Método de Pago</Th>
                 <Th>Monto Total</Th>
                 <Th>Acciones</Th>
               </tr>
@@ -451,6 +535,7 @@ export function ReporteFacturas() {
                     </Badge>
                   </Td>
                   <Td>{venta.rucDni || "-"}</Td>
+                  <Td>{venta.metodoPago || "-"}</Td>
                   <Td>
                     <TotalAmount>
                       {FormatearNumeroDinero(
@@ -487,12 +572,12 @@ export function ReporteFacturas() {
               <InfoGroup>
                 <InfoItem>
                   <label>N° Comprobante:</label>
-                  <span>{ventaSeleccionada.nroComprobante || "-"}</span>
+                  <span>{ventaSeleccionada?.dataventas?.nroComprobante || ventaSeleccionada?.nroComprobante || "-"}</span>
                 </InfoItem>
                 <InfoItem>
                   <label>Tipo:</label>
-                  <Badge color={obtenerColorTipo(ventaSeleccionada.tipoComprobante)}>
-                    {ventaSeleccionada.tipoComprobante || "-"}
+                  <Badge color={obtenerColorTipo(ventaSeleccionada?.nombreComprobante || ventaSeleccionada?.dataventas?.tipoComprobante)}>
+                    {ventaSeleccionada?.nombreComprobante || ventaSeleccionada?.dataventas?.tipoComprobante || "-"}
                   </Badge>
                 </InfoItem>
               </InfoGroup>
@@ -500,8 +585,8 @@ export function ReporteFacturas() {
                 <InfoItem>
                   <label>Fecha:</label>
                   <span>
-                    {ventaSeleccionada.fecha
-                      ? format(new Date(ventaSeleccionada.fecha), "dd/MM/yyyy HH:mm", {
+                    {ventaSeleccionada?.dataventas?.fecha
+                      ? format(new Date(ventaSeleccionada.dataventas.fecha), "dd/MM/yyyy HH:mm", {
                           locale: es,
                         })
                       : "-"}
@@ -509,27 +594,27 @@ export function ReporteFacturas() {
                 </InfoItem>
                 <InfoItem>
                   <label>Cliente:</label>
-                  <span>{ventaSeleccionada.cliente?.nombres || "Público General"}</span>
+                  <span>{ventaSeleccionada?.dataCliente?.nombres || "Público General"}</span>
                 </InfoItem>
               </InfoGroup>
               <InfoGroup>
                 <InfoItem>
                   <label>
-                    {ventaSeleccionada.tipoComprobante?.toUpperCase() === "FACTURA" 
+                    {(ventaSeleccionada?.dataventas?.tipoComprobante || ventaSeleccionada?.nombreComprobante)?.toUpperCase() === "FACTURA" 
                       ? "RUC:" 
-                      : ventaSeleccionada.tipoComprobante?.toUpperCase() === "BOLETA"
+                      : (ventaSeleccionada?.dataventas?.tipoComprobante || ventaSeleccionada?.nombreComprobante)?.toUpperCase() === "BOLETA"
                       ? "DNI:"
                       : "Documento:"}
                   </label>
                   <span>
-                    {ventaSeleccionada.rucDni || "-"}
+                    {ventaSeleccionada?.dataventas?.rucDni || ventaSeleccionada?.dataventas?.ruc_dni || ventaSeleccionada?.dataventas?._ruc_dni || ventaSeleccionada?.dataCliente?.identificador_fiscal || ventaSeleccionada?.rucDni || "-"}
                   </span>
-                  {ventaSeleccionada.tipoComprobante?.toUpperCase() === "FACTURA" && (
+                  {(ventaSeleccionada?.dataventas?.tipoComprobante || ventaSeleccionada?.nombreComprobante)?.toUpperCase() === "FACTURA" && (
                     <DocumentTypeHint>
                       (Registro Único de Contribuyentes)
                     </DocumentTypeHint>
                   )}
-                  {ventaSeleccionada.tipoComprobante?.toUpperCase() === "BOLETA" && (
+                  {(ventaSeleccionada?.dataventas?.tipoComprobante || ventaSeleccionada?.nombreComprobante)?.toUpperCase() === "BOLETA" && (
                     <DocumentTypeHint>
                       (Documento Nacional de Identidad)
                     </DocumentTypeHint>
@@ -539,7 +624,7 @@ export function ReporteFacturas() {
                   <label>Monto Total:</label>
                   <span className="total">
                     {FormatearNumeroDinero(
-                      ventaSeleccionada.totalPagar || ventaSeleccionada.montoTotal || 0,
+                      ventaSeleccionada?.dataventas?.montoTotal || ventaSeleccionada?.totalPagar || ventaSeleccionada?.montoTotal || 0,
                       dataempresa?.currency,
                       dataempresa?.iso
                     )}
@@ -549,11 +634,11 @@ export function ReporteFacturas() {
               <InfoGroup>
                 <InfoItem>
                   <label>Cajero:</label>
-                  <span>{ventaSeleccionada.usuario?.nombres || "-"}</span>
+                  <span>{ventaSeleccionada?.dataventas?.usuario?.nombres || ventaSeleccionada?.nombrecajero || "-"}</span>
                 </InfoItem>
                 <InfoItem>
                   <label>Sucursal:</label>
-                  <span>{ventaSeleccionada.sucursal?.nombre || "-"}</span>
+                  <span>{ventaSeleccionada?.sucursal?.nombre || "-"}</span>
                 </InfoItem>
               </InfoGroup>
             </ModalBody>

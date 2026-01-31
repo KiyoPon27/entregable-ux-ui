@@ -174,9 +174,10 @@ const TicketVenta = async (output, data) => {
             {},
           ],
           [
-            { text: "DOC.ID: ", style: "tClientLabel" },
+            { text: "N°_DOC: ", style: "tClientLabel" },
             {
-              text: data.dataCliente?.identificador_fiscal || "-",
+              text:
+                data.dataventas?._ruc_dni || data.dataventas?.ruc_dni || data.dataventas?.rucDni || data.dataCliente?.identificador_fiscal || "-",
               style: "tClientValue",
               colSpan: 3,
             },
