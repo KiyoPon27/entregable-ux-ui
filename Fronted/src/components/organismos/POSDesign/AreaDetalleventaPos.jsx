@@ -13,7 +13,7 @@ import {
 } from "../../../index";
 import animacionvacio from "../../../assets/vacioanimacion.json";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Device } from "../../../styles/breakpoints";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ export function AreaDetalleventaPos() {
   const { dataempresa } = useEmpresaStore();
   const [editIndex, setEditIndex] = useState(null);
   const [newCantidad, setNewCantidad] = useState(1);
+  const carritoRef = useRef(null);
   const { mostrardetalleventa, editarCantidadDetalleVenta,eliminardetalleventa } =
     useDetalleVentasStore();
     const queryClient = useQueryClient()
@@ -77,8 +78,19 @@ export function AreaDetalleventaPos() {
     queryKey: ["mostrar detalle venta", { id_venta: idventa }],
     queryFn: () => mostrardetalleventa({ id_venta: idventa }),
   });
+  
+  // Scroll automático cuando se agregue un nuevo producto
+  useEffect(() => {
+    if (items?.length > 0 && carritoRef.current) {
+      carritoRef.current.scrollTo({
+        top: carritoRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, [items?.length]);
+  
   return (
-    <AreaDetalleventa className={items?.length > 0 ? "" : "animacion"}>
+    <AreaDetalleventa ref={carritoRef} className={items?.length > 0 ? "" : "animacion"}>
     {items?.length > 0 ? (
       items?.map((item, index) => {
         const igvBase = Number(item.precio_venta || 0) / 1.18; // Precio sin IGV (division solicitada)

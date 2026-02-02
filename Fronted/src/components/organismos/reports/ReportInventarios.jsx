@@ -22,6 +22,11 @@ export const ReportInventarios = () => {
       (acc, item) => acc + (item.stock || 0),
       0
     ) || 0;
+  const totalValor =
+    dataReporteInventarioValorado?.reduce(
+      (acc, item) => acc + (item.total || 0),
+      0
+    ) || 0;
   const currentDate = new Date();
   const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
   Font.register({
@@ -104,30 +109,28 @@ export const ReportInventarios = () => {
       fontFamily: "Inconsolata",
     },
     codeCell: {
-      flex: 0.8,
+      flex: 1.2,
       textAlign: "center",
       fontFamily: "Inconsolata",
       fontSize: 9,
       padding: 3,
     },
     descriptionCell: {
-      flex: 2,
+      flex: 2.5,
       textAlign: "center",
       fontFamily: "Inconsolata",
       fontSize: 9,
       padding: 3,
     },
     numberCell: {
-      flex: 0.8,
-      textAlign: "right",
+      flex: 1,
+      textAlign: "center",
       fontFamily: "Inconsolata",
       fontSize: 9,
       padding: 3,
-      paddingRight: 5,
     },
     headerCodeCell: {
-      flex: 0.8,
-
+      flex: 1.2,
       fontWeight: "bold",
       fontFamily: "Inconsolata",
       textAlign: "center",
@@ -135,8 +138,7 @@ export const ReportInventarios = () => {
       padding: 3,
     },
     headerDescriptionCell: {
-      flex: 2,
-
+      flex: 2.5,
       fontWeight: "bold",
       fontFamily: "Inconsolata",
       textAlign: "center",
@@ -144,8 +146,7 @@ export const ReportInventarios = () => {
       padding: 3,
     },
     headerNumberCell: {
-      flex: 0.8,
-
+      flex: 1,
       fontWeight: "bold",
       fontFamily: "Inconsolata",
       textAlign: "center",
@@ -153,7 +154,7 @@ export const ReportInventarios = () => {
       padding: 3,
     },
     totalLabelCell: {
-      flex: 2.8,
+      flex: 3.7,
       textAlign: "right",
       fontFamily: "Inconsolata",
       fontWeight: "bold",
@@ -173,25 +174,22 @@ export const ReportInventarios = () => {
   );
   const renderTableRow = (rowData) => (
     <View style={styles.row}>
-      <Text style={styles.codeCell}> {rowData.codigoArticulo} </Text>
+      <Text style={styles.codeCell}>{rowData.codigoArticulo}</Text>
       <Text style={styles.descriptionCell}>{rowData.descripcionArticulo}</Text>
       <Text style={styles.numberCell}>
-        {" "}
         {typeof rowData.stock === "number"
           ? rowData.stock.toFixed(2)
-          : rowData.stock}{" "}
+          : rowData.stock}
       </Text>
       <Text style={styles.numberCell}>
-        {" "}
         {typeof rowData.precioCosto === "number"
           ? rowData.precioCosto.toFixed(2)
-          : rowData.precioCosto}{" "}
+          : rowData.precioCosto}
       </Text>
       <Text style={styles.numberCell}>
-        {" "}
         {typeof rowData.total === "number"
           ? rowData.total.toFixed(2)
-          : rowData.total}{" "}
+          : rowData.total}
       </Text>
     </View>
   );
@@ -221,7 +219,11 @@ export const ReportInventarios = () => {
                   <View style={styles.row}>
                     <Text style={styles.totalLabelCell}>TOTAL</Text>
                     <Text style={styles.numberCell}>
-                      {totalStock.toFixed(2)}{" "}
+                      {totalStock.toFixed(2)}
+                    </Text>
+                    <Text style={styles.numberCell}></Text>
+                    <Text style={styles.numberCell}>
+                      {totalValor.toFixed(2)}
                     </Text>
                   </View>
                 </View>

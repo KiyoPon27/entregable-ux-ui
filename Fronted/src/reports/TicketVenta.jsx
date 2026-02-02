@@ -137,6 +137,11 @@ const TicketVenta = async (output, data) => {
     {
       text: data.dataempresa?.direccionFiscal || data.dataempresa?.direccion_fiscal || "Sin dirección",
       style: "subheader",
+      margin: [0, 2, 0, 2],
+    },
+    {
+      text: "Contactanos: 921071767",
+      style: "subheader",
       margin: [0, 2, 0, 5],
     },
 

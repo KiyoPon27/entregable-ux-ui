@@ -8,6 +8,7 @@ import {
   useUsuariosStore,
 } from "../../../..";
 import { useMovCajaStore } from "../../../../store/MovCajaStore";
+import { useMetodosPagoStore } from "../../../../store/MetodosPagoStore";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { useCierreCajaStore } from "../../../../store/CierreCajaStore";
@@ -17,10 +18,11 @@ import { toast } from "sonner";
 import { BarLoader } from "react-spinners";
 export function PantallaConteoCaja() {
   const [montoEfectivo, setMontoEfectivo] = useState(0);
-  const { totalEfectivoTotalCaja } = useMovCajaStore();
+  const { totalEfectivoTotalCaja, insertarMovCaja } = useMovCajaStore();
   const { datausuarios } = useUsuariosStore();
   const fechaactual = useFormattedDate();
   const { dataempresa } = useEmpresaStore();
+  const { dataMetodosPago } = useMetodosPagoStore();
   const {
     cerrarTurnoCaja,
     dataCierreCaja,
@@ -47,6 +49,25 @@ export function PantallaConteoCaja() {
     };
     console.log(p);
     await cerrarTurnoCaja(p);
+    
+    // Registrar movimiento de cierre de caja con el total calculado
+    const id_metodo_pago = dataMetodosPago
+      ?.filter((item) => item.nombre === "Efectivo")
+      .map((item) => item.id)[0];
+    
+    if (id_metodo_pago) {
+      const pmovcaja = {
+        fecha_movimiento: fechaactual,
+        tipo_movimiento: "cierre",
+        monto: parseFloat(totalEfectivoTotalCaja),
+        id_metodo_pago: id_metodo_pago,
+        descripcion: `Cierre de caja - Total en caja: ${FormatearNumeroDinero(totalEfectivoTotalCaja, dataempresa?.currency, dataempresa?.iso)}`,
+        id_usuario: datausuarios?.id,
+        id_cierre_caja: dataCierreCaja?.id,
+      };
+      console.log("Movimiento cierre:", pmovcaja);
+      await insertarMovCaja(pmovcaja);
+    }
   };
   const { isPending, mutate: doInsertar } = useMutation({
     mutationKey: ["cerrar turno caja"],

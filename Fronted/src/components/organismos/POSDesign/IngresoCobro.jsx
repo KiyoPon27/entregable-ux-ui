@@ -174,19 +174,20 @@ export const IngresoCobro = forwardRef((props, ref) => {
   async function ConfirmarVenta() {
     // Validar campos requeridos solo para Factura y Boleta, no para Ticket
     const tipoComprobanteNombre = itemComprobanteSelect?.tipoComprobante?.nombre;
+    const tipoComprobanteUpper = tipoComprobanteNombre?.toUpperCase();
     
-    // Solo validar RUC/DNI para Factura y Boleta (no obligatorio el nro de comprobante)
-    if (tipoComprobanteNombre !== "Ticket") {
+    // Solo validar RUC/DNI para Factura y Boleta (no para TICKET)
+    if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
       if (!rucDni || rucDni.trim() === "") {
-        toast.error(`El campo ${tipoComprobanteNombre === "Factura" ? "RUC" : "DNI"} es obligatorio`);
+        toast.error(`El campo ${tipoComprobanteUpper === "FACTURA" ? "RUC" : "DNI"} es obligatorio`);
         return;
       }
       // Validar formato de RUC/DNI
-      if (tipoComprobanteNombre === "Factura" && rucDni.length !== 11) {
+      if (tipoComprobanteUpper === "FACTURA" && rucDni.length !== 11) {
         toast.error("El RUC debe tener 11 dígitos");
         return;
       }
-      if (tipoComprobanteNombre === "Boleta" && rucDni.length !== 8) {
+      if (tipoComprobanteUpper === "BOLETA" && rucDni.length !== 8) {
         toast.error("El DNI debe tener 8 dígitos");
         return;
       }
@@ -208,8 +209,9 @@ export const IngresoCobro = forwardRef((props, ref) => {
         pagoCon: montoEfectivo,
       };
       
-      // Agregar ruc/dni si NO es Ticket. No enviar nro de comprobante (se genera en backend)
-      if (tipoComprobanteNombre !== "Ticket") {
+      // Agregar ruc/dni solo para FACTURA y BOLETA (no para TICKET)
+      const tipoComprobanteUpper = tipoComprobanteNombre?.toUpperCase();
+      if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
         pventas._ruc_dni = rucDni;
       }
 
@@ -361,8 +363,9 @@ export const IngresoCobro = forwardRef((props, ref) => {
   
   // Lógica para mostrar/ocultar botón SUNAT y texto dinámico
   const tipoComprobante = itemComprobanteSelect?.tipoComprobante?.nombre;
-  const mostrarBotonSunat = tipoComprobante === "Factura" || tipoComprobante === "Boleta";
-  const textoBotonSunat = tipoComprobante === "Factura" ? "Factura SUNAT" : tipoComprobante === "Boleta" ? "Boleta SUNAT" : "";
+  const tipoComprobanteUpper = tipoComprobante?.toUpperCase();
+  const mostrarBotonSunat = tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA";
+  const textoBotonSunat = tipoComprobanteUpper === "FACTURA" ? "Factura SUNAT" : tipoComprobanteUpper === "BOLETA" ? "Boleta SUNAT" : "";
   // El botón de cobrar siempre está habilitado
   const cobrarHabilitado = true;
 
@@ -422,7 +425,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
             </section>
             
             {/* Inputs para RUC/DNI y Número de Comprobante - Solo visible para Factura y Boleta */}
-            {itemComprobanteSelect?.tipoComprobante?.nombre !== "Ticket" && (
+            {(itemComprobanteSelect?.tipoComprobante?.nombre?.toUpperCase() === "FACTURA" || 
+              itemComprobanteSelect?.tipoComprobante?.nombre?.toUpperCase() === "BOLETA") && (
               <section className="area-datos-comprobante">
                 <InputText textalign="left">
                   <input
@@ -438,10 +442,10 @@ export const IngresoCobro = forwardRef((props, ref) => {
                     className={`form__field${errorRucDni ? ' error-input' : ''}`}
                     type="text"
                     placeholder=" "
-                    maxLength={itemComprobanteSelect?.tipoComprobante?.nombre === "Factura" ? 11 : 8}
+                    maxLength={itemComprobanteSelect?.tipoComprobante?.nombre?.toUpperCase() === "FACTURA" ? 11 : 8}
                   />
                   <label className="form__label">
-                    {itemComprobanteSelect?.tipoComprobante?.nombre === "Factura" ? "RUC" : "DNI"}
+                    {itemComprobanteSelect?.tipoComprobante?.nombre?.toUpperCase() === "FACTURA" ? "RUC" : "DNI"}
                   </label>
                   {errorRucDni && <span style={{ color: '#d32f2f', fontSize: '13px' }}>{errorRucDni}</span>}
                 </InputText>
@@ -517,18 +521,19 @@ export const IngresoCobro = forwardRef((props, ref) => {
               {/* Botón SUNAT interno eliminado, solo queda COBRAR */}
               <Btn1
                 funcion={() => {
-                  // Validación previa: solo validar RUC/DNI para Factura/Boleta
+                  // Validación previa: solo validar RUC/DNI para Factura/Boleta (no para TICKET)
                     setErrorRucDni("");
-                    if (tipoComprobante === "Factura" || tipoComprobante === "Boleta") {
+                    const tipoComprobanteUpper = tipoComprobante?.toUpperCase();
+                    if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
                       if (!rucDni.trim()) {
-                        setErrorRucDni(`El campo ${tipoComprobante === "Factura" ? "RUC" : "DNI"} es obligatorio`);
+                        setErrorRucDni(`El campo ${tipoComprobanteUpper === "FACTURA" ? "RUC" : "DNI"} es obligatorio`);
                         return;
                       }
-                      if (tipoComprobante === "Factura" && rucDni.length !== 11) {
+                      if (tipoComprobanteUpper === "FACTURA" && rucDni.length !== 11) {
                         setErrorRucDni("El RUC debe tener 11 dígitos");
                         return;
                       }
-                      if (tipoComprobante === "Boleta" && rucDni.length !== 8) {
+                      if (tipoComprobanteUpper === "BOLETA" && rucDni.length !== 8) {
                         setErrorRucDni("El DNI debe tener 8 dígitos");
                         return;
                       }
