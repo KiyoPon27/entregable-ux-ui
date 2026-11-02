@@ -28,10 +28,11 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
     List<Object[]> findEfectivoSinVentasPorCierre(@Param("idCierreCaja") Long idCierreCaja);
     
     @Query("SELECT mc FROM MovimientoCaja mc " +
-           "JOIN FETCH mc.usuario u " +
-           "JOIN FETCH mc.cierreCaja cc " +
-           "JOIN FETCH cc.caja c " +
-           "JOIN FETCH c.sucursal s " +
+           "INNER JOIN FETCH mc.cierreCaja cc " +
+           "INNER JOIN FETCH cc.caja c " +
+           "INNER JOIN FETCH c.sucursal s " +
+           "LEFT JOIN FETCH mc.usuario u " +
+           "LEFT JOIN FETCH mc.metodoPago mp " +
            "WHERE s.empresa.id = :idEmpresa " +
            "ORDER BY mc.fechaMovimiento DESC")
     List<MovimientoCaja> findByEmpresaIdOrderByFechaDesc(@Param("idEmpresa") Long idEmpresa);

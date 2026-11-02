@@ -1,5 +1,4 @@
-
-       package tienda.posbackend.repositories;
+package tienda.posbackend.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -72,4 +71,36 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     BigDecimal sumTotalVentas(@Param("empresaId") Long empresaId,
                               @Param("fechaInicio") LocalDateTime fechaInicio,
                               @Param("fechaFin") LocalDateTime fechaFin);
+    
+    // Contar comprobantes con número SUNAT registrado
+    @Query("SELECT COUNT(v) FROM Venta v WHERE v.empresa.id = :empresaId " +
+           "AND v.estado = 'confirmada' " +
+           "AND v.numeroSunat IS NOT NULL AND v.numeroSunat != '' " +
+           "AND (:fechaInicio IS NULL OR v.fecha >= :fechaInicio) " +
+           "AND (:fechaFin IS NULL OR v.fecha <= :fechaFin)")
+    Long countConNumeroSunat(@Param("empresaId") Long empresaId,
+                            @Param("fechaInicio") LocalDateTime fechaInicio,
+                            @Param("fechaFin") LocalDateTime fechaFin);
+    
+    // Sumar IGV de comprobantes con número SUNAT (IGV = montoTotal - montoTotal/1.18)
+    @Query("SELECT COALESCE(SUM(v.montoTotal - v.montoTotal / 1.18), 0) FROM Venta v " +
+           "WHERE v.empresa.id = :empresaId " +
+           "AND v.estado = 'confirmada' " +
+           "AND v.numeroSunat IS NOT NULL AND v.numeroSunat != '' " +
+           "AND (:fechaInicio IS NULL OR v.fecha >= :fechaInicio) " +
+           "AND (:fechaFin IS NULL OR v.fecha <= :fechaFin)")
+    BigDecimal sumTotalIgvConSunat(@Param("empresaId") Long empresaId,
+                                   @Param("fechaInicio") LocalDateTime fechaInicio,
+                                   @Param("fechaFin") LocalDateTime fechaFin);
+    
+    // Sumar monto total de comprobantes con número SUNAT
+    @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v " +
+           "WHERE v.empresa.id = :empresaId " +
+           "AND v.estado = 'confirmada' " +
+           "AND v.numeroSunat IS NOT NULL AND v.numeroSunat != '' " +
+           "AND (:fechaInicio IS NULL OR v.fecha >= :fechaInicio) " +
+           "AND (:fechaFin IS NULL OR v.fecha <= :fechaFin)")
+    BigDecimal sumTotalConSunat(@Param("empresaId") Long empresaId,
+                                @Param("fechaInicio") LocalDateTime fechaInicio,
+                                @Param("fechaFin") LocalDateTime fechaFin);
 }

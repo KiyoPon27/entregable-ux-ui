@@ -1,40 +1,78 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
 export const SelectList = ({
-  data, 
-  placeholder, 
-  onSelect, 
-  displayField = "nombre",itemSelect
+  data,
+  placeholder,
+  onSelect,
+  displayField = "nombre",
+  itemSelect,
+  appearance = "default",
+  className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selected, setSelected] = useState(itemSelect?.[displayField] || "Select an option");
+  const [selected, setSelected] = useState(itemSelect || null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    setSelected(itemSelect || null);
+  }, [itemSelect]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   const toggleDropdown = () => setIsOpen(!isOpen);
   const handleSelect = (item) => {
-     setSelected(item);
+    setSelected(item);
     setIsOpen(false);
-    onSelect(item);
+    if (onSelect) {
+      onSelect(item);
+    }
   };
 
+  const selectedLabel =
+    itemSelect?.[displayField] ||
+    selected?.[displayField] ||
+    placeholder ||
+    "Seleccionar";
+
   return (
-    <DropdownContainer>
-      <DropdownHeader onClick={toggleDropdown}>
-        {itemSelect?.[displayField]}
-        <Arrow isOpen={isOpen}><Icon icon="iconamoon:arrow-up-2-bold" width="24" height="24" /></Arrow>
+    <DropdownContainer ref={containerRef} data-appearance={appearance} className={className}>
+      <DropdownHeader
+        type="button"
+        $isOpen={isOpen}
+        $appearance={appearance}
+        onClick={toggleDropdown}
+      >
+        <ValueText>{selectedLabel}</ValueText>
+        <Arrow isOpen={isOpen}>
+          <Icon icon="iconamoon:arrow-up-2-bold" width="20" height="20" />
+        </Arrow>
       </DropdownHeader>
       {isOpen && (
-        <DropdownList>
-          {data?.map((item, index) => {
+        <DropdownList $appearance={appearance}>
+          {(data || []).map((item, index) => {
+            const label = item?.[displayField];
+            const isSelected =
+              (itemSelect && itemSelect?.id === item?.id) ||
+              (selected && selected?.id === item?.id);
             return (
               <DropdownItem
-                key={index}
+                key={item?.id || `${label}-${index}`}
                 onClick={() => handleSelect(item)}
-                isSelected={item === selected}
+                isSelected={isSelected}
+                $appearance={appearance}
               >
-            <Arrow $isOpen={isOpen}><Icon icon="iconamoon:arrow-up-2-bold" width="24" height="24" /></Arrow>
-                {item?.[displayField]}
+                <ItemIndicator>{isSelected ? "✓" : ""}</ItemIndicator>
+                <ItemText>{label}</ItemText>
               </DropdownItem>
             );
           })}
@@ -47,63 +85,94 @@ export const SelectList = ({
 // Estilos usando Styled Components
 const DropdownContainer = styled.div`
   position: relative;
-  width: ${(props) => props.width};
-
+  width: 100%;
 `;
 
-const DropdownHeader = styled.div`
- background-color: ${({ theme }) => theme.body};
-  color: ${({ theme }) => theme.text};
-  padding: 8px 15px;
-  border: 1px solid #333;
-      transform: ${({ $isOpen }) => ($isOpen ? "rotate(180deg)" : "rotate(0deg)")};
+const DropdownHeader = styled.button`
+  width: 100%;
+  min-height: 44px;
+  background-color: #ffffff;
+  color: #111827;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap:10px;
+  gap: 10px;
+  text-align: left;
+
+  &:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+  }
+
+  &:hover {
+    background-color: #f9fafb;
+  }
+`;
+
+const ValueText = styled.span`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const Arrow = styled.span`
   transform: ${({ isOpen }) => (isOpen ? "rotate(180deg)" : "rotate(0deg)")};
   transition: transform 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const DropdownList = styled.div`
   position: absolute;
-  top: 100%;
+  top: calc(100% + 6px);
   left: 0;
-  background-color: ${({ theme }) => theme.body};
-  border: 1px solid #333;
-  border-radius: 5px;
-  margin-top: 5px;
-  max-height: 150px;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  max-height: 260px;
   overflow-y: auto;
   z-index: 1000;
-
-  // Evita que se adapte al tamaño del header
-  min-width: 200px; /* Ancho mínimo */
-  width: max-content; /* Ancho según el contenido */
-  max-width: 300px; /* Ancho máximo */
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
 `;
 
 const DropdownItem = styled.div`
-  padding: 10px 15px;
+  padding: 10px 12px;
   color: ${({ theme }) => theme.text};
-  display: flex;
+  display: grid;
+  grid-template-columns: 14px 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  background-color: ${({ isSelected }) =>
-    isSelected ? ( theme ) => theme.bg : "transparent"};
+  background-color: ${({ isSelected }) => {
+    if (!isSelected) return "transparent";
+    return "#111827";
+  }};
+  color: ${({ isSelected }) => {
+    if (isSelected) return "#f8fafc";
+    return "#111827";
+  }};
   transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.bg};
+    background-color: ${({ isSelected }) => (isSelected ? "#0f172a" : "#f3f4f6")};
+    color: ${({ isSelected, theme }) => (isSelected ? "#f8fafc" : theme.text)};
   }
 `;
 
-const CheckMark = styled.span`
-  color:${({ theme }) => theme.text};
-  font-size: 14px;
+const ItemIndicator = styled.span`
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+`;
+
+const ItemText = styled.span`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;

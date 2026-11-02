@@ -17,6 +17,7 @@ export const useUsuariosStore = create((set) => ({
   datausuarios: null,
   itemSelect: null,
   setItemSelect: (p) => set({ itemSelect: p }),
+  setUsuario: (datausuarios) => set({ datausuarios }),
   
   mostrarusuarios: async () => {
     try {
@@ -42,14 +43,16 @@ export const useUsuariosStore = create((set) => ({
   },
   
   insertarUsuario: async (p) => {
-    const selectModules = usePermisosStore.getState().selectedModules || [];
-    console.log("Módulos seleccionados:", selectModules);
+    let selectModules = usePermisosStore.getState().selectedModules || [];
+    // Deduplicate modules before inserting
+    selectModules = [...new Set(selectModules)];
+    console.log("Módulos seleccionados (deduplicados):", selectModules);
 
     if (!Array.isArray(selectModules) || selectModules.length === 0) {
       throw new Error("No hay módulos seleccionados");
     }
 
-    // Crear usuario
+    // Crear usuario - pasar id_sucursal al backend
     const dataUserNew = await InsertarUsuarios({
       nombres: p.nombres,
       nro_doc: p.nro_doc,
@@ -58,19 +61,24 @@ export const useUsuariosStore = create((set) => ({
       correo: p.email,
       password: p.pass,
       id_auth: null,
-      id_tipodocumento: p.id_tipodocumento || null
+      id_tipodocumento: p.id_tipodocumento || null,
+      id_sucursal: p.id_sucursal  // Pasar la sucursal al backend
     });
 
-    // Asignar sucursal y caja si se proveen (debe venir de formulario o lógica superior)
-    if (p.id_sucursal && p.id_caja && dataUserNew?.id) {
-      await InsertarAsignacionCajaSucursal({
-        id_sucursal: p.id_sucursal,
-        id_usuario: dataUserNew.id,
-        id_caja: p.id_caja,
-      });
+    console.log("👤 Usuario creado:", dataUserNew);  // DEBUG
+    console.log("👤 ID del usuario:", dataUserNew?.id);  // DEBUG
+
+    // IMPORTANTE: Primero eliminar los permisos por defecto asignados por el backend
+    if (dataUserNew?.id) {
+      try {
+        await EliminarPermisos({ id_usuario: dataUserNew.id });
+        console.log("🗑️ Permisos por defecto eliminados para usuario:", dataUserNew.id);
+      } catch (error) {
+        console.log("⚠️ No había permisos para eliminar o ya fueron eliminados");
+      }
     }
 
-    // Insertar permisos en paralelo
+    // Luego insertar los permisos seleccionados en paralelo
     await Promise.all(
       selectModules.map((idModule) => {
         const perm = {
@@ -83,16 +91,19 @@ export const useUsuariosStore = create((set) => ({
   },
   
   editarUsuarios: async (p) => {
-    const selectModules = usePermisosStore.getState().selectedModules || [];
-    
+    let selectModules = usePermisosStore.getState().selectedModules || [];
+    // Deduplicate modules before updating
+    selectModules = [...new Set(selectModules)];
+    console.log("Módulos seleccionados para edición (deduplicados):", selectModules);
+
     // Actualizar datos básicos del usuario
     await EditarUsuarios(p);
-    
+
     // Si hay módulos seleccionados, actualizar permisos
     if (Array.isArray(selectModules) && selectModules.length > 0 && p.id) {
       // Primero eliminar permisos existentes
       await EliminarPermisos({ id_usuario: p.id });
-      
+
       // Luego insertar los nuevos permisos
       await Promise.all(
         selectModules.map((idModule) => {

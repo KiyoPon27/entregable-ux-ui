@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-11-02T01:20:54.711Z",
+  "database": "LT_Sanchez",
+  "empresaId": 1,
+  "users": [
+    {
+      "id": 2,
+      "correo": "uxui.super@ltsanchez.test",
+      "rol": "superadmin",
+      "empresaId": 1,
+      "sucursalId": 1,
+      "cajaId": 1
+    },
+    {
+      "id": 3,
+      "correo": "uxui.og@ltsanchez.test",
+      "rol": "OG",
+      "empresaId": null
+    }
+  ]
+}

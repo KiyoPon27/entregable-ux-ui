@@ -1,4 +1,4 @@
-import { numeroALetras, urlToBase64 } from "../utils/Conversiones";
+import { numeroALetras, urlToBase64, redondearADecimal } from "../utils/Conversiones";
 import createPdf from "../utils/CreatePdf";
 
 const TicketVenta = async (output, data) => {
@@ -19,9 +19,25 @@ const TicketVenta = async (output, data) => {
   const fechaObj = new Date(fechaCompleta);
   const simboloMoneda = data.dataempresa?.simbolo_moneda || "S/";
   
-  // Usar nombre_moneda de la configuración
   const nombreMoneda = data.dataempresa?.nombre_moneda || "Soles";
-  const textoTotal = numeroALetras(data.dataventas?.montoTotal, nombreMoneda);
+  const descuentoPorcentaje = Number(data.dataventas?.porcentajeDescuento || 0);
+  const mostrarColumnaDescuento = descuentoPorcentaje > 0;
+  
+  const montoTotal = redondearADecimal(Number(data.dataventas?.montoTotal || 0));
+  const montoDescuentoTicket = redondearADecimal(Number(data.dataventas?.montoDescuento || 0));
+  
+  // ✅ Calcular SUBTOTAL: si existe subTotal usarlo, sino calcular como montoTotal + descuento
+  let subtotalTicket;
+  if (Number(data.dataventas?.subTotal) > 0) {
+    subtotalTicket = redondearADecimal(Number(data.dataventas.subTotal));
+  } else {
+    // Si no hay subTotal en BD, calcular: subTotal = montoTotal + montoDescuento
+    subtotalTicket = redondearADecimal(montoTotal + montoDescuentoTicket);
+  }
+  
+  // ✅ TOTAL es montoTotal directo (ya tiene descuento aplicado)
+  const totalFinalTicket = montoTotal;
+  const textoTotal = numeroALetras(totalFinalTicket, nombreMoneda);
   
   const fecha = fechaObj.toLocaleDateString("es-PE", {
     day: "2-digit",
@@ -56,8 +72,8 @@ const TicketVenta = async (output, data) => {
     console.error("❌ Error al procesar logo:", error);
     logoempresa = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
   }
-  // Decidir si incluimos columna IGV en el PDF: sólo cuando pedimos 'download' (ReporteFacturas)
-  const includeIgvColumn = output === "download";
+  // Decidir si incluimos columna IGV en el PDF: DESHABILITADO - No mostrar columna IGV
+  const includeIgvColumn = false; // Cambiado de: output === "download"
   let sumaIgv = 0;
   let productTableBody;
 
@@ -71,39 +87,62 @@ const TicketVenta = async (output, data) => {
       sumaIgv += igvLinea;
 
       return [
-        { text: cantidad, style: "tProductsBody", alignment: "center" },
+        { text: cantidad, style: "tProductsBody", alignment: "center", noWrap: true },
         { text: item.productos?.nombre || "Producto", style: "tProductsBody", alignment: "left" },
-        { text: `${simboloMoneda} ${Number(precioUnit).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
-        { text: `${simboloMoneda} ${Number(igvLinea).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
-        { text: `${simboloMoneda} ${Number(totalLinea).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
+        { text: `${simboloMoneda} ${Number(precioUnit).toFixed(2)}`, style: "tProductsBody", alignment: "center", noWrap: true },
+        { text: `${simboloMoneda} ${Number(igvLinea).toFixed(2)}`, style: "tProductsBody", alignment: "center", noWrap: true },
+        { text: `${simboloMoneda} ${Number(totalLinea).toFixed(2)}`, style: "tProductsBody", alignment: "center", noWrap: true },
       ];
     });
 
     productTableBody = [
       [
-        { text: "CANT.", style: "tProductsHeader", alignment: "center" },
-        { text: "DESCRIPCIÓN", style: "tProductsHeader", alignment: "left" },
-        { text: "PRECIO", style: "tProductsHeader", alignment: "right" },
-        { text: "IGV (18%)", style: "tProductsHeader", alignment: "right" },
-        { text: "TOTAL", style: "tProductsHeader", alignment: "right" },
+        { text: "CANT", style: "tProductsHeader", alignment: "center", noWrap: true },
+        { text: "DESCRIPCIÓN", style: "tProductsHeader", alignment: "left", noWrap: true },
+        { text: "P.U.", style: "tProductsHeader", alignment: "center", noWrap: true },
+        { text: "IGV", style: "tProductsHeader", alignment: "center", noWrap: true },
+        { text: "TOTAL", style: "tProductsHeader", alignment: "center", noWrap: true },
       ],
       ...productRows,
     ];
   } else {
-    // Versión para impresión POS: no mostrar columna IGV
-    const productRows = (data.productos || []).map((item) => [
-      { text: item.cantidad || 1, style: "tProductsBody", alignment: "center" },
-      { text: item.productos?.nombre || "Producto", style: "tProductsBody", alignment: "left" },
-      { text: `${simboloMoneda} ${Number(item.precio_venta || 0).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
-      { text: `${simboloMoneda} ${Number(item.total || 0).toFixed(2)}`, style: "tProductsBody", alignment: "right" },
-    ]);
+    // Versión para impresión POS: mostrar columna de descuento
+    const productRows = (data.productos || []).map((item) => {
+      const precioUnit = Number(item.precio_venta || 0);
+      const cantidad = item.cantidad || 1;
+      const totalLinea = Number(item.total || precioUnit * cantidad || 0);
+      
+      // Calcular descuento por producto si existe
+      const descuentoUnitario = descuentoPorcentaje > 0 
+        ? parseFloat((precioUnit * (descuentoPorcentaje / 100)).toFixed(2))
+        : 0;
+      const totalConDescuento = totalLinea - (descuentoUnitario * cantidad);
+      
+      const row = [
+        { text: cantidad, style: "tProductsBody", alignment: "center", noWrap: true },
+        { text: item.productos?.nombre || "Producto", style: "tProductsBody", alignment: "left" },
+      ];
+      
+      // Agregar columna de descuento si existe
+      if (mostrarColumnaDescuento) {
+        row.push({ text: `${simboloMoneda} ${descuentoUnitario.toFixed(2)}`, style: "tProductsBody", alignment: "center", noWrap: true });
+      }
+      
+      row.push({ text: `${simboloMoneda} ${Number(precioUnit).toFixed(2)}`, style: "tProductsBody", alignment: "center", noWrap: true });
+      row.push({ text: `${simboloMoneda} ${Number(totalConDescuento).toFixed(2)}`, style: "tProductsBody", alignment: "center", noWrap: true });
+      
+      return row;
+    });
 
     productTableBody = [
       [
-        { text: "CANT.", style: "tProductsHeader", alignment: "center" },
-        { text: "DESCRIPCIÓN", style: "tProductsHeader", alignment: "left" },
-        { text: "PRECIO", style: "tProductsHeader", alignment: "right" },
-        { text: "TOTAL", style: "tProductsHeader", alignment: "right" },
+        { text: "CANT", style: "tProductsHeader", alignment: "center", noWrap: true },
+        { text: "DESCRIPCIÓN", style: "tProductsHeader", alignment: "left", noWrap: true },
+        ...(mostrarColumnaDescuento 
+          ? [{ text: `DESC.(${descuentoPorcentaje}%)`, style: "tProductsHeader", alignment: "right", noWrap: true }]
+          : []),
+        { text: "P.U.", style: "tProductsHeader", alignment: "right", noWrap: true },
+        { text: "TOTAL", style: "tProductsHeader", alignment: "right", noWrap: true },
       ],
       ...productRows,
     ];
@@ -156,6 +195,12 @@ const TicketVenta = async (output, data) => {
       style: "numeroComprobante",
       margin: [0, 2, 0, 5],
     },
+    // Mostrar número SUNAT si existe
+    ...(data.dataventas?.numeroSunat ? [{
+      text: `${data.nombreComprobante === 'FACTURA' ? 'N° FACTURA SUNAT:' : data.nombreComprobante === 'BOLETA' ? 'N° BOLETA SUNAT:' : 'N° SUNAT:'} ${data.dataventas.numeroSunat}`,
+      style: "numeroSunat",
+      margin: [0, 2, 0, 5],
+    }] : []),
     { 
       canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, dash: { length: 3 } }],
       margin: [0, 5, 0, 10]
@@ -223,7 +268,11 @@ const TicketVenta = async (output, data) => {
     {
       margin: [0, 10, 0, 0],
       table: {
-        widths: includeIgvColumn ? ["12%", "40%", "16%", "16%", "16%"] : ["15%", "45%", "20%", "20%"],
+        widths: includeIgvColumn
+          ? ["10%", "42%", "16%", "16%", "16%"]
+          : (mostrarColumnaDescuento
+              ? ["10%", "42%", "16%", "16%", "16%"]
+              : ["15%", "45%", "20%", "20%"]),
         headerRows: 1,
         body: productTableBody,
       },
@@ -247,28 +296,30 @@ const TicketVenta = async (output, data) => {
         body: [
           [
             { text: "SUBTOTAL:", style: "tTotals", alignment: "right" },
-            { 
-              text: `${simboloMoneda} ${Number(data.dataventas?.subTotal || 0).toFixed(2)}`, 
+            {
+              text: `${simboloMoneda} ${subtotalTicket.toFixed(2)}`,
               style: "tTotals", 
               alignment: "right" 
             },
           ],
-          [
+          // ✅ DESCUENTO (si existe)
+          ...(mostrarColumnaDescuento ? [[
             { 
-              text: `${data.dataempresa?.impuesto || "IGV"} (${data.dataempresa?.valor_impuesto || 0}%):`, 
+              text: `DESCUENTO (${descuentoPorcentaje}%):`, 
               style: "tTotals", 
               alignment: "right" 
             },
             {
-              text: `${simboloMoneda} ${Number(data.dataventas?.totalImpuestos ?? sumaIgv).toFixed(2)}`,
+              text: `-${simboloMoneda} ${montoDescuentoTicket.toFixed(2)}`,
               style: "tTotals",
-              alignment: "right"
+              alignment: "right",
+              color: "#e74c3c"
             },
-          ],
+          ]] : []),
           [
             { text: "TOTAL:", style: "tTotalFinal", alignment: "right" },
             { 
-              text: `${simboloMoneda} ${Number(data.dataventas?.montoTotal || 0).toFixed(2)}`, 
+              text: `${simboloMoneda} ${totalFinalTicket.toFixed(2)}`,
               style: "tTotalFinal", 
               alignment: "right" 
             },
@@ -400,6 +451,12 @@ const TicketVenta = async (output, data) => {
       fontSize: 10,
       bold: true,
       alignment: "center",
+    },
+    numeroSunat: {
+      fontSize: 9,
+      bold: true,
+      alignment: "center",
+      color: "#dc2626", // Rojo
     },
     tHeaderLabel: {
       fontSize: 8,

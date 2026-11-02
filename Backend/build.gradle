@@ -29,6 +29,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -43,4 +44,13 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// Configuración de memoria para bootRun
+bootRun {
+	jvmArgs = [
+		'-Xmx1536m',  // Memoria máxima
+		'-Xms512m',   // Memoria inicial
+		'-XX:MaxMetaspaceSize=384m'  // Espacio para metadatos
+	]
 }

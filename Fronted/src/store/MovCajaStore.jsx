@@ -4,6 +4,7 @@ import {
   MostrarEfectivoSinVentasMovcierrecaja,
   Mostrarmovimientoscajalive,
   MostrarVentasMetodoPagoMovCaja,
+  MostrarIngresosYSalidasCaja,
 } from "../supabase/crudMovimientosCaja";
 
 export const useMovCajaStore = create((set, get) => ({
@@ -14,6 +15,8 @@ export const useMovCajaStore = create((set, get) => ({
   totalIngresosVariosCaja: 0,
   totalEfectivoCajaSinVentas: 0,
   totalEfectivoTotalCaja: 0,
+  movimientosIngresos: [],
+  movimientosSalidas: [],
   updateTotalEfectivoTotalCaja: () => {
     const { totalEfectivoCajaSinVentas, totalVentasEfectivo } = get();
     const total = totalEfectivoCajaSinVentas + totalVentasEfectivo;
@@ -53,6 +56,7 @@ export const useMovCajaStore = create((set, get) => ({
       0
     );
     set({ totalIngresosVariosCaja: totalIngreso });
+    set({ movimientosIngresos: movimientosIngreso });
 
     // Filtrar solo los movimientos de tipo "salida"
     const movimientosSalida = result.filter(
@@ -64,6 +68,7 @@ export const useMovCajaStore = create((set, get) => ({
       0
     );
     set({ totalGastosVariosCaja: totalSalida });
+    set({ movimientosSalidas: movimientosSalida });
     const totalEfectivoCajaSinVentas =
       totalApertura + totalIngreso - totalSalida;
     set({ totalEfectivoCajaSinVentas: totalEfectivoCajaSinVentas });
@@ -93,6 +98,23 @@ export const useMovCajaStore = create((set, get) => ({
   },
   mostrarmovimientoscajalive: async (p) => {
     const response = await Mostrarmovimientoscajalive(p);
+    return response;
+  },
+  mostrarIngresosYSalidasDetallados: async (p) => {
+    const response = await MostrarIngresosYSalidasCaja(p);
+    console.log("Movimientos caja completos:", response); // DEBUG
+    if (response && Array.isArray(response)) {
+      const ingresos = response.filter(
+        (item) => item.tipo_movimiento?.toLowerCase() === "ingreso"
+      );
+      const salidas = response.filter(
+        (item) => item.tipo_movimiento?.toLowerCase() === "salida"
+      );
+      console.log("Ingresos filtrados:", ingresos); // DEBUG
+      console.log("Salidas filtradas:", salidas); // DEBUG
+      set({ movimientosIngresos: ingresos });
+      set({ movimientosSalidas: salidas });
+    }
     return response;
   },
 }));

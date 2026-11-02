@@ -57,7 +57,7 @@ export function POSTemplate() {
   );
 }
 const Container = styled.div`
-  height: calc(100vh - 60px);
+  height: calc(100vh - 0px);
   padding: 10px;
   padding-top: 50px;
   display: grid;

@@ -16,7 +16,7 @@ export const useRolesStore = create((set) => ({
   mostrarRoles: async () => {
     const response = await MostrarRoles();
     set({
-      rolesItemSelect: response && response.length > 0 ? response[0] : null,
+      rolesItemSelect: null, // Dejar en blanco, no seleccionar automáticamente
       dataroles: response,
     });
     return response;

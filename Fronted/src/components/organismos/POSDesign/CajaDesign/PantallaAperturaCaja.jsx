@@ -105,7 +105,7 @@ export function PantallaAperturaCaja() {
             <CardListCajas
               key={caja.id}
               title={caja.descripcion}
-              subtitle={state ? `${aperturaActiva?.rol}-${aperturaActiva?.usuario}` : 0}
+              subtitle={state ? `${aperturaActiva?.usuario?.rol?.nombre}-${aperturaActiva?.usuario?.nombres}` : 0}
               bgcolor={state ? "#e0e0e0" : "#b6fcd5"}
               funcion={() => setCajaSelectItem(caja)}
               sucursal={caja.sucursal?.nombre || ""}
@@ -144,7 +144,7 @@ export function PantallaAperturaCaja() {
               bgcolor={state ? "#f34a4a" : "#58CC02"}
               state={state}
               subtitle={
-                state ? `${aperturaActiva?.rol}-${aperturaActiva?.usuario}` : 0
+                state ? `${aperturaActiva?.usuario?.rol?.nombre}-${aperturaActiva?.usuario?.nombres}` : 0
               }
             />
           );

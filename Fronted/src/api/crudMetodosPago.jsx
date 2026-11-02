@@ -16,6 +16,7 @@ export async function InsertarMetodosPago(p, file) {
     const metodoPago = {
       nombre: p.nombre || p._nombre,
       icono: p.icono || p._icono || "-",
+      color: p.color || p._color || "#F44336",
       verNombre: p.ver_nombre !== undefined ? p.ver_nombre : true,
       eliminarActualizar: p.eliminar_actualizar || false,
       empresa: { id: p.id_empresa || p.idEmpresa }
@@ -48,6 +49,7 @@ export async function EditarMetodosPago(p, fileold, filenew) {
     const metodoPago = {
       nombre: p.nombre || p._nombre,
       icono: p.icono || p._icono || "-",
+      color: p.color || p._color || undefined,
       verNombre: p.ver_nombre !== undefined ? p.ver_nombre : undefined,
       eliminarActualizar: p.eliminar_actualizar !== undefined ? p.eliminar_actualizar : undefined
     };
@@ -86,6 +88,50 @@ export async function EliminarMetodosPago(p) {
     });
   } catch (error) {
     const mensaje = error.response?.data?.message || error.message || "Error al eliminar método de pago";
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: mensaje
+    });
+    throw new Error(mensaje);
+  }
+}
+
+export async function DeshabilitarMetodosPago(p) {
+  try {
+    await api.put(`/metodos-pago/${p.id}/deshabilitar`);
+
+    Swal.fire({
+      icon: "success",
+      title: "Deshabilitado",
+      text: "Método de pago deshabilitado correctamente",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message || "Error al deshabilitar método de pago";
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: mensaje
+    });
+    throw new Error(mensaje);
+  }
+}
+
+export async function HabilitarMetodosPago(p) {
+  try {
+    await api.put(`/metodos-pago/${p.id}/habilitar`);
+
+    Swal.fire({
+      icon: "success",
+      title: "Habilitado",
+      text: "Método de pago habilitado correctamente",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message || "Error al habilitar método de pago";
     Swal.fire({
       icon: "error",
       title: "Error",

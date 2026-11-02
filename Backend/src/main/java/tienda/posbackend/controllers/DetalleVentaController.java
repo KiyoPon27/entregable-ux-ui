@@ -31,6 +31,15 @@ public class DetalleVentaController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{id}/multiprecio")
+    public ResponseEntity<Void> cambiarMultiprecio(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        BigDecimal cantidad = new BigDecimal(payload.get("cantidad").toString());
+        BigDecimal precioVenta = new BigDecimal(payload.get("precioVenta").toString());
+        String descripcion = (String) payload.get("descripcion");
+        detalleVentaService.cambiarMultiprecio(id, cantidad, precioVenta, descripcion);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         detalleVentaService.eliminar(id);

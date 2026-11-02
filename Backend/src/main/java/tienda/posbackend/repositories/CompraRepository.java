@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import tienda.posbackend.entities.Compra;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface CompraRepository extends JpaRepository<Compra, Long> {
@@ -27,4 +28,24 @@ public interface CompraRepository extends JpaRepository<Compra, Long> {
     
     // Verificar si existe número de factura
     boolean existsByEmpresaIdAndNumeroFactura(Long empresaId, String numeroFactura);
+    
+    // Filtrar compras con múltiples criterios (filtra por fechaEmision que aparece en tabla)
+    @Query("SELECT DISTINCT c FROM Compra c " +
+           "LEFT JOIN FETCH c.proveedor p " +
+           "LEFT JOIN FETCH c.metodoPago mp " +
+           "LEFT JOIN FETCH c.tipoComprobante tc " +
+           "LEFT JOIN FETCH c.empresa e " +
+           "WHERE c.empresa.id = :empresaId " +
+           "AND (:estado IS NULL OR c.estado = :estado) " +
+           "AND (:idProveedor IS NULL OR c.proveedor.id = :idProveedor) " +
+           "AND (:fechaInicio IS NULL OR c.fechaEmision >= :fechaInicio) " +
+           "AND (:fechaFin IS NULL OR c.fechaEmision <= :fechaFin) " +
+           "AND (:buscador IS NULL OR c.numeroFactura LIKE CONCAT('%', :buscador, '%') OR p.nombres LIKE CONCAT('%', :buscador, '%')) " +
+           "ORDER BY c.fechaEmision DESC, c.fechaRegistro DESC")
+    List<Compra> findComprasConFiltros(@Param("empresaId") Long empresaId,
+                                       @Param("estado") String estado,
+                                       @Param("idProveedor") Long idProveedor,
+                                       @Param("fechaInicio") LocalDate fechaInicio,
+                                       @Param("fechaFin") LocalDate fechaFin,
+                                       @Param("buscador") String buscador);
 }

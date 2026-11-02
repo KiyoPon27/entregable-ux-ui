@@ -30,6 +30,19 @@ export async function EditarCantidadDetalleVenta(p) {
   }
 }
 
+export async function CambiarMultiprecioDetalleVenta(p) {
+  try {
+    const payload = {
+      cantidad: p.cantidad,
+      precioVenta: p.precioVenta,
+      descripcion: p.descripcion,
+    };
+    await api.put(`/detalle-ventas/${p.id}/multiprecio`, payload);
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message);
+  }
+}
+
 export async function MostrarDetalleVenta(p) {
   try {
     const response = await api.get(`/detalle-ventas/venta/${p.id_venta}`);

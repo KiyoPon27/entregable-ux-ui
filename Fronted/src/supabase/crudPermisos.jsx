@@ -51,6 +51,7 @@ export async function MostrarPermisosDefault() {
 
 export async function InsertarPermisos(p) {
   try {
+    console.log("📤 Enviando permiso:", p);  // Debug
     const permiso = {
       id_usuario: p.id_usuario,
       idmodulo: p.idmodulo

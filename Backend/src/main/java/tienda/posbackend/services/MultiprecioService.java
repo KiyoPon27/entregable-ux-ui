@@ -52,6 +52,12 @@ public class MultiprecioService {
     
     @Transactional
     public Multiprecio crear(Multiprecio multiprecio) {
+        // Si viene con idProducto, buscar el producto y asignarlo
+        if (multiprecio.getProducto() == null && multiprecio.getProductoId() != null) {
+            Producto producto = productoRepository.findById(multiprecio.getProductoId())
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + multiprecio.getProductoId()));
+            multiprecio.setProducto(producto);
+        }
         return multiprecioRepository.save(multiprecio);
     }
     
@@ -67,6 +73,9 @@ public class MultiprecioService {
                 }
                 if (multiprecioActualizado.getProducto() != null) {
                     multiprecio.setProducto(multiprecioActualizado.getProducto());
+                }
+                if (multiprecioActualizado.getNombreReferencial() != null) {
+                    multiprecio.setNombreReferencial(multiprecioActualizado.getNombreReferencial());
                 }
                 return multiprecioRepository.save(multiprecio);
             })

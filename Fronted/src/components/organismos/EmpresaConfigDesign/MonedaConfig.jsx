@@ -2,12 +2,12 @@ import styled from "styled-components";
 import { useMonedasStore } from "../../../store/MonedasStore";
 import { getAllInfoByISO } from "iso-country-currency";
 import iso from "iso-country-currency";
-import { InputText2 } from "../formularios/InputText2";
 import { FlagIcon } from "react-flag-kit";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEmpresaStore } from "../../../store/EmpresaStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { FiGlobe } from "react-icons/fi";
 
 
 export const MonedaConfig = () => {
@@ -53,86 +53,134 @@ export const MonedaConfig = () => {
  
   return (
     <Container>
-     
-      <InputText2>
-        <input
-          className="form__field"
-          type="search"
-          placeholder="buscar país..."
-          value={search}
-          onChange={handleSearchChange}
-          onFocus={() => setSearch(search)}
-        />
-      </InputText2>
-      <Linea />
+      <Card>
+        <Header>
+          <Title>Moneda</Title>
+          <Subtitle>Busca el país y actualiza la moneda de la empresa.</Subtitle>
+        </Header>
 
-      {search && filteredCountries.length > 0 && (
-        <Dropdown>
-          <DropdownList>
-            {filteredCountries.map((country, index) => (
-              <DropdownItem
-                key={index}
-                onClick={() => handleSelectCountry(country)}
-              >
-                {country.countryName}
-              </DropdownItem>
-            ))}
-          </DropdownList>
-        </Dropdown>
-      )}
+        <SearchField>
+          <FiGlobe />
+          <input
+            type="search"
+            placeholder="Buscar país..."
+            value={search}
+            onChange={handleSearchChange}
+            onFocus={() => setSearch(search)}
+          />
+        </SearchField>
 
-      <Cardselect
-        flag={
-          selectedCountry
-            ? `https://flagcdn.com/${selectedCountry.iso.toLowerCase()}.svg`
-            : ""
-        }
-      >
-        <article className="area1">
-          <span className="titulo">Moneda actual</span>
-        </article>
-        <article className="area2">
-          <article className="area2_1">
-            <FlagIcon
-              code={
-                selectedCountry == null ? dataempresa?.iso : selectedCountry.iso
-              }
-              size={60}
-            />
+        {search && filteredCountries.length > 0 && (
+          <Dropdown>
+            <DropdownList>
+              {filteredCountries.map((country, index) => (
+                <DropdownItem key={index} onClick={() => handleSelectCountry(country)}>
+                  {country.countryName}
+                </DropdownItem>
+              ))}
+            </DropdownList>
+          </Dropdown>
+        )}
+
+        <Cardselect>
+          <article className="area1">
+            <span className="titulo">Moneda actual</span>
           </article>
+          <article className="area2">
+            <article className="area2_1">
+              <FlagIcon
+                code={selectedCountry == null ? dataempresa?.iso : selectedCountry.iso}
+                size={60}
+              />
+            </article>
 
-          <article className="area2_2">
-            <span>
-              {selectedCountry == null
-                ? dataempresa?.pais
-                : selectedCountry.countryName}
-            </span>
-            <span className="simbolo">
-              <Icon className="icono" icon="fluent-emoji:money-with-wings" />
-              {selectedCountry == null
-                ? dataempresa?.simbolo_moneda
-                : selectedCountry.symbol}
-            </span>
+            <article className="area2_2">
+              <span>
+                {selectedCountry == null ? dataempresa?.pais : selectedCountry.countryName}
+              </span>
+              <span className="simbolo">
+                <Icon className="icono" icon="fluent-emoji:money-with-wings" />
+                {selectedCountry == null ? dataempresa?.simbolo_moneda : selectedCountry.symbol}
+              </span>
+            </article>
           </article>
-        </article>
-      </Cardselect>
-      {
-        mutate.onSuccess && <span>cambios guardados <Icon icon="emojione:pig" /></span>
-      }
+        </Cardselect>
+
+        {mutate.isSuccess && (
+          <SuccessText>
+            cambios guardados <Icon icon="emojione:pig" />
+          </SuccessText>
+        )}
+      </Card>
     </Container>
   );
 };
 const Container = styled.div`
+  width: 100%;
+  max-width: 560px;
+  margin: 8px auto 0;
+`;
+
+const Card = styled.div`
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
+  gap: 18px;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 22px;
+  padding: 22px;
+  box-sizing: border-box;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+`;
 
- 
+const Header = styled.div``;
+
+const Title = styled.h1`
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -0.5px;
+`;
+
+const Subtitle = styled.p`
+  margin: 8px 0 0;
+  color: ${({ theme }) => theme.colorSubtitle};
+  font-size: 14px;
+`;
+
+const SearchField = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 14px;
+  background: ${({ theme }) => theme.bg};
+  padding: 0 14px;
+  min-height: 50px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    color: ${({ theme }) => theme.colorSubtitle};
+    flex-shrink: 0;
+  }
+
+  input {
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    color: ${({ theme }) => theme.text};
+    font-size: 15px;
+
+    &::placeholder {
+      color: ${({ theme }) => theme.colorSubtitle};
+    }
+  }
 `;
 
 const Dropdown = styled.div`
-  top: -20px;
   position: relative;
 `;
 
@@ -171,24 +219,28 @@ const DropdownItem = styled.li`
 `;
 const Cardselect = styled.section`
   border: 2px solid ${({ theme }) => theme.color2};
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 18px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   position: relative;
   overflow: hidden;
-  width: 320px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+  background: ${({ theme }) => theme.bg};
 
 
   .area2 {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 18px;
     .area2_2 {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       .simbolo {
         align-items: center;
         display: flex;
@@ -206,4 +258,13 @@ const Linea = styled.span`
   width: 100%;
   border-bottom: solid 2px ${({ theme }) => theme.color2};
   margin: 10px 0;
+`;
+
+const SuccessText = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #16a34a;
 `;

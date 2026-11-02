@@ -51,5 +51,6 @@ public class DetalleVentaResponseDTO {
         private String codigoBarras;
         private String codigoInterno;
         private String tipoComprobante; // 'FACTURADO' o 'MANUALIDAD'
+       private String imagen; // URL de la imagen del producto
     }
 }

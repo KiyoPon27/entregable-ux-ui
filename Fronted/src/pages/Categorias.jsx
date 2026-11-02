@@ -4,11 +4,13 @@ import {
   Spinner1,
   useCategoriasStore,
   useEmpresaStore,
+  useProductosStore,
 } from "../index";
 
 export function Categorias() {
   const { mostrarCategorias, buscarCategorias, buscador } =
     useCategoriasStore();
+  const { mostrarProductos } = useProductosStore();
   const { dataempresa } = useEmpresaStore();
   const { isLoading, error } = useQuery({
     queryKey: ["mostrar categorias", dataempresa?.id],
@@ -25,11 +27,18 @@ export function Categorias() {
     refetchOnWindowFocus: false,
   });
 
-  if (isLoading) {
+  const { data: dataProductos = [], isLoading: isLoadingProductos } = useQuery({
+    queryKey: ["mostrar productos para categorias", dataempresa?.id],
+    queryFn: () => mostrarProductos({ id_empresa: dataempresa?.id }),
+    enabled: !!dataempresa,
+    refetchOnWindowFocus: false,
+  });
+
+  if (isLoading || isLoadingProductos) {
     return <Spinner1 />;
   }
   if (error) {
     return <span>error...</span>;
   }
-  return <CategoriasTemplate />;
+  return <CategoriasTemplate productos={dataProductos || []} />;
 }

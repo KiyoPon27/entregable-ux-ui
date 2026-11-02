@@ -2,7 +2,7 @@ import styled, { createGlobalStyle } from "styled-components";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { InputText } from "../formularios/InputText";
-import { FormatearNumeroDinero } from "../../../utils/Conversiones";
+import { FormatearNumeroDinero, redondearADecimal } from "../../../utils/Conversiones";
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Btn1 } from "../../moleculas/Btn1";
 import { useUsuariosStore } from "../../../store/UsuariosStore";
@@ -60,6 +60,13 @@ export const IngresoCobro = forwardRef((props, ref) => {
     resetState,
     confirmarVenta,
     dataventaconfirmada,
+    porcentajeDescuento,
+    montoDescuento,
+    setDescuento,
+    getTotalConDescuento,
+    resetDescuento,
+    stateDescuentoActivo,
+    setStateDescuentoActivo,
   } = useVentasStore();
   const { total } = useDetalleVentasStore();
   //Valores a calcular
@@ -78,6 +85,38 @@ export const IngresoCobro = forwardRef((props, ref) => {
   //Valores a mostrar
   const [vuelto, setVuelto] = useState(0);
   const [restante, setRestante] = useState(0);
+  
+  // ✅ Sincronizar descuento cuando el total cambia (mantiene el porcentaje guardado y recalcula monto)
+  useEffect(() => {
+    if (total > 0 && porcentajeDescuento > 0) {
+      setDescuento(porcentajeDescuento, total);
+    }
+  }, [total, porcentajeDescuento, stateDescuentoActivo]);
+  
+  // ✅ Actualizar precioVenta cuando cambie el descuento o el total
+  useEffect(() => {
+    if (getTotalConDescuento && total > 0) {
+      const totalesCon = getTotalConDescuento(total);
+      // ✅ Redondear a 1 decimal, formato a 2 decimales
+      setPrecioVenta(redondearADecimal(totalesCon.totalFinal));
+    } else {
+      setPrecioVenta(redondearADecimal(total));
+    }
+  }, [porcentajeDescuento, montoDescuento, total, getTotalConDescuento]);
+
+  // ✅ Sincronizar montos iniciales con el total neto mostrado
+  useEffect(() => {
+    const montoBase = redondearADecimal(precioVenta);
+    setValorEfectivo(tipocobro === "efectivo" ? montoBase : 0);
+    setValorTarjeta(tipocobro === "tarjeta" ? montoBase : 0);
+    setValorCredito(tipocobro === "credito" ? montoBase : 0);
+    setValoresPago((prev) => ({
+      ...prev,
+      ...(tipocobro === "efectivo" ? { Efectivo: montoBase } : {}),
+      ...(tipocobro === "tarjeta" ? { Tarjeta: montoBase } : {}),
+      ...(tipocobro === "credito" ? { Credito: montoBase } : {}),
+    }));
+  }, [precioVenta, tipocobro]);
   //datos de tipos de pago
   const { dataMetodosPago } = useMetodosPagoStore();
   //datos de la store
@@ -154,10 +193,32 @@ export const IngresoCobro = forwardRef((props, ref) => {
     console.log(valoresPago);
     //{100,50,10}
   };
-  // Exponiendo la función mutation a través de ref
+  // Exponiendo la función mutation y validarYCobrar a través de ref
   useImperativeHandle(ref, () => ({
     mutateAsync: mutation.mutateAsync,
+    validarYCobrar: validarYCobrar,
   }));
+  // Función para validar y cobrar (usada por botón y por Enter)
+  const validarYCobrar = async () => {
+    setErrorRucDni("");
+    const tipoComprobanteUpper = tipoComprobante?.toUpperCase();
+    if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
+      if (!rucDni.trim()) {
+        setErrorRucDni(`El campo ${tipoComprobanteUpper === "FACTURA" ? "RUC" : "DNI"} es obligatorio`);
+        return;
+      }
+      if (tipoComprobanteUpper === "FACTURA" && rucDni.length !== 11) {
+        setErrorRucDni("El RUC debe tener 11 dígitos");
+        return;
+      }
+      if (tipoComprobanteUpper === "BOLETA" && rucDni.length !== 8) {
+        setErrorRucDni("El DNI debe tener 8 dígitos");
+        return;
+      }
+    }
+    // El flujo de cobro es directo para todos los comprobantes
+    mutation.mutateAsync();
+  };
   //Funcion para realizar la venta
   const mutation = useMutation({
     mutationKey: "insertar ventas",
@@ -170,167 +231,222 @@ export const IngresoCobro = forwardRef((props, ref) => {
       queryClient.invalidateQueries(["mostrar detalle venta"]);
       toast.success("🎉 venta generada correctamente!!!");
     },
-  });
-  async function ConfirmarVenta() {
-    // Validar campos requeridos solo para Factura y Boleta, no para Ticket
-    const tipoComprobanteNombre = itemComprobanteSelect?.tipoComprobante?.nombre;
-    const tipoComprobanteUpper = tipoComprobanteNombre?.toUpperCase();
-    
-    // Solo validar RUC/DNI para Factura y Boleta (no para TICKET)
-    if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
-      if (!rucDni || rucDni.trim() === "") {
-        toast.error(`El campo ${tipoComprobanteUpper === "FACTURA" ? "RUC" : "DNI"} es obligatorio`);
-        return;
-      }
-      // Validar formato de RUC/DNI
-      if (tipoComprobanteUpper === "FACTURA" && rucDni.length !== 11) {
-        toast.error("El RUC debe tener 11 dígitos");
-        return;
-      }
-      if (tipoComprobanteUpper === "BOLETA" && rucDni.length !== 8) {
-        toast.error("El DNI debe tener 8 dígitos");
-        return;
+    onError: (error) => {
+      // Asegurar que el error se muestra al usuario
+      const mensajeError = error?.response?.data?.message || error?.message || "Error al procesar la venta";
+      toast.error(`Error: ${mensajeError}`);
+      
+      // Log solo en development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error en confirmación de venta:', error);
       }
     }
-    
-    if (restante === 0) {
-      // Obtener el monto pagado en efectivo
-      const montoEfectivo = valoresPago["Efectivo"] || 0;
-      const pventas = {
-        _id_venta: idventa,
-        idUsuario: datausuarios?.id,
-        _vuelto: vuelto,
-        _id_tipo_comprobante: itemComprobanteSelect?.tipoComprobante?.id,
-        _serie: itemComprobanteSelect?.serie,
-        idSucursal: dataCierreCaja?.caja?.id_sucursal,
-        _id_cliente: cliproItemSelect?.id || null,
-        _fecha: fechaActual,
-        _monto_total: total,
-        pagoCon: montoEfectivo,
-      };
-      
-      // Agregar ruc/dni solo para FACTURA y BOLETA (no para TICKET)
+  });
+  async function ConfirmarVenta() {
+    try {
+      // Validar campos requeridos solo para Factura y Boleta, no para Ticket
+      const tipoComprobanteNombre = itemComprobanteSelect?.tipoComprobante?.nombre;
       const tipoComprobanteUpper = tipoComprobanteNombre?.toUpperCase();
+      
+      // Solo validar RUC/DNI para Factura y Boleta (no para TICKET)
       if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
-        pventas._ruc_dni = rucDni;
+        if (!rucDni || rucDni.trim() === "") {
+          toast.error(`El campo ${tipoComprobanteUpper === "FACTURA" ? "RUC" : "DNI"} es obligatorio`);
+          return;
+        }
+        // Validar formato de RUC/DNI
+        if (tipoComprobanteUpper === "FACTURA" && rucDni.length !== 11) {
+          toast.error("El RUC debe tener 11 dígitos");
+          return;
+        }
+        if (tipoComprobanteUpper === "BOLETA" && rucDni.length !== 8) {
+          toast.error("El DNI debe tener 8 dígitos");
+          return;
+        }
       }
+      
+      if (restante === 0) {
+        // Obtener el monto pagado en efectivo
+        const montoEfectivo = valoresPago["Efectivo"] || 0;
+        const pventas = {
+          _id_venta: idventa,
+          idUsuario: datausuarios?.id,
+          _vuelto: vuelto,
+          _id_tipo_comprobante: itemComprobanteSelect?.tipoComprobante?.id,
+          _serie: itemComprobanteSelect?.serie,
+          idSucursal: dataCierreCaja?.caja?.id_sucursal,
+          _id_cliente: cliproItemSelect?.id || null,
+          _fecha: fechaActual,
+          _sub_total: total, // ✅ SUBTOTAL SIN DESCUENTO
+          _monto_total: precioVenta, // ✅ MONTO CON DESCUENTO
+          pagoCon: montoEfectivo,
+          // ✅ NUEVOS CAMPOS DE DESCUENTO
+          porcentajeDescuento: porcentajeDescuento || 0,
+          montoDescuento: montoDescuento || 0,
+        };
+        
+        // Agregar ruc/dni solo para FACTURA y BOLETA (no para TICKET)
+        const tipoComprobanteUpper = tipoComprobanteNombre?.toUpperCase();
+        if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
+          pventas._ruc_dni = rucDni;
+        }
 
-      // Eliminada confirmación para Factura/Boleta, el flujo es igual para todos
-      console.log("confirmarVenta", pventas);
-      const dataVentaConfirmada = await confirmarVenta(pventas);
-      const nuevosMetodosPago = [];
-      // Insertar en MovCaja solo los métodos de pago con monto mayor a 0
-      for (const [tipo, monto] of Object.entries(valoresPago)) {
-        if (monto > 0) {
-          const metodoPago = dataMetodosPago.find(
-            (item) => item.nombre === tipo
-          );
-          // Si es efectivo, solo ingresar en caja el monto neto (pago - vuelto)
-          if (tipo === "Efectivo") {
-            const montoNeto = Number(monto) - Number(vuelto || 0);
-            const pmovcajaVenta = {
-              tipo_movimiento: "VENTA",
-              monto: montoNeto > 0 ? montoNeto : 0,
-              id_metodo_pago: metodoPago?.id,
-              descripcion: `Pago de venta con ${tipo}`,
-              id_usuario: datausuarios?.id,
-              id_cierre_caja: dataCierreCaja?.id,
-              id_ventas: idventa,
-              vuelto: 0,
-            };
-            await insertarMovCaja(pmovcajaVenta);
-
-            // Registrar el vuelto como salida si aplica
-            if (Number(vuelto) > 0) {
-              const pmovcajaVuelto = {
-                tipo_movimiento: "salida",
-                monto: Number(vuelto),
+        // Eliminada confirmación para Factura/Boleta, el flujo es igual para todos
+        if (process.env.NODE_ENV === 'development') {
+          console.log("confirmarVenta", pventas);
+        }
+        
+        const dataVentaConfirmada = await confirmarVenta(pventas);
+        const nuevosMetodosPago = [];
+        // Insertar en MovCaja solo los métodos de pago con monto mayor a 0
+        for (const [tipo, monto] of Object.entries(valoresPago)) {
+          if (monto > 0) {
+            const metodoPago = dataMetodosPago.find(
+              (item) => item.nombre === tipo
+            );
+            // Si es efectivo, solo ingresar en caja el monto neto (pago - vuelto)
+            if (tipo === "Efectivo") {
+              const montoNeto = Number(monto) - Number(vuelto || 0);
+              const pmovcajaVenta = {
+                tipo_movimiento: "VENTA",
+                monto: montoNeto > 0 ? montoNeto : 0,
                 id_metodo_pago: metodoPago?.id,
-                descripcion: `Vuelto por venta`,
+                descripcion: `Pago de venta con ${tipo}`,
                 id_usuario: datausuarios?.id,
                 id_cierre_caja: dataCierreCaja?.id,
                 id_ventas: idventa,
+                vuelto: 0,
               };
-              await insertarMovCaja(pmovcajaVuelto);
-            }
+              await insertarMovCaja(pmovcajaVenta);
 
-            nuevosMetodosPago.push({ tipo, monto, vuelto });
-          } else {
-            const pmovcaja = {
-              tipo_movimiento: "VENTA",
-              monto: monto,
-              id_metodo_pago: metodoPago?.id,
-              descripcion: `Pago de venta con ${tipo}`,
-              id_usuario: datausuarios?.id,
-              id_cierre_caja: dataCierreCaja?.id,
-              id_ventas: idventa,
-              vuelto: 0,
-            };
-            await insertarMovCaja(pmovcaja);
-            nuevosMetodosPago.push({ tipo, monto, vuelto: 0 });
+              // Registrar el vuelto como salida si aplica
+              if (Number(vuelto) > 0) {
+                const pmovcajaVuelto = {
+                  tipo_movimiento: "salida",
+                  monto: Number(vuelto),
+                  id_metodo_pago: metodoPago?.id,
+                  descripcion: `Vuelto por venta`,
+                  id_usuario: datausuarios?.id,
+                  id_cierre_caja: dataCierreCaja?.id,
+                  id_ventas: idventa,
+                };
+                await insertarMovCaja(pmovcajaVuelto);
+              }
+
+              nuevosMetodosPago.push({ tipo, monto, vuelto });
+            } else {
+              const pmovcaja = {
+                tipo_movimiento: "VENTA",
+                monto: monto,
+                id_metodo_pago: metodoPago?.id,
+                descripcion: `Pago de venta con ${tipo}`,
+                id_usuario: datausuarios?.id,
+                id_cierre_caja: dataCierreCaja?.id,
+                id_ventas: idventa,
+                vuelto: 0,
+              };
+              await insertarMovCaja(pmovcaja);
+              nuevosMetodosPago.push({ tipo, monto, vuelto: 0 });
+            }
           }
         }
+        const pPrint = {
+          dataempresa: dataempresa,
+          productos: datadetalleventa,
+          dataventas: {
+            ...dataVentaConfirmada,
+            _ruc_dni: rucDni || dataVentaConfirmada?._ruc_dni || dataVentaConfirmada?.ruc_dni,
+          },
+          nombreComprobante: itemComprobanteSelect?.tipoComprobante?.nombre,
+          nombrecajero: datausuarios?.nombres,
+          dataCliente: cliproItemSelect,
+          metodosPago: nuevosMetodosPago,
+        };
+        // Usar el estado local `statePrintDirecto` para decidir el comportamiento
+        // Esto permite que desde la pantalla de cobro se desactive temporalmente
+        // la impresión directa sin sobrescribir la configuración guardada en DB.
+        (typeof statePrintDirecto === "boolean" ? statePrintDirecto : dataImpresorasPorUsuario?.estado)
+          ? imprimirDirectoTicket(pPrint)
+          : imprimirConVentanaEmergente(pPrint);
+      } else {
+        toast.warning("Falta completar el pago, el restante tiene que ser 0");
       }
-      const pPrint = {
-        dataempresa: dataempresa,
-        productos: datadetalleventa,
-        dataventas: {
-          ...dataVentaConfirmada,
-          _ruc_dni: rucDni || dataVentaConfirmada?._ruc_dni || dataVentaConfirmada?.ruc_dni,
-        },
-        nombreComprobante: itemComprobanteSelect?.tipoComprobante?.nombre,
-        nombrecajero: datausuarios?.nombres,
-        dataCliente: cliproItemSelect,
-        metodosPago: nuevosMetodosPago,
-      };
-      // Usar el estado local `statePrintDirecto` para decidir el comportamiento
-      // Esto permite que desde la pantalla de cobro se desactive temporalmente
-      // la impresión directa sin sobrescribir la configuración guardada en DB.
-      (typeof statePrintDirecto === "boolean" ? statePrintDirecto : dataImpresorasPorUsuario?.estado)
-        ? imprimirDirectoTicket(pPrint)
-        : imprimirConVentanaEmergente(pPrint);
-    } else {
-      toast.warning("Falta completar el pago, el restante tiene que ser 0");
+    } catch (error) {
+      // Capturar cualquier error inesperado en el flujo de venta
+      const mensajeError = error?.message || "Error desconocido durante la venta";
+      toast.error(`Error: ${mensajeError}`);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error en ConfirmarVenta:', error);
+      }
     }
   }
   const imprimirConVentanaEmergente = async (p) => {
-    console.log("pprint", p);
-    await ticket("print", p);
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        console.log("pprint", p);
+      }
+      await ticket("print", p);
+    } catch (error) {
+      console.error('Error al imprimir en ventana emergente:', error);
+      toast.error("Error al generar ticket. Por favor intenta nuevamente.");
+    }
   };
+  
   const imprimirDirectoTicket = async (p) => {
-    if (!dataImpresorasPorUsuario?.nombre || dataImpresorasPorUsuario?.nombre === "-") {
-      return toast.error(
-        "Impresora no configurada. Ve a Configuración → Impresoras para seleccionar tu impresora"
-      );
+    try {
+      if (!dataImpresorasPorUsuario?.nombre || dataImpresorasPorUsuario?.nombre === "-") {
+        return toast.error(
+          "Impresora no configurada. Ve a Configuración → Impresoras para seleccionar tu impresora"
+        );
+      }
+      
+      const response = await ticket("b64", p);
+      
+      if (!response || !response.content) {
+        throw new Error("No se pudo generar el ticket");
+      }
+      
+      // Convertir el contenido base64 en un archivo Blob
+      const binaryString = atob(response.content);
+      const binaryLen = binaryString.length;
+      const bytes = new Uint8Array(binaryLen);
+      for (let i = 0; i < binaryLen; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      
+      // Crear un archivo simulando un archivo subido
+      const file = new File([blob], "GeneratedTicket.pdf", {
+        type: "application/pdf",
+      });
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("printerName", dataImpresorasPorUsuario?.nombre);
+      
+      const responseApi = await fetch("http://localhost:5075/api/print-ticket", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (responseApi.ok) {
+        toast.success("El PDF se envió a imprimir correctamente.");
+      } else {
+        const errorText = await responseApi.text();
+        throw new Error(errorText || "Error desconocido al imprimir");
+      }
+    } catch (error) {
+      console.error('Error al imprimir directamente:', error);
+      toast.error(`Error de impresión: ${error.message || "Intenta nuevamente"}`);
+      
+      // Fallback: intentar abrir en ventana emergente
+      toast.info("Abriendo ticket en ventana emergente...");
+      try {
+        await ticket("print", p);
+      } catch (fallbackError) {
+        console.error('Error al abrir fallback:', fallbackError);
+      }
     }
-    const response = await ticket("b64", p);
-    // Convertir el contenido base64 en un archivo Blob
-    const binaryString = atob(response.content);
-    const binaryLen = binaryString.length;
-    const bytes = new Uint8Array(binaryLen);
-    for (let i = 0; i < binaryLen; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], { type: "application/pdf" });
-    // Crear un archivo simulando un archivo subido
-    const file = new File([blob], "GeneratedTicket.pdf", {
-      type: "application/pdf",
-    });
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("printerName", dataImpresorasPorUsuario?.nombre);
-    const responseApi = await fetch("http://localhost:5075/api/print-ticket", {
-      method: "POST",
-      body: formData,
-    });
-    if (responseApi.ok) {
-      toast.success("El PDF se envió a imprimir correctamente.");
-
-    }else{
-      const error = await responseApi.text();
-      toast.error("Error al imprimir" + error);
-    }
-
   };
   const { setTipo: setTipocliente } = useClientesProveedoresStore();
   const { setStateClose, setAccion, stateClose, accion, setIsExploding } =
@@ -343,13 +459,13 @@ export const IngresoCobro = forwardRef((props, ref) => {
   }
   //useEffect para recalcular cuando los valores cambian
   useEffect(() => {
-    if (tipocobro !== "Mixto" && valoresPago[tipocobro] != total) {
+    if (tipocobro !== "Mixto" && valoresPago[tipocobro] != precioVenta) {
       setValoresPago((prev) => ({
         ...prev,
-        [tipocobro]: total,
+        [tipocobro]: precioVenta,
       }));
     }
-  }, [tipocobro, total]);
+  }, [tipocobro, precioVenta]);
   useEffect(() => {
     calcularVueltoYRestante();
   }, [precioVenta, tipocobro, valoresPago]);
@@ -447,7 +563,7 @@ export const IngresoCobro = forwardRef((props, ref) => {
                   <label className="form__label">
                     {itemComprobanteSelect?.tipoComprobante?.nombre?.toUpperCase() === "FACTURA" ? "RUC" : "DNI"}
                   </label>
-                  {errorRucDni && <span style={{ color: '#d32f2f', fontSize: '13px' }}>{errorRucDni}</span>}
+                  {errorRucDni && <span style={{ color: '#d32f2f', fontSize: '20px', fontWeight: 'bold' }}>{errorRucDni}</span>}
                 </InputText>
               </section>
             )}
@@ -461,6 +577,39 @@ export const IngresoCobro = forwardRef((props, ref) => {
             <span className="cliente">{cliproItemSelect?.nombres}</span>
           </section>
           <Linea />
+          
+          {/* ✅ NUEVA SECCIÓN: DESCUENTO CON SWITCH */}
+          <section className="area-descuento-switch">
+            <article className="switch-container">
+              <span className="label-switch">💰 Descuento</span>
+              <button 
+                className={`switch ${stateDescuentoActivo ? 'active' : ''}`}
+                onClick={() => setStateDescuentoActivo()}
+              >
+                <span className="switch-circle"></span>
+              </button>
+            </article>
+            
+            {/* Input de descuento solo visible si está activo */}
+            {stateDescuentoActivo && (
+              <article className="descuento-input">
+                <InputText textalign="center">
+                  <input
+                    onChange={(e) => setDescuento(parseFloat(e.target.value) || 0, total)}
+                    value={porcentajeDescuento}
+                    className="form__field"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                  <label className="form__label">Porcentaje (%)</label>
+                </InputText>
+              </article>
+            )}
+          </section>
+          <Linea />
+          
           <section className="area2">
             {dataMetodosPago?.map((item, index) => {
               return (tipocobro === "Mixto" && item.nombre !== "Mixto") ||
@@ -470,7 +619,7 @@ export const IngresoCobro = forwardRef((props, ref) => {
                     onChange={(e) =>
                       handleChangePago(item.nombre, e.target.value)
                     }
-                    defaultValue={tipocobro === item.nombre ? total : ""}
+                    value={valoresPago[item.nombre] ?? (tipocobro === item.nombre ? precioVenta : "")}
                     className="form__field"
                     type="number"
                     disabled={
@@ -487,6 +636,8 @@ export const IngresoCobro = forwardRef((props, ref) => {
           <Linea />
           <section className="area3">
             <article className="etiquetas">
+              <span className="total">Subtotal: </span>
+              {porcentajeDescuento > 0 && <span>Descuento ({porcentajeDescuento}%): </span>}
               <span className="total">Total: </span>
               <span>Vuelto: </span>
               <span>Restante: </span>
@@ -495,6 +646,22 @@ export const IngresoCobro = forwardRef((props, ref) => {
               <span className="total">
                 {FormatearNumeroDinero(
                   total,
+                  dataempresa?.currency,
+                  dataempresa?.iso
+                )}
+              </span>
+              {porcentajeDescuento > 0 && (
+                <span style={{ color: '#e74c3c', fontWeight: '600' }}>
+                  -{FormatearNumeroDinero(
+                    montoDescuento,
+                    dataempresa?.currency,
+                    dataempresa?.iso
+                  )}
+                </span>
+              )}
+              <span className="total" style={{ fontWeight: '700', color: '#2980b9' }}>
+                {FormatearNumeroDinero(
+                  precioVenta,
                   dataempresa?.currency,
                   dataempresa?.iso
                 )}
@@ -522,24 +689,7 @@ export const IngresoCobro = forwardRef((props, ref) => {
               <Btn1
                 funcion={() => {
                   // Validación previa: solo validar RUC/DNI para Factura/Boleta (no para TICKET)
-                    setErrorRucDni("");
-                    const tipoComprobanteUpper = tipoComprobante?.toUpperCase();
-                    if (tipoComprobanteUpper === "FACTURA" || tipoComprobanteUpper === "BOLETA") {
-                      if (!rucDni.trim()) {
-                        setErrorRucDni(`El campo ${tipoComprobanteUpper === "FACTURA" ? "RUC" : "DNI"} es obligatorio`);
-                        return;
-                      }
-                      if (tipoComprobanteUpper === "FACTURA" && rucDni.length !== 11) {
-                        setErrorRucDni("El RUC debe tener 11 dígitos");
-                        return;
-                      }
-                      if (tipoComprobanteUpper === "BOLETA" && rucDni.length !== 8) {
-                        setErrorRucDni("El DNI debe tener 8 dígitos");
-                        return;
-                      }
-                    }
-                  // El flujo de cobro es directo para todos los comprobantes
-                  mutation.mutateAsync();
+                  validarYCobrar();
                 }}
                 border="2px"
                 titulo="COBRAR (enter)"
@@ -708,6 +858,73 @@ const Container = styled.div`
     padding: 12px;
     font-size: 18px;
   }
+
+  /* ✅ NUEVA SECCIÓN: DESCUENTO */
+  .area-descuento-switch {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 0;
+    
+    .switch-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      
+      .label-switch {
+        font-weight: 600;
+        font-size: 16px;
+        color: #333;
+      }
+      
+      .switch {
+        position: relative;
+        display: inline-flex;
+        width: 50px;
+        height: 28px;
+        background: #ccc;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        padding: 2px;
+        transition: background 0.3s ease;
+        
+        &.active {
+          background: #4caf50;
+        }
+        
+        .switch-circle {
+          display: block;
+          width: 24px;
+          height: 24px;
+          background: white;
+          border-radius: 50%;
+          transition: transform 0.3s ease;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        &.active .switch-circle {
+          transform: translateX(22px);
+        }
+      }
+    }
+    
+    .descuento-input {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      
+      input {
+        font-size: 24px;
+        font-weight: 600;
+      }
+    }
+  }
+
   .area3 {
     display: flex;
     justify-content: space-between;

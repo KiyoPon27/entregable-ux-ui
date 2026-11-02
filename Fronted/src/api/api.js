@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Crear la instancia de Axios con la URL base de tu Backend Java
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api', // Tu backend Java
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api', // Tu backend Java
   headers: {
     'Content-Type': 'application/json',
   },
@@ -30,7 +30,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error?.response?.status;
-    if (status === 401 || status === 403) {
+    const requestUrl = error?.config?.url || '';
+    const isAuthFlowRequest =
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/forgot-password') ||
+      requestUrl.includes('/auth/verify-reset-code') ||
+      requestUrl.includes('/auth/reset-password');
+
+    if ((status === 401 || status === 403) && !isAuthFlowRequest) {
       try {
         localStorage.removeItem('token');
         // opcional: limpiar otros datos relacionados

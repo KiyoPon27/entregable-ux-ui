@@ -4,6 +4,7 @@ import {
   MostrarDetalleVenta,
   EliminarDetalleVentas,
   EditarCantidadDetalleVenta,
+  CambiarMultiprecioDetalleVenta,
 } from "../supabase/crudDetalleVenta";
 import {
   ObtenerTop5ProductosPorCantidad,
@@ -11,7 +12,7 @@ import {
 } from "../supabase/crudDashboard";
 function calcularTotal(items) {
   return items.reduce(
-    (total, item) => total + item.precio_venta * item.cantidad,
+    (total, item) => total + (item.total ?? item.precio_venta * item.cantidad),
     0
   );
 }
@@ -52,5 +53,8 @@ export const useDetalleVentasStore = create((set, get) => ({
   },
   editarCantidadDetalleVenta: async (p) => {
     await EditarCantidadDetalleVenta(p);
+  },
+  cambiarMultiprecioDetalleVenta: async (p) => {
+    await CambiarMultiprecioDetalleVenta(p);
   },
 }));

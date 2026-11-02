@@ -10,10 +10,11 @@ import { BarLoader } from "react-spinners";
 export const CardMovimientosCajaLive = () => {
   const { dataempresa } = useEmpresaStore();
   const { mostrarmovimientoscajalive } = useMovCajaStore();
+  const idEmpresa = dataempresa?.id || dataempresa?.id_empresa;
   const { data, isLoading, error } = useQuery({
-    queryKey: ["mostrar movimientos caja live"],
-    queryFn: () => mostrarmovimientoscajalive({ idEmpresa: dataempresa?.id }),
-    enabled: !!dataempresa,
+    queryKey: ["mostrar movimientos caja live", idEmpresa],
+    queryFn: () => mostrarmovimientoscajalive({ idEmpresa }),
+    enabled: !!idEmpresa,
     refetchInterval: 5000, // Polling cada 5 segundos (temporal hasta implementar WebSocket)
   });
   

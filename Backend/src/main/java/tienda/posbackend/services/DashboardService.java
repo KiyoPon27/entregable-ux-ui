@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tienda.posbackend.dto.*;
+import tienda.posbackend.entities.Venta;
 import tienda.posbackend.repositories.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,6 +22,12 @@ public class DashboardService {
     private final DetalleVentaRepository detalleVentaRepository;
     private final CierreCajaRepository cierreCajaRepository;
     private final MovimientoCajaRepository movimientoCajaRepository;
+
+    private BigDecimal calcularMontoNetoVenta(Venta venta) {
+        // ✅ montoTotal ahora se guarda CON descuento aplicado
+        // No restar montoDescuento aquí, solo retornar montoTotal directo
+        return venta.getMontoTotal() != null ? venta.getMontoTotal() : BigDecimal.ZERO;
+    }
 
     /**
      * Dashboard de cajas por sucursal con ventas
@@ -44,7 +51,7 @@ public class DashboardService {
                 if (ultimoCierre != null && ultimoCierre.getEstado() == 0) {
                     totalVentas = ventaRepository.findByCierreCajaId(ultimoCierre.getId())
                         .stream()
-                        .map(v -> v.getMontoTotal() != null ? v.getMontoTotal() : BigDecimal.ZERO)
+                        .map(this::calcularMontoNetoVenta)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 }
                 
@@ -107,7 +114,7 @@ public class DashboardService {
             .filter(v -> v.getEmpresa() != null && v.getEmpresa().getId().equals(idEmpresa))
             .filter(v -> !v.getFecha().isBefore(fechaInicio) && !v.getFecha().isAfter(fechaFin))
             .filter(v -> !"pendiente".equals(v.getEstado()))
-            .map(v -> v.getMontoTotal() != null ? v.getMontoTotal() : BigDecimal.ZERO)
+            .map(this::calcularMontoNetoVenta)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
@@ -224,7 +231,7 @@ public class DashboardService {
             .collect(Collectors.groupingBy(
                 v -> v.getFecha().toLocalDate(),
                 Collectors.reducing(BigDecimal.ZERO,
-                    v -> v.getMontoTotal() != null ? v.getMontoTotal() : BigDecimal.ZERO,
+                    this::calcularMontoNetoVenta,
                     BigDecimal::add)
             ))
             .entrySet().stream()

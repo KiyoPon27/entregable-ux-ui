@@ -12,6 +12,7 @@ import { Device } from "./styles/breakpoints";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   const { setTheme, themeStyle } = useThemeStore();
@@ -37,13 +38,15 @@ function App() {
     // eslint-disable-next-line
   }, [datausuarios]);
   return (
-    <ThemeProvider theme={themeStyle}>
-      <AuthContextProvider>
-        <GlobalStyles />
-        <MyRoutes />
-        <ReactQueryDevtools initialIsOpen={true} />
-      </AuthContextProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider theme={themeStyle}>
+        <AuthContextProvider>
+          <GlobalStyles />
+          <MyRoutes />
+          <ReactQueryDevtools initialIsOpen={true} />
+        </AuthContextProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

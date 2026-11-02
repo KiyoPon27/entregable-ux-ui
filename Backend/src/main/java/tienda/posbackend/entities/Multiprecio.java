@@ -1,6 +1,8 @@
 package tienda.posbackend.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 
@@ -20,6 +22,9 @@ public class Multiprecio {
     private Producto producto;
     
     private BigDecimal cantidad;
+    
+    @Column(name = "nombre_referencial", nullable = true)
+    private String nombreReferencial;
     
     // Constructors
     public Multiprecio() {}
@@ -41,6 +46,7 @@ public class Multiprecio {
         this.precioVenta = precioVenta;
     }
     
+    @JsonIgnore
     public Producto getProducto() {
         return producto;
     }
@@ -54,11 +60,29 @@ public class Multiprecio {
         return producto != null ? producto.getId() : null;
     }
     
+    @JsonSetter("idProducto")
+    public void setProductoId(Long idProducto) {
+        // Este método se usa solo para recibir el ID desde JSON
+        // El producto real se asignará en el service
+        if (this.producto == null && idProducto != null) {
+            this.producto = new Producto();
+            this.producto.setId(idProducto);
+        }
+    }
+    
     public BigDecimal getCantidad() {
         return cantidad;
     }
     
     public void setCantidad(BigDecimal cantidad) {
         this.cantidad = cantidad;
+    }
+    
+    public String getNombreReferencial() {
+        return nombreReferencial;
+    }
+    
+    public void setNombreReferencial(String nombreReferencial) {
+        this.nombreReferencial = nombreReferencial;
     }
 }

@@ -6,6 +6,7 @@ import { useAlmacenesStore } from "../store/AlmacenesStore";
 import { useEmpresaStore } from "../store/EmpresaStore";
 import { Title } from "../components/atomos/Title";
 import { Btn1 } from "../components/moleculas/Btn1";
+import api from "../api/api";
 
 export const MovimientosStock = () => {
   const {
@@ -31,6 +32,47 @@ export const MovimientosStock = () => {
   });
 
   const [mostrarDetalles, setMostrarDetalles] = useState(null);
+  const [ventaDetalles, setVentaDetalles] = useState(null);
+  const [cargandoVenta, setCargandoVenta] = useState(false);
+
+  // Función para cargar detalles de la venta enlazada
+  const cargarVentaDetalles = async (idVenta) => {
+    if (!idVenta) return;
+    
+    setCargandoVenta(true);
+    try {
+      // Obtener el detalle completo de la venta usando el endpoint correcto
+      const response = await api.get(`/ventas/${idVenta}/detalle-completo`);
+      if (response.data) {
+        setVentaDetalles(response.data);
+      }
+    } catch (error) {
+      console.error("Error al cargar venta:", error);
+      setVentaDetalles(null);
+    } finally {
+      setCargandoVenta(false);
+    }
+  };
+
+  // Manejar apertura del modal
+  const handleVerDetalles = (mov) => {
+    setMostrarDetalles(mov);
+    setVentaDetalles(null);
+    
+    // Si es una venta, cargar los detalles
+    if (mov.origen === "ventas" && mov.detalle?.includes("ID venta:")) {
+      const idVenta = mov.detalle.match(/ID venta:\s*(\d+)/)?.[1];
+      if (idVenta) {
+        cargarVentaDetalles(idVenta);
+      }
+    }
+  };
+
+  // Manejar cierre del modal
+  const handleCerrarModal = () => {
+    setMostrarDetalles(null);
+    setVentaDetalles(null);
+  };
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -218,21 +260,24 @@ export const MovimientosStock = () => {
               <Tabla>
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Fecha</th>
-                    <th>Producto</th>
-                    <th>Almacén</th>
-                    <th>Tipo</th>
-                    <th>Cantidad</th>
-                    <th>Detalle</th>
-                    <th>Origen</th>
-                    <th>Acciones</th>
+                    <th>ACCIONES</th>
+                    <th>FECHA</th>
+                    <th>PRODUCTO</th>
+                    <th>ALMACÉN</th>
+                    <th>TIPO</th>
+                    <th>CANTIDAD</th>
+                    <th>DETALLE</th>
+                    <th>ORIGEN</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dataMovimientos.map((mov) => (
                     <tr key={mov.id}>
-                      <td>{mov.id}</td>
+                      <td className="acciones-cell">
+                        <BtnVer onClick={() => handleVerDetalles(mov)}>
+                          👁️ Ver
+                        </BtnVer>
+                      </td>
                       <td>{formatearFecha(mov.fecha)}</td>
                       <td>{mov.producto?.nombre || "-"}</td>
                       <td>{mov.almacen?.nombre || "-"}</td>
@@ -244,11 +289,6 @@ export const MovimientosStock = () => {
                       <td className="cantidad">{mov.cantidad}</td>
                       <td>{mov.detalle || "-"}</td>
                       <td>{mov.origen || "-"}</td>
-                      <td>
-                        <BtnVer onClick={() => setMostrarDetalles(mov)}>
-                          👁️ Ver
-                        </BtnVer>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -258,62 +298,133 @@ export const MovimientosStock = () => {
         )}
       </TablaCard>
 
-      {/* Modal de detalles */}
+      {/* Modal de detalles - DISEÑO PROFESIONAL CON DOS COLUMNAS */}
       {mostrarDetalles && (
         <Modal>
-          <ModalOverlay onClick={() => setMostrarDetalles(null)} />
+          <ModalOverlay onClick={handleCerrarModal} />
           <ModalContent>
             <ModalHeader>
-              <h2>📋 Detalles del Movimiento</h2>
-              <CloseBtn onClick={() => setMostrarDetalles(null)}>✕</CloseBtn>
+              <h2>📋 Detalle del Movimiento de Stock</h2>
+              <CloseBtn onClick={handleCerrarModal}>✕</CloseBtn>
             </ModalHeader>
             
             <ModalBody>
-              <DetalleItem>
-                <label>ID:</label>
-                <span>{mostrarDetalles.id}</span>
-              </DetalleItem>
-              
-              <DetalleItem>
-                <label>Fecha y Hora:</label>
-                <span>{formatearFecha(mostrarDetalles.fecha)}</span>
-              </DetalleItem>
-              
-              <DetalleItem>
-                <label>Producto:</label>
-                <span>{mostrarDetalles.producto?.nombre || "-"}</span>
-              </DetalleItem>
-              
-              <DetalleItem>
-                <label>Almacén:</label>
-                <span>{mostrarDetalles.almacen?.nombre || "-"}</span>
-              </DetalleItem>
-              
-              <DetalleItem>
-                <label>Tipo de Movimiento:</label>
-                <TipoBadge className={getTipoClass(mostrarDetalles.tipoMovimiento)}>
-                  {mostrarDetalles.tipoMovimiento}
-                </TipoBadge>
-              </DetalleItem>
-              
-              <DetalleItem>
-                <label>Cantidad:</label>
-                <span className="cantidad-grande">{mostrarDetalles.cantidad}</span>
-              </DetalleItem>
-              
-              <DetalleItem>
-                <label>Detalle:</label>
-                <span>{mostrarDetalles.detalle || "Sin detalle"}</span>
-              </DetalleItem>
-              
-              <DetalleItem>
-                <label>Origen:</label>
-                <span>{mostrarDetalles.origen || "Sin origen"}</span>
-              </DetalleItem>
+              {/* GRUPO 1: ID y Comprobante (si es venta) */}
+              <InfoGroup>
+                <InfoItem>
+                  <InfoLabel>ID Movimiento:</InfoLabel>
+                  <InfoValue>{mostrarDetalles.id}</InfoValue>
+                </InfoItem>
+                {mostrarDetalles.origen === "ventas" && mostrarDetalles.detalle?.includes("ID venta:") && (
+                  <InfoItem>
+                    <InfoLabel>Venta Asociada:</InfoLabel>
+                    <InfoValue className="comprobante">
+                      {cargandoVenta ? (
+                        "Cargando..."
+                      ) : ventaDetalles?.nroComprobante ? (
+                        <>Comprobante: {ventaDetalles.nroComprobante}</>
+                      ) : (
+                        <>Venta #{mostrarDetalles.detalle.match(/ID venta:\s*(\d+)/)?.[1] || "-"}</>
+                      )}
+                    </InfoValue>
+                  </InfoItem>
+                )}
+              </InfoGroup>
+
+              {/* GRUPO 2: Tipo y Fecha */}
+              <InfoGroup>
+                <InfoItem>
+                  <InfoLabel>Tipo de Movimiento:</InfoLabel>
+                  <InfoValue>
+                    <TipoBadge className={getTipoClass(mostrarDetalles.tipoMovimiento)}>
+                      {mostrarDetalles.tipoMovimiento}
+                    </TipoBadge>
+                  </InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Fecha:</InfoLabel>
+                  <InfoValue>{formatearFecha(mostrarDetalles.fecha)}</InfoValue>
+                </InfoItem>
+              </InfoGroup>
+
+              {/* GRUPO 3: Producto y Almacén */}
+              <InfoGroup>
+                <InfoItem>
+                  <InfoLabel>Producto:</InfoLabel>
+                  <InfoValue>{mostrarDetalles.producto?.nombre || "-"}</InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Almacén:</InfoLabel>
+                  <InfoValue>{mostrarDetalles.almacen?.nombre || "-"}</InfoValue>
+                </InfoItem>
+              </InfoGroup>
+
+              {/* GRUPO 4: Cantidad y Origen */}
+              <InfoGroup>
+                <InfoItem>
+                  <InfoLabel>Cantidad:</InfoLabel>
+                  <InfoValue className="cantidad-grande">
+                    {mostrarDetalles.cantidad}
+                  </InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Origen:</InfoLabel>
+                  <InfoValue>{mostrarDetalles.origen || "-"}</InfoValue>
+                </InfoItem>
+              </InfoGroup>
+
+              {/* GRUPO 5: Detalle adicional */}
+              {mostrarDetalles.detalle && mostrarDetalles.detalle !== "-" && (
+                <InfoGroup fullWidth>
+                  <InfoItem fullWidth>
+                    <InfoLabel>Detalle:</InfoLabel>
+                    <InfoValue>{mostrarDetalles.detalle}</InfoValue>
+                  </InfoItem>
+                </InfoGroup>
+              )}
+
+              {/* GRUPO 6: Información de la venta (si se cargó) */}
+              {ventaDetalles && mostrarDetalles.origen === "ventas" && (
+                <>
+                  <SectionDivider />
+                  <InfoGroup>
+                    <InfoItem>
+                      <InfoLabel>Tipo Comprobante:</InfoLabel>
+                      <InfoValue className="tipo-comprobante">
+                        {ventaDetalles.dataventas?.tipoComprobante || ventaDetalles.nombreComprobante || "-"}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoLabel>Número Comprobante:</InfoLabel>
+                      <InfoValue className="comprobante">
+                        {ventaDetalles.dataventas?.nroComprobante || "-"}
+                      </InfoValue>
+                    </InfoItem>
+                  </InfoGroup>
+                  <InfoGroup>
+                    <InfoItem>
+                      <InfoLabel>Número SUNAT:</InfoLabel>
+                      <InfoValue>{ventaDetalles.dataventas?.numeroSunat || "No registrado"}</InfoValue>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoLabel>Monto Total:</InfoLabel>
+                      <InfoValue className="monto-total">
+                        S/ {parseFloat(ventaDetalles.dataventas?.montoTotal || 0).toFixed(2)}
+                      </InfoValue>
+                    </InfoItem>
+                  </InfoGroup>
+                  <InfoGroup fullWidth>
+                    <InfoItem fullWidth>
+                      <InfoLabel>Cliente:</InfoLabel>
+                      <InfoValue>{ventaDetalles.dataCliente?.nombres || "Cliente Genérico" || "-"}</InfoValue>
+                    </InfoItem>
+                  </InfoGroup>
+                </>
+              )}
             </ModalBody>
             
             <ModalFooter>
-              <Btn1 funcion={() => setMostrarDetalles(null)} bgcolor="#6b7280">
+              <Btn1 funcion={handleCerrarModal} bgcolor="#6b7280">
                 Cerrar
               </Btn1>
             </ModalFooter>
@@ -374,9 +485,10 @@ const FiltroItem = styled.div`
   }
   
   select, input {
-    padding: 8px 12px;
+    min-height: 44px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border-radius: 10px;
     font-size: 14px;
     
     &:focus {
@@ -444,99 +556,196 @@ const ResultadosInfo = styled.div`
 
 const TablaWrapper = styled.div`
   overflow-x: auto;
+  
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+    
+    &:hover {
+      background: #94a3b8;
+    }
+  }
 `;
 
 const Tabla = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  min-width: 600px;
+  border-collapse: separate;
+  border-spacing: 0;
   
   thead {
-    background: #f9fafb;
-    
-    th {
-      padding: 12px;
-      text-align: left;
-      font-size: 13px;
-      font-weight: 600;
-      color: #374151;
-      border-bottom: 2px solid #e5e7eb;
+    tr {
+      th {
+        text-align: left;
+        padding: 12px 14px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #1f2937;
+        font-weight: 700;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        border-bottom: 3px solid #667eea;
+        
+        &:first-child {
+          position: sticky;
+          left: 0;
+          background: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
+          color: white;
+          border-bottom: 3px solid #4555c0;
+          border-top-left-radius: 12px;
+          z-index: 20;
+          box-shadow: 4px 0 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        &:last-child {
+          border-top-right-radius: 12px;
+        }
+      }
     }
   }
   
   tbody {
     tr {
-      border-bottom: 1px solid #e5e7eb;
-      transition: background 0.2s;
+      transition: background 0.2s ease;
+      border-bottom: 1px solid #f3f4f6;
       
       &:hover {
         background: #f9fafb;
       }
-    }
-    
-    td {
-      padding: 12px;
-      font-size: 14px;
-      color: #1f2937;
       
-      &.cantidad {
-        font-weight: 600;
-        text-align: center;
+      &:last-child {
+        td {
+          &:first-child {
+            border-bottom-left-radius: 12px;
+          }
+          &:last-child {
+            border-bottom-right-radius: 12px;
+          }
+        }
       }
+      
+      td {
+        padding: 14px 14px;
+        color: #374151;
+        font-size: 13px;
+        border-bottom: 1px solid #f3f4f6;
+        
+        &:first-child {
+          position: sticky;
+          left: 0;
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(85, 104, 211, 0.95) 100%);
+          text-align: center;
+          z-index: 15;
+          box-shadow: 4px 0 12px rgba(102, 126, 234, 0.15);
+          padding: 8px 10px;
+        }
+        
+        &.cantidad {
+          font-weight: 600;
+          text-align: center;
+        }
+        
+        &.acciones-cell {
+          padding: 8px 10px;
+        }
+      }
+    }
+  }
+  
+  @media (max-width: 1200px) {
+    th:nth-child(2),
+    td:nth-child(2) {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 `;
 
 const TipoBadge = styled.span`
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
   
   &.entrada {
-    background: #dcfce7;
-    color: #16a34a;
+    background: linear-gradient(135deg, #dcfce7 0%, #c6f6d5 100%);
+    color: #166534;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
   }
   
   &.salida {
-    background: #fee2e2;
-    color: #dc2626;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
   }
   
   &.ajuste-entrada {
-    background: #d1fae5;
-    color: #059669;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);
   }
   
   &.ajuste-salida {
-    background: #fecaca;
-    color: #b91c1c;
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    color: #7f1d1d;
+    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.2);
   }
   
   &.ajuste-sin-cambio {
-    background: #e5e7eb;
-    color: #6b7280;
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    color: #374151;
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.2);
   }
   
   &.default {
-    background: #e0e7ff;
-    color: #4f46e5;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #312e81;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
   }
 `;
 
 const BtnVer = styled.button`
-  padding: 6px 12px;
-  background: #3b82f6;
+  background: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
   color: white;
   border: none;
+  padding: 10px 16px;
   border-radius: 6px;
   font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
   
   &:hover {
-    background: #2563eb;
+    background: linear-gradient(135deg, #5568d3 0%, #4555c0 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
   }
 `;
 
@@ -567,7 +776,7 @@ const ModalContent = styled.div`
   background: white;
   border-radius: 12px;
   width: 90%;
-  max-width: 600px;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -608,6 +817,86 @@ const CloseBtn = styled.button`
 
 const ModalBody = styled.div`
   padding: 20px;
+`;
+
+// Estilos profesionales para InfoGroup (dos columnas)
+const InfoGroup = styled.div`
+  display: grid;
+  grid-template-columns: ${props => props.fullWidth ? '1fr' : 'repeat(2, 1fr)'};
+  gap: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const SectionDivider = styled.div`
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #d1d5db, transparent);
+  margin: 20px 0;
+`;
+
+const InfoItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const InfoLabel = styled.label`
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+`;
+
+const InfoValue = styled.span`
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+  word-break: break-word;
+  
+  &.cantidad-grande {
+    font-size: 28px;
+    font-weight: 700;
+    color: #3b82f6;
+  }
+
+  &.comprobante {
+    font-size: 16px;
+    font-weight: 700;
+    color: #059669;
+    background: #d1fae5;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  &.tipo-comprobante {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    padding: 8px 14px;
+    border-radius: 6px;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &.monto-total {
+    font-size: 24px;
+    font-weight: 700;
+    color: #059669;
+  }
 `;
 
 const DetalleItem = styled.div`

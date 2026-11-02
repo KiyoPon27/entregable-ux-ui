@@ -3,209 +3,271 @@ import { useRef, useState } from "react";
 import styled from "styled-components";
 import { useGlobalStore } from "../store/GlobalStore";
 
-export const ImageSelector = ({ fileUrl }) => {
+export const ImageSelector = ({ fileUrl, onFileSelected, onRemove, compact = false }) => {
   const fileInputRef = useRef(null);
   const { setFile, setFileUrl } = useGlobalStore();
   const [isDragging, setIsDragging] = useState(false);
-  
+  const [fileName, setFileName] = useState(null);
+
   function openFileSelector() {
     fileInputRef.current.click();
   }
-  
-  const handleImageChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) return;
-    
-    // Validar que sea imagen
-    if (!selectedFile.type.startsWith('image/')) {
-      alert('Por favor selecciona un archivo de imagen válido');
-      return;
-    }
-    
+
+  const processFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    setFileName(file.name);
     const fileReader = new FileReader();
-    fileReader.readAsDataURL(selectedFile);
-    setFile(selectedFile);
+    fileReader.readAsDataURL(file);
+    setFile(file);
     fileReader.onload = () => {
       setFileUrl(fileReader.result);
+      try { if (typeof onFileSelected === 'function') onFileSelected(file, fileReader.result); } catch(e) { console.error('onFileSelected callback error', e); }
     };
   };
-  
+
+  const handleImageChange = (e) => {
+    processFile(e.target.files[0]);
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
   };
-  
+
   const handleDragLeave = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
   };
-  
+
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
-    
-    const droppedFile = e.dataTransfer.files[0];
-    if (!droppedFile) return;
-    
-    // Validar que sea imagen
-    if (!droppedFile.type.startsWith('image/')) {
-      alert('Por favor selecciona un archivo de imagen válido');
-      return;
-    }
-    
-    const fileReader = new FileReader();
-    fileReader.readAsDataURL(droppedFile);
-    setFile(droppedFile);
-    fileReader.onload = () => {
-      setFileUrl(fileReader.result);
-    };
+    processFile(e.dataTransfer.files[0]);
   };
-  
+
+  const handleRemove = (e) => {
+    e && e.stopPropagation && e.stopPropagation();
+    setFileUrl(null);
+    setFile(null);
+    setFileName(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    try { if (typeof onRemove === 'function') onRemove(); } catch(e) { console.error('onRemove callback error', e); }
+  };
+
   const hasImage = fileUrl && fileUrl !== "-";
-  
+
   return (
-    <Container>
-      <DropZone
-        isDragging={isDragging}
-        hasImage={hasImage}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={openFileSelector}
-      >
-        {hasImage ? (
-          <>
-            <PreviewImage src={fileUrl} alt="Logo de empresa" />
-            <OverlayEdit>
-              <Icon icon="lets-icons:edit-fill" className="edit-icon" />
-              <span>Cambiar logo</span>
-            </OverlayEdit>
-          </>
-        ) : (
-          <PlaceholderContent>
-            <Icon icon="ph:image-duotone" className="placeholder-icon" />
-            <TextContainer>
-              <MainText>Click para seleccionar tu logo</MainText>
-              <SubText>o arrastra y suelta aquí</SubText>
-              <FormatText>PNG, JPG, GIF hasta 5MB</FormatText>
-            </TextContainer>
-          </PlaceholderContent>
-        )}
-        <HiddenInput
-          onChange={handleImageChange}
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-        />
-      </DropZone>
-    </Container>
+    <Wrapper>
+      <HiddenInput
+        onChange={handleImageChange}
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+      />
+
+      {!hasImage ? (
+        <DropZone
+          $isDragging={isDragging}
+          $compact={compact}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={openFileSelector}
+        >
+          <IconCircle $compact={compact}>
+            <Icon icon="ph:image-plus" style={{ fontSize: (compact ? 18 : 22), color: "#6b7280" }} />
+          </IconCircle>
+          <DropText>
+            <DropMainText>Click para seleccionar</DropMainText>
+            <DropSubText>o arrastra y suelta aquí</DropSubText>
+          </DropText>
+        </DropZone>
+      ) : (
+        <PreviewWrapper>
+          <PreviewArea $compact={compact}>
+            <PreviewImage src={fileUrl} alt="Vista previa" />
+            <PreviewOverlay>
+              <OverlayBtn onClick={openFileSelector} title="Cambiar imagen">
+                <Icon icon="ph:upload-simple" style={{ fontSize: 16 }} />
+              </OverlayBtn>
+              <OverlayBtnDanger onClick={handleRemove} title="Eliminar imagen">
+                <Icon icon="ph:trash" style={{ fontSize: 16 }} />
+              </OverlayBtnDanger>
+            </PreviewOverlay>
+          </PreviewArea>
+          {fileName && (
+            <FileNameRow>
+              <FileNameText>{fileName}</FileNameText>
+              <RemoveBtn onClick={handleRemove}>
+                <Icon icon="ph:x" style={{ fontSize: 14 }} />
+              </RemoveBtn>
+            </FileNameRow>
+          )}
+        </PreviewWrapper>
+      )}
+    </Wrapper>
   );
 };
 
-const Container = styled.div`
+const Wrapper = styled.div`
   width: 100%;
-  margin: 20px 0;
-  display: flex;
-  justify-content: center;
 `;
 
 const DropZone = styled.div`
-  position: relative;
-  width: 280px;
-  height: 200px;
-  border: 2px dashed ${props => props.isDragging ? '#ffc107' : props.hasImage ? '#4CAF50' : '#ccc'};
-  border-radius: 12px;
-  background-color: ${props => props.isDragging ? '#fffde7' : props.hasImage ? '#f9f9f9' : '#fafafa'};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: ${({ $compact }) => ($compact ? '120px' : '160px')};
+  border: 2px dashed ${({ $isDragging }) => ($isDragging ? "#6366f1" : "#d1d5db")};
+  border-radius: 10px;
+  background-color: ${({ $isDragging }) => ($isDragging ? "#f5f3ff" : "#f9fafb")};
   cursor: pointer;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #9ca3af;
+    background-color: #f3f4f6;
+  }
+`;
+
+const IconCircle = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  &:hover {
-    border-color: ${props => props.hasImage ? '#45a049' : '#ffc107'};
-    background-color: ${props => props.hasImage ? '#f5f5f5' : '#fff9c4'};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: ${({ $compact }) => ($compact ? '44px' : '48px')};
+  height: ${({ $compact }) => ($compact ? '44px' : '48px')};
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+`;
+
+const DropText = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+`;
+
+const DropMainText = styled.p`
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+`;
+
+const DropSubText = styled.p`
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+`;
+
+const PreviewWrapper = styled.div`
+  width: 100%;
+`;
+
+const PreviewArea = styled.div`
+  position: relative;
+  width: 100%;
+  height: ${({ $compact }) => ($compact ? '120px' : '160px')};
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+
+  &:hover > div {
+    opacity: 1;
   }
 `;
 
 const PreviewImage = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  padding: 10px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+
+  ${PreviewArea}:hover & {
+    transform: scale(1.03);
+  }
 `;
 
-const OverlayEdit = styled.div`
+const PreviewOverlay = styled.div`
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  color: white;
   gap: 8px;
-  
-  ${DropZone}:hover & {
-    opacity: 1;
-  }
-  
-  .edit-icon {
-    font-size: 32px;
-  }
-  
-  span {
-    font-size: 14px;
-    font-weight: 500;
-  }
+  opacity: 0;
+  transition: opacity 0.2s ease;
 `;
 
-const PlaceholderContent = styled.div`
+const OverlayBtn = styled.button`
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 20px;
-  text-align: center;
-  
-  .placeholder-icon {
-    font-size: 48px;
-    color: #999;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
   }
 `;
 
-const TextContainer = styled.div`
+const OverlayBtnDanger = styled(OverlayBtn)`
+  background: rgba(239, 68, 68, 0.7);
+  border-color: rgba(239, 68, 68, 0.5);
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.9);
+  }
+`;
+
+const FileNameRow = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
 `;
 
-const MainText = styled.p`
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-`;
-
-const SubText = styled.p`
+const FileNameText = styled.span`
   font-size: 12px;
-  color: #666;
-  margin: 0;
+  color: #6b7280;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const FormatText = styled.p`
-  font-size: 11px;
-  color: #999;
-  margin: 0;
+const RemoveBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
 `;
 
 const HiddenInput = styled.input`

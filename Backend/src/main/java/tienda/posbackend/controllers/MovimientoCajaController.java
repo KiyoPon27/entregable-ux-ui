@@ -71,8 +71,25 @@ public class MovimientoCajaController {
     }
 
     @GetMapping("/cierre-caja/{idCierreCaja}")
-    public ResponseEntity<List<MovimientoCaja>> listarPorCierreCaja(@PathVariable Long idCierreCaja) {
-        return ResponseEntity.ok(movimientoCajaRepository.findByCierreCajaId(idCierreCaja));
+    public ResponseEntity<List<Map<String, Object>>> listarPorCierreCaja(@PathVariable Long idCierreCaja) {
+        List<MovimientoCaja> movimientos = movimientoCajaRepository.findByCierreCajaId(idCierreCaja);
+        
+        // Mapear a estructura esperada por frontend
+        List<Map<String, Object>> response = new java.util.ArrayList<>();
+        for (MovimientoCaja mc : movimientos) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", mc.getId());
+            item.put("fecha_movimiento", mc.getFechaMovimiento());
+            item.put("tipo_movimiento", mc.getTipoMovimiento());
+            item.put("monto", mc.getMonto());
+            item.put("descripcion", mc.getDescripcion());
+            item.put("vuelto", mc.getVuelto());
+            item.put("usuario_nombre", mc.getUsuario() != null ? mc.getUsuario().getNombres() : "Sin usuario");
+            item.put("metodo_pago", mc.getMetodoPago() != null ? mc.getMetodoPago().getNombre() : "Sin método");
+            response.add(item);
+        }
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/cierre-caja/{idCierreCaja}/efectivo-sin-ventas")

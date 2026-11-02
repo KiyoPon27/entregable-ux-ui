@@ -13,7 +13,7 @@ export function Productos() {
   const {mostrarCategorias} = useCategoriasStore();
   const {mostrarSucursales} = useSucursalesStore();
   const {} =useAlmacenesStore()
-  const { mostrarProductos, buscarProductos, buscador,setRefetch } =
+  const { mostrarProductos, buscarProductos, buscador, setRefetch, setBuscador } =
     useProductosStore();
   const { dataempresa } = useEmpresaStore();
   

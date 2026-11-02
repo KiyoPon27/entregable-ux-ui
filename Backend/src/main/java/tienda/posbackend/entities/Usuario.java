@@ -42,4 +42,7 @@ public class Usuario {
     private String idAuth;
 
     private String tema;
+
+    @Transient
+    private Long empresaId;
 }

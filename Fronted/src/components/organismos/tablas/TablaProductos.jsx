@@ -1,6 +1,5 @@
 import styled from "styled-components";
 import {
-  Checkbox1,
   ContentAccionesTabla,
   Paginacion,
   useProductosStore,
@@ -17,18 +16,21 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
+import { Check } from "../../ui/toggles/Check";
+
 export function TablaProductos({
   data,
   SetopenRegistro,
   setdataSelect,
   setAccion,
 }) {
-  if (data == null) return;
+  if (data == null) return null;
   const [pagina, setPagina] = useState(1);
   const [datas, setData] = useState(data);
   const [columnFilters, setColumnFilters] = useState([]);
 
   const { eliminarProductos } = useProductosStore();
+
   function eliminar(p) {
     if (p.nombre === "General") {
       Swal.fire({
@@ -40,8 +42,8 @@ export function TablaProductos({
       return;
     }
     Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
-      text: "Una vez eliminado, ¡no podrá recuperar este registro!",
+      title: "Estas seguro(a)(e)?",
+      text: "Una vez eliminado, no podra recuperar este registro!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -53,21 +55,29 @@ export function TablaProductos({
       }
     });
   }
-  function editar(data) {
-  
+
+  function editar(item) {
     SetopenRegistro(true);
-    setdataSelect(data);
+    setdataSelect(item);
     setAccion("Editar");
   }
+
   const columns = [
+    {
+      accessorKey: "index",
+      header: "#",
+      enableSorting: false,
+      cell: (info) => (
+        <div data-title="#" className="ContentCell">
+          <span>{info.row.index + 1}</span>
+        </div>
+      ),
+      enableColumnFilter: false,
+    },
     {
       accessorKey: "nombre",
       header: "Descripcion",
-      cell: (info) => (
-        <div data-title="DESCRIPCION" className="ContentCell">
-          <span>{info.getValue()}</span>
-        </div>
-      ),
+      cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -78,11 +88,7 @@ export function TablaProductos({
     {
       accessorKey: "precioVenta",
       header: "P. venta",
-      cell: (info) => (
-        <div data-title="P. venta" className="ContentCell">
-          <span>S/. {info.getValue()}</span>
-        </div>
-      ),
+      cell: (info) => <span>S/. {info.getValue()}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -93,11 +99,7 @@ export function TablaProductos({
     {
       accessorKey: "precioCompra",
       header: "P. compra",
-      cell: (info) => (
-        <div data-title="P. compra" className="ContentCell">
-          <span>S/. {info.getValue()}</span>
-        </div>
-      ),
+      cell: (info) => <span>S/. {info.getValue()}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -108,11 +110,7 @@ export function TablaProductos({
     {
       accessorKey: "seVendePor",
       header: "Se vende por",
-      cell: (info) => (
-        <div data-title="Se vende por" className="ContentCell">
-          <span>{info.getValue()}</span>
-        </div>
-      ),
+      cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -123,11 +121,7 @@ export function TablaProductos({
     {
       accessorKey: "tipoComprobante",
       header: "Tipo",
-      cell: (info) => (
-        <div data-title="Tipo" className="ContentCell">
-          <span>{info.getValue() || "FACTURADO"}</span>
-        </div>
-      ),
+      cell: (info) => <span>{info.getValue() || "FACTURADO"}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -139,13 +133,12 @@ export function TablaProductos({
       accessorKey: "manejaInventarios",
       header: "Inventarios",
       cell: (info) => (
-        <div data-title="Inventarios" className="ContentCell">
-          <Checkbox1 isChecked={info.getValue()} onChange={() => {}} disabled={true}/>
+        <div className="ContentCell">
+          <Check checked={Boolean(info.getValue())} onChange={() => {}} />
         </div>
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
-        // Filtrar por inventarios: true (check azul) o false (gris)
         if (filterStatuses.length === 0) return true;
         const status = row.getValue(columnId);
         return filterStatuses.includes(status);
@@ -154,11 +147,7 @@ export function TablaProductos({
     {
       accessorKey: "stockTotal",
       header: "Stock",
-      cell: (info) => (
-        <div data-title="Stock" className="ContentCell">
-          <span>{info.getValue() ?? 0}</span>
-        </div>
-      ),
+      cell: (info) => <span>{info.getValue() ?? 0}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -166,18 +155,13 @@ export function TablaProductos({
         return filterStatuses.includes(status?.id);
       },
     },
-
     {
       accessorKey: "acciones",
-      header: "",
+      header: "ACCIONES",
       enableSorting: false,
       cell: (info) => (
         <div data-title="Acciones" className="ContentCell">
-          <ContentAccionesTabla
-            funcionEditar={() => editar(info.row.original)}
-            // Ocultamos el botón de eliminar (calavera) porque el estado se controla solo por inventarios
-            funcionEliminar={null}
-          />
+          <ContentAccionesTabla funcionEditar={() => editar(info.row.original)} />
         </div>
       ),
       enableColumnFilter: true,
@@ -188,6 +172,7 @@ export function TablaProductos({
       },
     },
   ];
+
   const table = useReactTable({
     data,
     columns,
@@ -213,6 +198,7 @@ export function TablaProductos({
         ),
     },
   });
+
   return (
     <>
       <Container>
@@ -263,6 +249,7 @@ export function TablaProductos({
         </table>
         <Paginacion
           table={table}
+          variant="extended"
           irinicio={() => table.setPageIndex(0)}
           pagina={table.getState().pagination.pageIndex + 1}
           setPagina={setPagina}
@@ -272,149 +259,106 @@ export function TablaProductos({
     </>
   );
 }
+
 const Container = styled.div`
   position: relative;
+  margin: 14px 0 0;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  padding: 16px;
 
-  margin: 5% 3%;
-  @media (min-width: ${v.bpbart}) {
-    margin: 2%;
-  }
-  @media (min-width: ${v.bphomer}) {
-    margin: 2em auto;
-    /* max-width: ${v.bphomer}; */
-  }
   .responsive-table {
     width: 100%;
-    margin-bottom: 1.5em;
-    border-spacing: 0;
-    @media (min-width: ${v.bpbart}) {
-      font-size: 0.9em;
+    min-width: 1120px;
+    margin-bottom: 1.1em;
+    border-collapse: collapse;
+    table-layout: fixed;
+
+    .ContentCell {
+      display: flex;
+      margin: auto;
+      justify-content: center;
+      align-items: center;
+      min-height: 36px;
     }
-    @media (min-width: ${v.bpmarge}) {
-      font-size: 1em;
-    }
+
     thead {
-      position: absolute;
+      background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
 
-      padding: 0;
-      border: 0;
-      height: 1px;
-      width: 1px;
-      overflow: hidden;
-
-      @media (min-width: ${v.bpbart}) {
-        position: relative;
-        height: auto;
-        width: auto;
-        overflow: auto;
-      }
       th {
-        border-bottom: 2px solid ${({ theme }) => theme.color2};
+        border-bottom: none;
+        padding: 13px 14px;
         font-weight: 700;
         text-align: center;
-        color: ${({ theme }) => theme.text};
+        color: #f8fafc;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+
         &:first-of-type {
-          text-align: center;
+          border-top-left-radius: 10px;
+        }
+
+        &:last-of-type {
+          border-top-right-radius: 10px;
         }
       }
+
+      th:nth-child(1) { width: 6%; }
+      th:nth-child(2) { width: 24%; }
+      th:nth-child(3) { width: 11%; }
+      th:nth-child(4) { width: 11%; }
+      th:nth-child(5) { width: 14%; }
+      th:nth-child(6) { width: 12%; }
+      th:nth-child(7) { width: 10%; }
+      th:nth-child(8) { width: 6%; }
+      th:nth-child(9) { width: 6%; }
     }
+
     tbody,
     tr,
     th,
     td {
-      display: block;
-      padding: 0;
-      text-align: left;
       white-space: normal;
     }
-    tr {
-      @media (min-width: ${v.bpbart}) {
-        display: table-row;
-      }
-    }
 
-    th,
-    td {
-      padding: 0.5em;
-      vertical-align: middle;
-      @media (min-width: ${v.bplisa}) {
-        padding: 0.75em 0.5em;
-      }
-      @media (min-width: ${v.bpbart}) {
-        display: table-cell;
-        padding: 0.5em;
-      }
-      @media (min-width: ${v.bpmarge}) {
-        padding: 0.75em 0.5em;
-      }
-      @media (min-width: ${v.bphomer}) {
-        padding: 0.75em;
-      }
-    }
     tbody {
-      @media (min-width: ${v.bpbart}) {
-        display: table-row-group;
-      }
       tr {
-        margin-bottom: 1em;
-        &:nth-of-type(even) {
-          background-color: rgba(161, 161, 161, 0.1);
-        }
-        @media (min-width: ${v.bpbart}) {
-          display: table-row;
-          border-width: 1px;
-        }
-        &:last-of-type {
-          margin-bottom: 0;
-        }
-        &:nth-of-type(even) {
-          @media (min-width: ${v.bpbart}) {
-          }
-        }
-      }
-      th[scope="row"] {
-        @media (min-width: ${v.bplisa}) {
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        }
-        @media (min-width: ${v.bpbart}) {
-          background-color: transparent;
-          text-align: center;
-          color: ${({ theme }) => theme.text};
-        }
-      }
-      .ContentCell {
-        text-align: right;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 50px;
-        
+        border-bottom: 1px solid ${({ theme }) => theme.color2};
+        transition: background 0.2s ease;
 
-        border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        @media (min-width: ${v.bpbart}) {
-          justify-content: center;
+        &:nth-of-type(even) {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.03)"
+              : "rgba(15, 23, 42, 0.035)"};
+        }
+
+        &:hover {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.12)"
+              : "rgba(15, 23, 42, 0.11)"};
+        }
+
+        &:last-child {
           border-bottom: none;
         }
       }
+
       td {
-        text-align: right;
-        @media (min-width: ${v.bpbart}) {
-          /* border-bottom: 1px solid rgba(161, 161, 161, 0.32); */
-          text-align: center;
-        }
-      }
-      td[data-title]:before {
-        content: attr(data-title);
-        float: left;
-        font-size: 0.8em;
-        font-weight:700;
-        @media (min-width: ${v.bplisa}) {
-          font-size: 0.9em;
-        }
-        @media (min-width: ${v.bpbart}) {
-          content: none;
-        }
+        text-align: center;
+        padding: 14px;
+        color: ${({ theme }) => theme.text};
+        font-size: 14px;
       }
     }
+  }
+
+  @media (max-width: ${v.bpbart}) {
+    overflow-x: auto;
+    padding: 12px;
   }
 `;

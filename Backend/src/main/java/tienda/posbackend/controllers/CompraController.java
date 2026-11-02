@@ -23,6 +23,19 @@ public class CompraController {
     @Autowired
     private CompraService compraService;
 
+    // Filtrar compras con múltiples criterios (filtra por fechaEmision)
+    @GetMapping
+    public ResponseEntity<List<Compra>> filtrarCompras(
+            @RequestParam Long empresaId,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) Long id_proveedor,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @RequestParam(required = false) String buscador) {
+        List<Compra> compras = compraService.filtrarCompras(empresaId, estado, id_proveedor, fechaInicio, fechaFin, buscador);
+        return ResponseEntity.ok(compras);
+    }
+
     // Listar todas las compras de una empresa
     @GetMapping("/empresa/{empresaId}")
     public ResponseEntity<List<Compra>> listarPorEmpresa(@PathVariable Long empresaId) {

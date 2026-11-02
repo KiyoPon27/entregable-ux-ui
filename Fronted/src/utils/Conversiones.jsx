@@ -5,11 +5,16 @@ export function ConvertirCapitalize(input) {
   export function ConvertirMinusculas(input){
     return input.toLowerCase()
   }
+  // ✅ Redondeo a 1 decimal, formato a 2 decimales
+  export function redondearADecimal(numero) {
+    const n = Number(numero) || 0;
+    const redondeado = Math.round(n * 10) / 10;
+    return parseFloat(redondeado.toFixed(2));
+  }
   export function FormatearNumeroDinero(numero, currency, iso) {
     if (currency === undefined) {
       return "";
     }
-    // Si el número es null o undefined, usar 0
     const safeNumber = (typeof numero === "number" && !isNaN(numero)) ? numero : 0;
     const esiso = "es-" + iso;
     try {

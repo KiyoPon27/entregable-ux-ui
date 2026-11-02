@@ -40,6 +40,10 @@ export const useMostrarStockXAlmacenYProductoQuery = () => {
     useAlmacenesStore();
   const { dataSucursales } = useSucursalesStore();
   const { productosItemSelect } = useProductosStore();
+  const hasValidProductSelection =
+    !!productosItemSelect?.id && !!productosItemSelect?.nombre;
+  const canFetchStock = !!almacenSelectItem?.id && hasValidProductSelection;
+
   return useQuery({
     queryKey: [
       "mostrar StockXAlmacenYProducto",
@@ -53,7 +57,9 @@ export const useMostrarStockXAlmacenYProductoQuery = () => {
         id_almacen: almacenSelectItem?.id,
         id_producto: productosItemSelect?.id,
       }),
-    enabled: !!dataSucursales,
+    enabled: canFetchStock,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 };
 export const useMostrarStockPorProductoQuery = () => {

@@ -69,11 +69,20 @@ public class Venta {
     @Column(name = "nro_comprobante")
     private String nroComprobante;
     
+    @Column(name = "numero_sunat")
+    private String numeroSunat; // Número de comprobante registrado en SUNAT (editable)
+    
      @Column(name = "tipo_comprobante")
      private String tipoComprobante; // 'FACTURA' o 'BOLETA' o 'TICKET'
      
      @Column(name = "ruc_dni")
      private String rucDni; // RUC o DNI del cliente
+
+     @Column(name = "porcentaje_descuento")
+     private BigDecimal porcentajeDescuento = BigDecimal.ZERO; // Porcentaje de descuento (0-100)
+
+     @Column(name = "monto_descuento")
+     private BigDecimal montoDescuento = BigDecimal.ZERO; // Monto calculado del descuento
 
 
      /* 

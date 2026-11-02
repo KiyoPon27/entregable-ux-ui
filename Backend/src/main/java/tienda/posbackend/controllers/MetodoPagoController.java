@@ -58,6 +58,30 @@ public class MetodoPagoController {
         }
     }
 
+    @PutMapping("/{id}/deshabilitar")
+    public ResponseEntity<?> deshabilitar(@PathVariable Long id) {
+        try {
+            MetodoPago metodoPagoDeshabilitado = metodoPagoService.deshabilitar(id);
+            return ResponseEntity.ok(metodoPagoDeshabilitado);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @PutMapping("/{id}/habilitar")
+    public ResponseEntity<?> habilitar(@PathVariable Long id) {
+        try {
+            MetodoPago metodoPagoHabilitado = metodoPagoService.habilitar(id);
+            return ResponseEntity.ok(metodoPagoHabilitado);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
         try {

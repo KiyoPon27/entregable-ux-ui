@@ -72,8 +72,13 @@ export async function ConfirmarVenta(p) {
         idCliente: p._id_cliente ?? p.id_cliente,
         fecha: p._fecha ?? p.fecha,
         montoTotal: p._monto_total ?? p.monto_total,
+        subTotal: p._sub_total ?? p.sub_total, // ✅ AGREGADO: Subtotal sin descuento
         nroComprobante: p._nro_comprobante ?? p.nro_comprobante,
-        rucDni: p._ruc_dni ?? p.ruc_dni, // ✅ AGREGADO: Enviar RUC/DNI al backend
+        rucDni: p._ruc_dni ?? p.ruc_dni,
+        
+        // ✅ NUEVOS CAMPOS DE DESCUENTO
+        porcentajeDescuento: p.porcentajeDescuento ?? p.porcentaje_descuento ?? 0,
+        montoDescuento: p.montoDescuento ?? p.monto_descuento ?? 0,
     };
     
     const response = await api.post(`/ventas/${p._id_venta ?? p.id_venta ?? p.id}/confirmar`, payload);

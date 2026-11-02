@@ -14,11 +14,13 @@ export const useAlmacenesStore = create((set, get) => ({
   setStateAlmacen: (p) => set({ stateAlmacen: p }),
   accion: "",
   setAccion: (p) => set({ accion: p }),
-  // Siempre usar el almacén principal con id=1
-  almacenSelectItem: { id: 1, nombre: "Almacén Principal" },
+  // Almacén seleccionado actualmente (se actualiza dinámicamente)
+  almacenSelectItem: null,
   setAlmacenSelectItem: (p) => {
-    // Siempre mantener el almacén con id=1
-    set({ almacenSelectItem: { id: 1, nombre: "Almacén Principal" } });
+    // Ahora SÍ usa el parámetro que le pasan (sucursal completa)
+    if (p && p.id) {
+      set({ almacenSelectItem: { id: p.id, nombre: p.nombre } });
+    }
   },
 
   dataalmacen: [],
@@ -35,6 +37,19 @@ export const useAlmacenesStore = create((set, get) => ({
     const response = await MostrarAlmacenesXEmpresa(p);
     set({ dataAlmacenesXsucursal: response });
     return response;
+  },
+  dataAlmacenes: [],
+  mostrarAlmacenes: async (p) => {
+    const sucursales = await MostrarAlmacenesXEmpresa(p);
+    const almacenes = (sucursales || []).flatMap((sucursal) =>
+      (sucursal.almacen || sucursal.almacenes || []).map((almacen) => ({
+        ...almacen,
+        id_sucursal: sucursal.id,
+        nombre_sucursal: sucursal.nombre,
+      }))
+    );
+    set({ dataAlmacenes: almacenes, dataAlmacenesXsucursal: sucursales });
+    return almacenes;
   },
   dataAlmacenesXsucursal: null,
   mostrarAlmacenesXSucursal: async (p) => {

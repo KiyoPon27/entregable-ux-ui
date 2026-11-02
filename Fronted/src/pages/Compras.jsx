@@ -35,7 +35,12 @@ export function Compras() {
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState(null);
   const [tipoComprobante, setTipoComprobante] = useState("factura");
   const [observacion, setObservacion] = useState("");
-  const [estadoCompra, setEstadoCompra] = useState("completo");
+  
+  // Estados para los campos del resumen (independientes)
+  const [resumenGravada, setResumenGravada] = useState("");
+  const [resumenIGV, setResumenIGV] = useState("");
+  const [resumenDescuentoTotal, setResumenDescuentoTotal] = useState("");
+  const [resumenTotal, setResumenTotal] = useState("");
 
   // Estados para búsqueda de proveedor
   const [busquedaProveedor, setBusquedaProveedor] = useState("");
@@ -49,9 +54,26 @@ export function Compras() {
 
   // Estados para el producto actual
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [cantidadEsperada, setCantidadEsperada] = useState("");
-  const [cantidadRecibida, setCantidadRecibida] = useState("");
+  const [cantidad, setCantidad] = useState("");
   const [precioCompra, setPrecioCompra] = useState("");
+  const [precioUnitario, setPrecioUnitario] = useState("");
+  const [unidadMedida, setUnidadMedida] = useState("CJA");
+  const [factorUnidades, setFactorUnidades] = useState(1);
+  
+  // Estados para controlar cuál campo fue llenado (para hacer el otro read-only)
+  const [campoLlenado, setCampoLlenado] = useState(null); // "unitario", "importe", o null
+
+  // Modal de edición
+  const [modalEdicionAbierto, setModalEdicionAbierto] = useState(false);
+  const [productoEditando, setProductoEditando] = useState(null);
+  const [indexEditando, setIndexEditando] = useState(null);
+  const [editando, setEditando] = useState({
+    cantidad: "",
+    unidad_medida: "CJA",
+    factor_unidades: 1,
+    importe: ""
+  });
+  const [campoLlenadoModal, setCampoLlenadoModal] = useState(null); // Para controlar el modal también
 
   // Tabla temporal de productos
   const [detallesCompra, setDetallesCompra] = useState([]);
@@ -64,6 +86,84 @@ export function Compras() {
     }
   }, [dataempresa]);
 
+  // Cerrar dropdown cuando se hace click fuera
+  useEffect(() => {
+    const handleClickFuera = (e) => {
+      // Si no estamos en un input de búsqueda, cerrar dropdowns
+      if (!e.target.closest('input[placeholder*="Busca por"]')) {
+        setMostrarListaProveedores(false);
+        setMostrarListaProductos(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickFuera);
+    return () => document.removeEventListener('click', handleClickFuera);
+  }, []);
+
+  // Recalcular el campo bloqueado cuando cambia cantidad o factor
+  useEffect(() => {
+    if (!campoLlenado) return; // Si no hay campo llenado, no hace nada
+    
+    const cant = parseFloat(cantidad) || 0;
+    const factor = parseFloat(factorUnidades) || 1;
+    const unitario = parseFloat(precioUnitario) || 0;
+    const importe = parseFloat(precioCompra) || 0;
+
+    // Si campoLlenado es "unitario", recalcular el importe
+    if (campoLlenado === "unitario" && unitario >= 0 && cant > 0 && factor > 0) {
+      const nuevoImporte = unitario * cant * factor;
+      setPrecioCompra(nuevoImporte.toFixed(2));
+    }
+
+    // Si campoLlenado es "importe", recalcular el precio unitario
+    if (campoLlenado === "importe" && importe >= 0 && cant > 0 && factor > 0) {
+      const nuevoUnitario = importe / (cant * factor);
+      setPrecioUnitario(nuevoUnitario.toFixed(2));
+    }
+  }, [cantidad, factorUnidades, campoLlenado]);
+
+  // Recalcular resumen cuando cambia el total de la compra o el descuento
+  useEffect(() => {
+    const totalCompra = calcularTotal();
+    const descuentoTotal = parseFloat(resumenDescuentoTotal) || 0;
+
+    // Gravada = (Total / 1.18) - Descuento
+    const gravada = (totalCompra / 1.18) - descuentoTotal;
+    
+    // IGV = Gravada * 0.18
+    const igv = gravada * 0.18;
+    
+    // Total = Gravada + IGV
+    const total = gravada + igv;
+
+    // Actualizar los estados con los valores calculados
+    setResumenGravada(gravada > 0 ? gravada.toFixed(2) : "");
+    setResumenIGV(igv > 0 ? igv.toFixed(2) : "");
+    setResumenTotal(total > 0 ? total.toFixed(2) : "");
+  }, [detallesCompra, resumenDescuentoTotal]);
+
+  // Recalcular el campo bloqueado en el MODAL cuando cambia cantidad o factor
+  useEffect(() => {
+    if (!modalEdicionAbierto || !campoLlenadoModal) return;
+    
+    const cant = parseFloat(editando.cantidad) || 0;
+    const factor = parseFloat(editando.factor_unidades) || 1;
+    const unitario = parseFloat(editando.precio_unitario) || 0;
+    const importe = parseFloat(editando.importe) || 0;
+
+    // Si campoLlenadoModal es "unitario", recalcular el importe
+    if (campoLlenadoModal === "unitario" && unitario >= 0 && cant > 0 && factor > 0) {
+      const nuevoImporte = unitario * cant * factor;
+      setEditando(prev => ({...prev, importe: nuevoImporte.toFixed(2)}));
+    }
+
+    // Si campoLlenadoModal es "importe", recalcular el precio unitario
+    if (campoLlenadoModal === "importe" && importe >= 0 && cant > 0 && factor > 0) {
+      const nuevoUnitario = importe / (cant * factor);
+      setEditando(prev => ({...prev, precio_unitario: nuevoUnitario.toFixed(2)}));
+    }
+  }, [editando.cantidad, editando.factor_unidades, campoLlenadoModal, modalEdicionAbierto]);
+
   // Cargar datos si es edición
   useEffect(() => {
     const cargarDatosEdicion = async () => {
@@ -74,7 +174,6 @@ export function Compras() {
         setNumeroFactura(compra.numeroFactura || compra.numero_factura || "");
         setFechaEmision(compra.fechaEmision || compra.fecha_emision || format(new Date(), "yyyy-MM-dd"));
         setObservacion(compra.observacion || "");
-        setEstadoCompra(compra.estado || "COMPLETO");
         
         // Buscar y establecer proveedor
         const proveedor = dataclipro?.find(p => p.id === compra.proveedor?.id || p.id === compra.id_proveedor);
@@ -90,18 +189,32 @@ export function Compras() {
         const tipoId = compra.tipoComprobante?.id || compra.id_tipo_comprobante;
         setTipoComprobante(tipoId === 1 ? "factura" : "boleta");
         
+        // Establecer campos de resumen
+        setResumenGravada(compra.resumenGravada ?? compra.resumen_gravada ?? "");
+        setResumenIGV(compra.resumenIGV ?? compra.resumen_igv ?? "");
+        setResumenDescuentoTotal(compra.resumenDescuentoTotal ?? compra.resumen_descuento_total ?? "");
+        setResumenTotal(compra.resumenTotal ?? compra.resumen_total ?? "");
+        
         // Cargar detalles
         try {
           const detalles = await mostrarCompraDetalle({ id_compra: compra.id });
-          const detallesMapeados = detalles.map(d => ({
-            id: d.id,
-            id_producto: d.producto?.id || d.id_producto,
-            nombre_producto: d.producto?.nombre || "Producto",
-            cantidad_esperada: d.cantidadEsperada || d.cantidad_esperada,
-            cantidad_recibida: d.cantidadRecibida || d.cantidad_recibida,
-            precio_compra: d.precioCompra || d.precio_compra,
-            subtotal: d.subtotal
-          }));
+          const detallesMapeados = detalles.map(d => {
+            const factor = d.factor_unidades ?? d.factor_compra ?? 1;
+            const importe = d.importe ?? d.subtotal ?? 0;
+            const cantidad = d.cantidad ?? d.cantidad_recibida ?? d.cantidadRecibida ?? 0;
+            const valorUnitario = cantidad > 0 && factor > 0 ? importe / (cantidad * factor) : 0;
+
+            return {
+              id: d.id,
+              id_producto: d.producto?.id ?? d.id_producto,
+              nombre_producto: d.producto?.nombre ?? "Producto",
+              cantidad: cantidad,
+              unidad_medida: d.unidad_medida_compra ?? d.unidad_medida ?? "CJA",
+              factor_unidades: factor,
+              importe: importe,
+              valor_unitario: valorUnitario
+            };
+          });
           setDetallesCompra(detallesMapeados);
         } catch (error) {
           console.error("Error al cargar detalles:", error);
@@ -151,15 +264,72 @@ export function Compras() {
 
   const seleccionarProveedor = (proveedor) => {
     setProveedorSeleccionado(proveedor);
-    setBusquedaProveedor(proveedor.nombres);
+    setBusquedaProveedor("");  // Limpiar búsqueda, no poner el nombre
     setMostrarListaProveedores(false);
   };
 
   const seleccionarProducto = (producto) => {
     setProductoSeleccionado(producto);
-    setBusquedaProducto(producto.nombre);
-    setPrecioCompra(producto.precioCompra || producto.precio_compra || "");
+    setBusquedaProducto("");  // Limpiar búsqueda, no poner el nombre
+    setPrecioCompra("");
+    setPrecioUnitario("");
+    setCampoLlenado(null); // Reset el control de campos
+    // Traer valores del producto
+    setUnidadMedida(producto.unidad_medida_principal || "CJA");
+    setFactorUnidades(producto.factor_unidad_medida || 1);
+    // Autocompletar cantidad con 1
+    setCantidad("1");
     setMostrarListaProductos(false);
+  };
+
+  // Calcular Importe cuando se cambia Precio Unitario
+  const handlePrecioUnitarioChange = (value) => {
+    setPrecioUnitario(value);
+    
+    // Si el usuario está borrando el contenido, liberar el otro campo
+    if (!value) {
+      setCampoLlenado(null);
+      setPrecioCompra("");
+      return;
+    }
+    
+    // Marcar este campo como el que fue llenado
+    setCampoLlenado("unitario");
+    
+    if (cantidad && factorUnidades) {
+      const unitario = parseFloat(value);
+      const cant = parseFloat(cantidad);
+      const factor = parseFloat(factorUnidades);
+      if (unitario >= 0 && cant > 0 && factor > 0) {
+        const importe = unitario * cant * factor;
+        setPrecioCompra(importe.toFixed(2));
+      }
+    }
+  };
+
+  // Calcular Precio Unitario cuando se cambia Importe
+  const handlePrecioCompraChange = (value) => {
+    setPrecioCompra(value);
+    
+    // Si el usuario está borrando el contenido, liberar el otro campo
+    if (!value) {
+      setCampoLlenado(null);
+      setPrecioUnitario("");
+      return;
+    }
+    
+    // Marcar este campo como el que fue llenado
+    setCampoLlenado("importe");
+    
+    if (cantidad && factorUnidades) {
+      const importe = parseFloat(value);
+      const cant = parseFloat(cantidad);
+      const factor = parseFloat(factorUnidades);
+      if (importe >= 0 && cant > 0 && factor > 0) {
+        const unitario = importe / (cant * factor);
+        setPrecioUnitario(unitario.toFixed(2));
+      }
+    }
   };
 
   const agregarProductoATabla = () => {
@@ -168,17 +338,22 @@ export function Compras() {
       return;
     }
 
-    const cantEsperada = parseFloat(cantidadEsperada) || 0;
-    const cantRecibida = parseFloat(cantidadRecibida) || 0;
-    const precio = parseFloat(precioCompra) || 0;
+    const cant = parseFloat(cantidad) || 0;
+    const importe = parseFloat(precioCompra) || 0;
+    const factor = parseFloat(factorUnidades) || 1;
 
-    if (cantRecibida <= 0) {
-      toast.error("La cantidad recibida debe ser mayor a 0");
+    if (cant <= 0) {
+      toast.error("La cantidad debe ser mayor a 0");
       return;
     }
 
-    if (precio <= 0) {
-      toast.error("El precio de compra debe ser mayor a 0");
+    if (importe < 0) {
+      toast.error("El importe no puede ser negativo");
+      return;
+    }
+
+    if (factor <= 0) {
+      toast.error("El factor debe ser mayor a 0");
       return;
     }
 
@@ -189,15 +364,16 @@ export function Compras() {
       return;
     }
 
-    const subtotal = cantRecibida * precio;
+    const valorUnitario = importe / (cant * factor);
 
     const nuevoDetalle = {
       id_producto: productoSeleccionado.id,
       nombre_producto: productoSeleccionado.nombre,
-      cantidad_esperada: cantEsperada,
-      cantidad_recibida: cantRecibida,
-      precio_compra: precio,
-      subtotal: subtotal,
+      cantidad: cant,
+      unidad_medida: unidadMedida,
+      factor_unidades: factor,
+      importe: importe,
+      valor_unitario: valorUnitario,
     };
 
     setDetallesCompra([...detallesCompra, nuevoDetalle]);
@@ -205,9 +381,12 @@ export function Compras() {
     // Limpiar campos
     setProductoSeleccionado(null);
     setBusquedaProducto("");
-    setCantidadEsperada("");
-    setCantidadRecibida("");
+    setCantidad("");
     setPrecioCompra("");
+    setPrecioUnitario("");
+    setUnidadMedida("CJA");
+    setFactorUnidades(1);
+    setCampoLlenado(null);
 
     toast.success("Producto agregado");
   };
@@ -218,8 +397,97 @@ export function Compras() {
     toast.info("Producto eliminado");
   };
 
+  const moverProductoArriba = (index) => {
+    if (index === 0) return; // No hacer nada si es el primer elemento
+    
+    const nuevosDetalles = [...detallesCompra];
+    // Intercambiar elemento actual con el anterior
+    [nuevosDetalles[index], nuevosDetalles[index - 1]] = [nuevosDetalles[index - 1], nuevosDetalles[index]];
+    setDetallesCompra(nuevosDetalles);
+  };
+
+  const moverProductoAbajo = (index) => {
+    if (index === detallesCompra.length - 1) return; // No hacer nada si es el último elemento
+    
+    const nuevosDetalles = [...detallesCompra];
+    // Intercambiar elemento actual con el siguiente
+    [nuevosDetalles[index], nuevosDetalles[index + 1]] = [nuevosDetalles[index + 1], nuevosDetalles[index]];
+    setDetallesCompra(nuevosDetalles);
+  };
+
+  const abrirModalEdicion = (detalle, index) => {
+    // Calcular precio unitario si no existe
+    const precioUnitarioCalculado = detalle.valor_unitario || 
+      (detalle.importe / (detalle.cantidad * detalle.factor_unidades)) || 0;
+    
+    setProductoEditando(detalle);
+    setIndexEditando(index);
+    setEditando({
+      cantidad: detalle.cantidad,
+      unidad_medida: detalle.unidad_medida || "CJA",
+      factor_unidades: detalle.factor_unidades || 1,
+      precio_unitario: precioUnitarioCalculado.toFixed(2),
+      importe: detalle.importe
+    });
+    setCampoLlenadoModal(null); // Reset el control
+    setModalEdicionAbierto(true);
+  };
+
+  const cerrarModalEdicion = () => {
+    setModalEdicionAbierto(false);
+    setProductoEditando(null);
+    setIndexEditando(null);
+    setCampoLlenadoModal(null);
+    setEditando({
+      cantidad: "",
+      unidad_medida: "CJA",
+      factor_unidades: 1,
+      precio_unitario: "",
+      importe: ""
+    });
+  };
+
+  const guardarEdicionProducto = () => {
+    const cantidad = parseFloat(editando.cantidad) || 0;
+    const precioUnitario = parseFloat(editando.precio_unitario) || 0;
+    const precioCompra = parseFloat(editando.importe) || 0;
+    const factor = parseFloat(editando.factor_unidades) || 1;
+
+    if (cantidad <= 0) {
+      toast.error("Cantidad debe ser mayor a 0");
+      return;
+    }
+
+    if (precioCompra < 0) {
+      toast.error("Importe no puede ser negativo");
+      return;
+    }
+
+    if (factor <= 0) {
+      toast.error("Factor debe ser mayor a 0");
+      return;
+    }
+
+    // Usar el importe como referencia para calcular valor_unitario (igual que en agregar producto)
+    const valorUnitario = precioCompra / (cantidad * factor);
+
+    const detallesActualizados = [...detallesCompra];
+    detallesActualizados[indexEditando] = {
+      ...detallesActualizados[indexEditando],
+      cantidad: cantidad,
+      unidad_medida: editando.unidad_medida,
+      factor_unidades: factor,
+      importe: precioCompra,
+      valor_unitario: valorUnitario
+    };
+
+    setDetallesCompra(detallesActualizados);
+    toast.success("Producto actualizado");
+    cerrarModalEdicion();
+  };
+
   const calcularTotal = () => {
-    return detallesCompra.reduce((sum, detalle) => sum + detalle.subtotal, 0);
+    return detallesCompra.reduce((sum, detalle) => sum + (detalle.importe || 0), 0);
   };
 
   const guardarCompra = async () => {
@@ -244,12 +512,6 @@ export function Compras() {
     }
 
     try {
-      // Verificar si todos los productos están completos (cantidad_recibida === cantidad_esperada)
-      const todosCompletos = detallesCompra.every(
-        d => d.cantidad_recibida >= d.cantidad_esperada
-      );
-      const estadoFinal = todosCompletos ? "COMPLETO" : "INCOMPLETO";
-
       const compra = {
         numero_factura: numeroFactura,
         fecha_emision: fechaEmision,
@@ -257,7 +519,11 @@ export function Compras() {
         id_metodo_pago: metodoPagoSeleccionado,
         id_tipo_comprobante: tipoComprobante === "factura" ? 1 : 2,
         observacion: observacion,
-        estado: estadoFinal,
+        // Campos de resumen
+        resumen_gravada: parseFloat(resumenGravada) || 0,
+        resumen_igv: parseFloat(resumenIGV) || 0,
+        resumen_descuento_total: parseFloat(resumenDescuentoTotal) || 0,
+        resumen_total: parseFloat(resumenTotal) || 0,
         monto_total: calcularTotal(),
         id_empresa: dataempresa.id,
         id_usuario: user?.idUsuario || user?.id,
@@ -282,7 +548,10 @@ export function Compras() {
         setMetodoPagoSeleccionado(null);
         setTipoComprobante("factura");
         setObservacion("");
-        setEstadoCompra("COMPLETO");
+        setResumenGravada("");
+        setResumenIGV("");
+        setResumenDescuentoTotal("");
+        setResumenTotal("");
         setDetallesCompra([]);
 
         toast.success("Compra registrada exitosamente");
@@ -361,24 +630,31 @@ export function Compras() {
           <FormGrid>
             <FormGroup style={{ position: "relative" }}>
               <Label>Buscar Proveedor *</Label>
-              <SearchInputContainer>
-                <BsSearch style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#999" }} />
-                <SearchInput
-                  type="text"
-                  placeholder="Busca por nombre o RUC..."
-                  value={busquedaProveedor}
-                  onChange={(e) => setBusquedaProveedor(e.target.value)}
-                  onFocus={() => busquedaProveedor && setMostrarListaProveedores(true)}
-                />
-                {proveedorSeleccionado && (
+              {proveedorSeleccionado ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', backgroundColor: '#f0f9ff', border: '1px solid #0EA5E9', borderRadius: '4px' }}>
+                  <span style={{ flex: 1 }}>
+                    <strong>{proveedorSeleccionado.nombres}</strong>
+                    <small style={{ display: 'block', color: '#666' }}>RUC: {proveedorSeleccionado.identificador_fiscal || proveedorSeleccionado.identificadorFiscal || "Sin RUC"}</small>
+                  </span>
                   <ClearButton onClick={() => {
                     setProveedorSeleccionado(null);
                     setBusquedaProveedor("");
                   }}>
                     <IoMdClose />
                   </ClearButton>
-                )}
-              </SearchInputContainer>
+                </div>
+              ) : (
+                <SearchInputContainer>
+                  <BsSearch style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#999" }} />
+                  <SearchInput
+                    type="text"
+                    placeholder="Busca por nombre o RUC..."
+                    value={busquedaProveedor}
+                    onChange={(e) => setBusquedaProveedor(e.target.value)}
+                    onFocus={() => busquedaProveedor && setMostrarListaProveedores(true)}
+                  />
+                </SearchInputContainer>
+              )}
 
               {mostrarListaProveedores && proveedoresFiltrados?.length > 0 && (
                 <DropdownList>
@@ -403,57 +679,46 @@ export function Compras() {
                 placeholder="Se completa automáticamente"
               />
             </FormGroup>
-
-            <FormGroup style={{ gridColumn: "1 / -1" }}>
-              <Label>Estado de la Compra</Label>
-              <RadioGroup>
-                <RadioLabel>
-                  <input
-                    type="radio"
-                    value="completo"
-                    checked={estadoCompra === "completo"}
-                    onChange={(e) => setEstadoCompra(e.target.value)}
-                  />
-                  ✅ Completo (todos los productos llegaron)
-                </RadioLabel>
-                <RadioLabel>
-                  <input
-                    type="radio"
-                    value="incompleto"
-                    checked={estadoCompra === "incompleto"}
-                    onChange={(e) => setEstadoCompra(e.target.value)}
-                  />
-                  ⚠️ Incompleto (faltan productos)
-                </RadioLabel>
-              </RadioGroup>
-            </FormGroup>
           </FormGrid>
         </Section>
 
         {/* SECCIÓN 3: AGREGAR PRODUCTOS */}
         <Section>
           <SectionTitle>3. Agregar Productos</SectionTitle>
-          <FormGrid>
-            <FormGroup style={{ position: "relative" }}>
+          
+          {/* Fila 1: Búsqueda de Producto */}
+          <FormGrid style={{marginBottom: "20px"}}>
+            <FormGroup style={{ position: "relative", gridColumn: "1 / -1" }}>
               <Label>Buscar Producto *</Label>
-              <SearchInputContainer>
-                <BsSearch style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#999" }} />
-                <SearchInput
-                  type="text"
-                  placeholder="Busca por nombre o código..."
-                  value={busquedaProducto}
-                  onChange={(e) => setBusquedaProducto(e.target.value)}
-                  onFocus={() => busquedaProducto && setMostrarListaProductos(true)}
-                />
-                {productoSeleccionado && (
+              {productoSeleccionado ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', backgroundColor: '#f0fdf4', border: '1px solid #22C55E', borderRadius: '4px' }}>
+                  <span style={{ flex: 1 }}>
+                    <strong>{productoSeleccionado.nombre}</strong>
+                    <small style={{ display: 'block', color: '#666' }}>Código: {productoSeleccionado.codigoBarras || productoSeleccionado.codigo_barras || "Sin código"}</small>
+                  </span>
                   <ClearButton onClick={() => {
                     setProductoSeleccionado(null);
                     setBusquedaProducto("");
+                    setCantidad("");
+                    setPrecioCompra("");
+                    setUnidadMedida("CJA");
+                    setFactorUnidades(1);
                   }}>
                     <IoMdClose />
                   </ClearButton>
-                )}
-              </SearchInputContainer>
+                </div>
+              ) : (
+                <SearchInputContainer>
+                  <BsSearch style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#999" }} />
+                  <SearchInput
+                    type="text"
+                    placeholder="Busca por nombre o código..."
+                    value={busquedaProducto}
+                    onChange={(e) => setBusquedaProducto(e.target.value)}
+                    onFocus={() => busquedaProducto && setMostrarListaProductos(true)}
+                  />
+                </SearchInputContainer>
+              )}
 
               {mostrarListaProductos && productosFiltrados?.length > 0 && (
                 <DropdownList>
@@ -468,38 +733,85 @@ export function Compras() {
                 </DropdownList>
               )}
             </FormGroup>
+          </FormGrid>
 
+          {/* Fila 2: Cantidad, Unidad, Factor */}
+          <FormGrid style={{marginBottom: "20px"}}>
             <FormGroup>
-              <Label>Cant. Esperada (opcional)</Label>
+              <Label>Cantidad *</Label>
               <Input
                 type="number"
                 step="0.01"
-                placeholder="Ej: 100"
-                value={cantidadEsperada}
-                onChange={(e) => setCantidadEsperada(e.target.value)}
+                placeholder="Ej: 1"
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
               />
             </FormGroup>
 
             <FormGroup>
-              <Label>Cant. Recibida *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="Ej: 100"
-                value={cantidadRecibida}
-                onChange={(e) => setCantidadRecibida(e.target.value)}
-              />
+              <Label>Unidad Medida *</Label>
+              <Select
+                value={unidadMedida}
+                onChange={(e) => setUnidadMedida(e.target.value)}
+              >
+                <option value="CJA">Caja</option>
+                <option value="UND">Unidad</option>
+                <option value="DOC">Docena</option>
+                <option value="PQT">Paquete</option>
+                <option value="CEN">Cientos</option>
+              </Select>
             </FormGroup>
 
             <FormGroup>
-              <Label>Precio de Compra *</Label>
+              <Label>Factor (Unidades) *</Label>
+              <Input
+                type="number"
+                step="1"
+                placeholder="Ej: 300"
+                value={factorUnidades}
+                onChange={(e) => setFactorUnidades(e.target.value)}
+              />
+            </FormGroup>
+          </FormGrid>
+
+          {/* Fila 3: Precio Unitario, Importe Total, Botón */}
+          <FormGrid>
+            <FormGroup>
+              <Label>Precio Unitario *</Label>
               <Input
                 type="number"
                 step="0.01"
-                placeholder="Ej: 5.50"
+                placeholder="Ej: 0.67"
+                value={precioUnitario}
+                onChange={(e) => handlePrecioUnitarioChange(e.target.value)}
+                readOnly={campoLlenado === "importe"}
+                style={{ 
+                  backgroundColor: campoLlenado === "importe" ? "#f5f5f5" : "white",
+                  cursor: campoLlenado === "importe" ? "not-allowed" : "auto"
+                }}
+              />
+              <HelperText>
+                {campoLlenado === "importe" ? "🔒 Se calcula automáticamente (borra el Importe Total para editar)" : "O llena el Importe Total y se calcula"}
+              </HelperText>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Importe Total *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Ej: 200.00"
                 value={precioCompra}
-                onChange={(e) => setPrecioCompra(e.target.value)}
+                onChange={(e) => handlePrecioCompraChange(e.target.value)}
+                readOnly={campoLlenado === "unitario"}
+                style={{ 
+                  backgroundColor: campoLlenado === "unitario" ? "#f5f5f5" : "white",
+                  cursor: campoLlenado === "unitario" ? "not-allowed" : "auto"
+                }}
               />
+              <HelperText>
+                {campoLlenado === "unitario" ? "🔒 Se calcula automáticamente (borra el Precio Unitario para editar)" : "O llena el Precio Unitario y se calcula"}
+              </HelperText>
             </FormGroup>
 
             <FormGroup>
@@ -519,34 +831,57 @@ export function Compras() {
               <Table>
                 <thead>
                   <tr>
-                    <Th>Producto</Th>
-                    <Th>Cant. Esperada</Th>
-                    <Th>Cant. Recibida</Th>
-                    <Th>Precio Unit.</Th>
-                    <Th>Subtotal</Th>
-                    <Th>Acciones</Th>
+                    <Th style={{width: '30%'}}>Descripción</Th>
+                    <Th style={{width: '8%', textAlign: 'center'}}>Cant.</Th>
+                    <Th style={{width: '10%', textAlign: 'center'}}>Unidad</Th>
+                    <Th style={{width: '10%', textAlign: 'center'}}>Factor</Th>
+                    <Th style={{width: '12%', textAlign: 'right'}}>V. Unitario</Th>
+                    <Th style={{width: '12%', textAlign: 'right'}}>Importe</Th>
+                    <Th style={{width: '18%', textAlign: 'center'}}>Acciones</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {detallesCompra?.map((detalle, index) => (
                     <tr key={index}>
                       <Td>{detalle.nombre_producto}</Td>
-                      <Td>{detalle.cantidad_esperada || "-"}</Td>
-                      <Td>
-                        <strong>{detalle.cantidad_recibida}</strong>
-                        {detalle.cantidad_esperada > 0 &&
-                          detalle.cantidad_recibida < detalle.cantidad_esperada && (
-                            <Badge type="warning">Falta</Badge>
-                          )}
+                      <Td style={{textAlign: 'center'}}>
+                        <strong>{detalle.cantidad}</strong>
                       </Td>
-                      <Td>S/ {detalle.precio_compra.toFixed(2)}</Td>
-                      <Td>
-                        <strong>S/ {detalle.subtotal.toFixed(2)}</strong>
+                      <Td style={{textAlign: 'center'}}>
+                        {detalle.unidad_medida || "CJA"}
                       </Td>
-                      <Td>
-                        <DeleteButton onClick={() => eliminarProductoDeTabla(index)}>
-                          <BsTrash />
-                        </DeleteButton>
+                      <Td style={{textAlign: 'center'}}>
+                        {detalle.factor_unidades || 1}
+                      </Td>
+                      <Td style={{textAlign: 'right'}}>
+                        S/ {(detalle.valor_unitario || 0).toFixed(2)}
+                      </Td>
+                      <Td style={{textAlign: 'right'}}>
+                        <strong>S/ {(detalle.importe || 0).toFixed(2)}</strong>
+                      </Td>
+                      <Td style={{textAlign: 'center'}}>
+                        <ActionButtonsContainer>
+                          <UpButton 
+                            onClick={() => moverProductoArriba(index)}
+                            disabled={index === 0}
+                            title={index === 0 ? "Es el primer producto" : "Mover hacia arriba"}
+                          >
+                            ⬆️
+                          </UpButton>
+                          <DownButton 
+                            onClick={() => moverProductoAbajo(index)}
+                            disabled={index === detallesCompra.length - 1}
+                            title={index === detallesCompra.length - 1 ? "Es el último producto" : "Mover hacia abajo"}
+                          >
+                            ⬇️
+                          </DownButton>
+                          <EditButton onClick={() => abrirModalEdicion(detalle, index)}>
+                            ✏️
+                          </EditButton>
+                          <DeleteButton onClick={() => eliminarProductoDeTabla(index)}>
+                            🗑️
+                          </DeleteButton>
+                        </ActionButtonsContainer>
                       </Td>
                     </tr>
                   ))}
@@ -554,22 +889,68 @@ export function Compras() {
               </Table>
 
               <TotalContainer>
-                <TotalLabel>Total de la Compra:</TotalLabel>
+                <TotalLabel>Total (Importe Total):</TotalLabel>
                 <TotalAmount>S/ {calcularTotal().toFixed(2)}</TotalAmount>
               </TotalContainer>
             </TableContainer>
           </Section>
         )}
 
-        {/* OBSERVACIONES */}
+        {/* RESUMEN */}
         <Section>
-          <SectionTitle>4. Observaciones (Opcional)</SectionTitle>
-          <TextArea
-            rows="3"
-            placeholder="Ej: Faltan 20 unidades del producto XYZ, llegarán la próxima semana..."
-            value={observacion}
-            onChange={(e) => setObservacion(e.target.value)}
-          />
+          <SectionTitle>Resumen</SectionTitle>
+          <FormGrid>
+            <FormGroup>
+              <Label>Gravada</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Ej: 1000.00"
+                value={resumenGravada}
+                disabled
+                style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }}
+              />
+              <HelperText>Se calcula automáticamente: (Total / 1.18) - Descuento</HelperText>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>IGV (18%)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Ej: 180.00"
+                value={resumenIGV}
+                disabled
+                style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }}
+              />
+              <HelperText>Se calcula automáticamente: Gravada × 0.18</HelperText>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Descuento Total</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Ej: 0.00"
+                value={resumenDescuentoTotal}
+                onChange={(e) => setResumenDescuentoTotal(e.target.value)}
+              />
+              <HelperText>Ingresa el descuento manual (opcional)</HelperText>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Total (Importe Total)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Ej: 1180.00"
+                value={resumenTotal}
+                disabled
+                style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }}
+              />
+              <HelperText>Se calcula automáticamente: Gravada + IGV</HelperText>
+            </FormGroup>
+          </FormGrid>
         </Section>
 
         {/* BOTONES */}
@@ -603,6 +984,146 @@ export function Compras() {
           </SaveButton>
         </ButtonsContainer>
       </FormContainer>
+
+      {/* MODAL DE EDICIÓN */}
+      {modalEdicionAbierto && productoEditando && (
+        <ModalOverlay onClick={cerrarModalEdicion}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>✏️ Editar Producto</ModalTitle>
+              <CloseModalButton onClick={cerrarModalEdicion}>✕</CloseModalButton>
+            </ModalHeader>
+
+            <ModalBody>
+              <ModalField>
+                <FieldLabel>Descripción:</FieldLabel>
+                <FieldValue>{productoEditando.nombre_producto}</FieldValue>
+              </ModalField>
+
+              <FormRow>
+                <FormFieldModal>
+                  <FieldLabel>Cantidad *</FieldLabel>
+                  <ModalInput
+                    type="number"
+                    step="0.01"
+                    value={editando.cantidad}
+                    onChange={(e) => setEditando({...editando, cantidad: e.target.value})}
+                    placeholder="Ej: 1"
+                  />
+                </FormFieldModal>
+
+                <FormFieldModal>
+                  <FieldLabel>Unidad *</FieldLabel>
+                  <ModalSelect
+                    value={editando.unidad_medida}
+                    onChange={(e) => setEditando({...editando, unidad_medida: e.target.value})}
+                  >
+                    <option value="CJA">CJA (Caja)</option>
+                    <option value="BULTO">BULTO</option>
+                    <option value="NIU">NIU (Unidad)</option>
+                    <option value="PZA">PZA (Pieza)</option>
+                    <option value="METRO">METRO</option>
+                    <option value="LITRO">LITRO</option>
+                  </ModalSelect>
+                </FormFieldModal>
+              </FormRow>
+
+              <FormRow>
+                <FormFieldModal>
+                  <FieldLabel>Factor (Unidades/Caja) *</FieldLabel>
+                  <ModalInput
+                    type="number"
+                    step="1"
+                    value={editando.factor_unidades}
+                    onChange={(e) => setEditando({...editando, factor_unidades: e.target.value})}
+                    placeholder="Ej: 300"
+                  />
+                </FormFieldModal>
+
+                <FormFieldModal>
+                  <FieldLabel>Precio Unitario *</FieldLabel>
+                  <ModalInput
+                    type="number"
+                    step="0.01"
+                    value={editando.precio_unitario || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!value) {
+                        setCampoLlenadoModal(null);
+                        setEditando({...editando, precio_unitario: value, importe: ""});
+                      } else {
+                        setCampoLlenadoModal("unitario");
+                        setEditando({...editando, precio_unitario: value});
+                        // Calcular importe
+                        const unitario = parseFloat(value);
+                        const cant = parseFloat(editando.cantidad);
+                        const factor = parseFloat(editando.factor_unidades);
+                        if (unitario > 0 && cant > 0 && factor > 0) {
+                          const importe = unitario * cant * factor;
+                          setEditando(prev => ({...prev, importe: importe.toFixed(2)}));
+                        }
+                      }
+                    }}
+                    placeholder="Ej: 0.67"
+                    readOnly={campoLlenadoModal === "importe"}
+                    style={{ 
+                      backgroundColor: campoLlenadoModal === "importe" ? "#f5f5f5" : "white",
+                      cursor: campoLlenadoModal === "importe" ? "not-allowed" : "auto"
+                    }}
+                  />
+                </FormFieldModal>
+              </FormRow>
+
+              <FormRow>
+                <FormFieldModal>
+                  <FieldLabel>Importe Total *</FieldLabel>
+                  <ModalInput
+                    type="number"
+                    step="0.01"
+                    value={editando.importe}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!value) {
+                        setCampoLlenadoModal(null);
+                        setEditando({...editando, importe: value, precio_unitario: ""});
+                      } else {
+                        setCampoLlenadoModal("importe");
+                        setEditando({...editando, importe: value});
+                        // Calcular precio unitario
+                        const importe = parseFloat(value);
+                        const cant = parseFloat(editando.cantidad);
+                        const factor = parseFloat(editando.factor_unidades);
+                        if (importe > 0 && cant > 0 && factor > 0) {
+                          const unitario = importe / (cant * factor);
+                          setEditando(prev => ({...prev, precio_unitario: unitario.toFixed(2)}));
+                        }
+                      }
+                    }}
+                    placeholder="Ej: 200.00"
+                    readOnly={campoLlenadoModal === "unitario"}
+                    style={{ 
+                      backgroundColor: campoLlenadoModal === "unitario" ? "#f5f5f5" : "white",
+                      cursor: campoLlenadoModal === "unitario" ? "not-allowed" : "auto"
+                    }}
+                  />
+                </FormFieldModal>
+              </FormRow>
+
+              <CalculatedField>
+                <FieldLabel>V. Unitario (Calculado):</FieldLabel>
+                <CalculatedValue>
+                  S/ {(parseFloat(editando.importe) / (parseFloat(editando.cantidad) * parseFloat(editando.factor_unidades)) || 0).toFixed(2)}
+                </CalculatedValue>
+              </CalculatedField>
+            </ModalBody>
+
+            <ModalFooter>
+              <CancelModalButton onClick={cerrarModalEdicion}>Cancelar</CancelModalButton>
+              <SaveModalButton onClick={guardarEdicionProducto}>Guardar Cambios</SaveModalButton>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 }
@@ -732,10 +1253,11 @@ const Input = styled.input`
 `;
 
 const Select = styled.select`
-  padding: 9px 11px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 13px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
   color: #1e293b;
   background: white;
   cursor: pointer;
@@ -746,6 +1268,14 @@ const Select = styled.select`
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
+`;
+
+const HelperText = styled.small`
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-style: italic;
 `;
 
 const SearchInputContainer = styled.div`
@@ -820,25 +1350,6 @@ const DropdownItem = styled.div`
   }
 `;
 
-const RadioGroup = styled.div`
-  display: flex;
-  gap: 20px;
-  margin-top: 8px;
-`;
-
-const RadioLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: ${({ theme }) => theme.text};
-  cursor: pointer;
-
-  input {
-    cursor: pointer;
-  }
-`;
-
 const AddButton = styled.button`
   padding: 9px 18px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -872,25 +1383,38 @@ const TableContainer = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  overflow: hidden;
 `;
 
 const Th = styled.th`
   text-align: left;
-  padding: 10px;
-  background: #f8fafc;
-  color: #475569;
-  font-weight: 600;
-  font-size: 12px;
-  border-bottom: 2px solid #e2e8f0;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  border-bottom: 2px solid #059669;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
 
 const Td = styled.td`
-  padding: 10px;
+  padding: 12px 16px;
   color: #334155;
   font-size: 13px;
   border-bottom: 1px solid #f1f5f9;
+  background: white;
+  
+  &:last-child {
+    text-align: center;
+  }
+  
+  tr:hover & {
+    background: #f8fafc;
+  }
 `;
 
 const Badge = styled.span`
@@ -924,28 +1448,77 @@ const DeleteButton = styled.button`
   }
 `;
 
+const UpButton = styled.button`
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    background: #2563eb;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  }
+
+  &:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
+const DownButton = styled.button`
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    background: #2563eb;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  }
+
+  &:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
 const TotalContainer = styled.div`
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  gap: 20px;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 `;
 
 const TotalLabel = styled.span`
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.9);
 `;
 
 const TotalAmount = styled.span`
-  font-size: 20px;
-  font-weight: 700;
-  color: #667eea;
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: 0.5px;
 `;
 
 const TextArea = styled.textarea`
@@ -1021,6 +1594,239 @@ const SaveButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+  }
+`;
+
+// ==================== MODAL DE EDICIÓN ====================
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 2px solid #f1f5f9;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 12px 12px 0 0;
+`;
+
+const ModalTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+`;
+
+const CloseModalButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 24px;
+`;
+
+const ModalField = styled.div`
+  margin-bottom: 16px;
+`;
+
+const FieldLabel = styled.label`
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+`;
+
+const FieldValue = styled.div`
+  font-size: 14px;
+  color: #1e293b;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+`;
+
+const FormRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+`;
+
+const FormFieldModal = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ModalInput = styled.input`
+  padding: 10px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1e293b;
+  background: white;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+`;
+
+const ModalSelect = styled.select`
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1e293b;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+`;
+
+const CalculatedField = styled.div`
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #f1fdf5 100%);
+  border: 2px solid #86efac;
+  border-radius: 8px;
+  margin-bottom: 16px;
+`;
+
+const CalculatedValue = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: #10b981;
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+  border-radius: 0 0 12px 12px;
+  justify-content: flex-end;
+`;
+
+const CancelModalButton = styled.button`
+  padding: 10px 20px;
+  background: #e2e8f0;
+  color: #475569;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #cbd5e1;
+    transform: translateY(-2px);
+  }
+`;
+
+const SaveModalButton = styled.button`
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+`;
+
+const ActionButtonsContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+`;
+
+const EditButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #fff3cd;
+    transform: scale(1.15);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 `;
 

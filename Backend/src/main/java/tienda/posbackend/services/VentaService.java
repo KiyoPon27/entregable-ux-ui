@@ -211,9 +211,23 @@ public class VentaService {
         venta.setVuelto(dto.getVuelto());
         venta.setCliente(cliente);
         venta.setFecha(dto.getFecha());
-        venta.setMontoTotal(dto.getMontoTotal());
+        venta.setMontoTotal(dto.getMontoTotal()); // Monto neto (con descuento aplicado)
+        venta.setSubTotal(dto.getSubTotal() != null ? dto.getSubTotal() : dto.getMontoTotal()); // Guardar subtotal sin descuento
         venta.setRucDni(dto.getRucDni()); // Guardar RUC/DNI
         venta.setTipoComprobante(tipoComprobante.getNombre()); // ✅ GUARDAR TIPO DE COMPROBANTE (FACTURA, BOLETA, TICKET)
+        
+        // ✅ GUARDAR CAMPOS DE DESCUENTO
+        if (dto.getPorcentajeDescuento() != null) {
+            venta.setPorcentajeDescuento(dto.getPorcentajeDescuento());
+        } else {
+            venta.setPorcentajeDescuento(BigDecimal.ZERO);
+        }
+        
+        if (dto.getMontoDescuento() != null) {
+            venta.setMontoDescuento(dto.getMontoDescuento());
+        } else {
+            venta.setMontoDescuento(BigDecimal.ZERO);
+        }
         
         Venta ventaGuardada = ventaRepository.save(venta);
         
@@ -228,6 +242,8 @@ public class VentaService {
             .idUsuario(ventaGuardada.getUsuario() != null ? ventaGuardada.getUsuario().getId() : null)
             .idCliente(ventaGuardada.getCliente() != null ? ventaGuardada.getCliente().getId() : null)
             .idSucursal(ventaGuardada.getSucursal() != null ? ventaGuardada.getSucursal().getId() : null)
+            .porcentajeDescuento(ventaGuardada.getPorcentajeDescuento())
+            .montoDescuento(ventaGuardada.getMontoDescuento())
             .build();
     }
     
@@ -239,11 +255,17 @@ public class VentaService {
             dto.setId(venta.getId());
             dto.setFecha(venta.getFecha());
             dto.setMontoTotal(venta.getMontoTotal());
+            dto.setSubTotal(venta.getSubTotal()); // ✅ MAPEAR subTotal
             dto.setTotalImpuestos(venta.getTotalImpuestos());
             dto.setNroComprobante(venta.getNroComprobante());
+            dto.setNumeroSunat(venta.getNumeroSunat());
             dto.setTipoComprobante(venta.getTipoComprobante());
             dto.setRucDni(venta.getRucDni());
             dto.setClienteNombre(venta.getCliente() != null ? venta.getCliente().getNombres() : "");
+            
+            // ✅ MAPEAR CAMPOS DE DESCUENTO
+            dto.setPorcentajeDescuento(venta.getPorcentajeDescuento());
+            dto.setMontoDescuento(venta.getMontoDescuento());
 
             // Buscar todos los movimientos de caja de tipo VENTA para esta venta
             List<MovimientoCaja> movimientos = movimientoCajaRepository.findByVentaId(venta.getId());
@@ -291,11 +313,19 @@ public class VentaService {
         BigDecimal totalTickets = ventaRepository.sumTotalByTipoComprobante(empresaId, "TICKET", fechaInicio, fechaFin);
         if (totalTickets == null) totalTickets = BigDecimal.ZERO;
         
+        // Comprobantes con número SUNAT
+        Long countConSunat = ventaRepository.countConNumeroSunat(empresaId, fechaInicio, fechaFin);
+        BigDecimal totalConSunat = ventaRepository.sumTotalConSunat(empresaId, fechaInicio, fechaFin);
+        if (totalConSunat == null) totalConSunat = BigDecimal.ZERO;
+        BigDecimal totalIgvSunat = ventaRepository.sumTotalIgvConSunat(empresaId, fechaInicio, fechaFin);
+        if (totalIgvSunat == null) totalIgvSunat = BigDecimal.ZERO;
+        
         return java.util.Map.of(
             "totalVentas", totalVentas,
             "facturas", java.util.Map.of("count", countFacturas, "total", totalFacturas),
             "boletas", java.util.Map.of("count", countBoletas, "total", totalBoletas),
-            "tickets", java.util.Map.of("count", countTickets, "total", totalTickets)
+            "tickets", java.util.Map.of("count", countTickets, "total", totalTickets),
+            "comprobantesSunat", java.util.Map.of("count", countConSunat, "total", totalConSunat, "totalIgv", totalIgvSunat)
         );
     }
     
@@ -379,6 +409,7 @@ public class VentaService {
         VentaDTO ventaDTO = VentaDTO.builder()
             .id(venta.getId())
             .nroComprobante(venta.getNroComprobante())
+            .numeroSunat(venta.getNumeroSunat())
             .fecha(venta.getFecha())
             .montoTotal(venta.getMontoTotal())
             .rucDni(venta.getRucDni())
@@ -387,6 +418,9 @@ public class VentaService {
             .tipoComprobante(venta.getTipoComprobante())
             .estado(venta.getEstado())
             .usuario(usuarioDTO)
+            // ✅ MAPEAR CAMPOS DE DESCUENTO
+            .porcentajeDescuento(venta.getPorcentajeDescuento())
+            .montoDescuento(venta.getMontoDescuento())
             .build();
         
         // 7. Construir lista de productos
@@ -400,6 +434,7 @@ public class VentaService {
                 .productos(ProductoSimpleDTO.builder()
                     .id(detalle.getProducto().getId())
                     .nombre(detalle.getProducto().getNombre())
+                    .imagen(detalle.getProducto().getImagen())
                     .build())
                 .build())
             .collect(Collectors.toList());
@@ -444,5 +479,16 @@ public class VentaService {
             .metodosPago(metodosPagoDTO)
             .nombreComprobante(venta.getTipoComprobante() != null ? venta.getTipoComprobante().toUpperCase() : "TICKET")
             .build();
+    }
+    
+    /**
+     * Actualizar el número SUNAT de una venta
+     */
+    @Transactional
+    public void actualizarNumeroSunat(Long idVenta, String numeroSunat) {
+        Venta venta = ventaRepository.findById(idVenta)
+            .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada con ID: " + idVenta));
+        venta.setNumeroSunat(numeroSunat);
+        ventaRepository.save(venta);
     }
 }

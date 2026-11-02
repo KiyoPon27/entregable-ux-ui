@@ -1,16 +1,16 @@
 
 import styled from "styled-components";
-export function Checkbox1({isChecked,onChange}) {
+export function Checkbox1({ isChecked, onChange, checkedColor = "#2d8cf0" }) {
   
   return (
-    <Container>
+    <Container $checkedColor={checkedColor}>
       <input checked={isChecked} onChange={onChange}  type="checkbox" />
       <div className="checkmark"></div>
     </Container>
   );
 }
 const Container = styled.label`
-  --input-focus: #2d8cf0;
+  --input-focus: ${({ $checkedColor }) => $checkedColor};
   --input-out-of-focus: #ccc;
   --bg-color: #fff;
   --bg-color-alt: #666;

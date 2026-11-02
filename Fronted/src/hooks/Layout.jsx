@@ -47,7 +47,7 @@ export function Layout({ children }) {
       <section className="contentSidebar">
         <Sidebar
           state={sidebarOpen}
-          setState={() => setSidebarOpen(!sidebarOpen)}
+          setState={setSidebarOpen}
         />
       </section>
       <section className="contentMenuhambur">
@@ -76,9 +76,9 @@ const Container = styled.main`
     /* background-color: rgba(53, 219, 11, 0.5); */
   }
   @media ${Device.tablet} {
-    grid-template-columns: 88px 1fr;
+    grid-template-columns: 86px 1fr;
     &.active {
-      grid-template-columns: 260px 1fr;
+      grid-template-columns: 255px 1fr;
     }
     .contentSidebar {
       display: initial;

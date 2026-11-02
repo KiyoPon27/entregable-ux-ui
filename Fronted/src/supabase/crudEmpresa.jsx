@@ -149,3 +149,89 @@ async function compressImage(file, maxWidth = 800, quality = 0.7) {
 export async function EditarIconoStorage(id, file){
   console.warn("EditarIconoStorage: Función pendiente de migrar");
 }
+
+export async function CrearEmpresaCompleta(datos) {
+  try {
+    const response = await api.post("/empresas/crear-completa", datos);
+    return response.data;
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.response?.data || error.message || "Error al crear la empresa";
+    throw new Error(errorMsg);
+  }
+}
+
+export async function ObtenerEmpresas() {
+  try {
+    const response = await api.get("/empresas");
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener empresas:", error);
+    throw new Error(error.response?.data?.message || error.response?.data || error.message || "Error al obtener empresas");
+  }
+}
+
+export async function ObtenerTodasIncluiyendoDeshabilitadas() {
+  try {
+    const response = await api.get("/empresas/all/incluyendo-deshabilitadas");
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener empresas:", error);
+    throw new Error(error.response?.data?.message || error.response?.data || error.message || "Error al obtener empresas");
+  }
+}
+
+export async function DeshabilitarEmpresa(p) {
+  try {
+    // Soft delete: enviar PUT en lugar de DELETE
+    await api.put(`/empresas/${p.id}/deshabilitar`);
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Empresa deshabilitada!",
+      text: "La empresa se ha deshabilitado exitosamente. Los datos se conservan en el sistema.",
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+    return true;
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message;
+    Swal.fire({
+      icon: "error",
+      title: "Error al deshabilitar empresa",
+      text: mensaje,
+    });
+    throw new Error(mensaje);
+  }
+}
+
+export async function HabilitarEmpresa(p) {
+  try {
+    const response = await api.put(`/empresas/${p.id}/habilitar`);
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Empresa habilitada!",
+      text: "La empresa y sus usuarios asociados quedaron activos nuevamente.",
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+    return response.data;
+  } catch (error) {
+    const mensaje = error.response?.data?.message || error.message;
+    Swal.fire({
+      icon: "error",
+      title: "Error al habilitar empresa",
+      text: mensaje,
+    });
+    throw new Error(mensaje);
+  }
+}
+
+// Mantener EliminarEmpresa como alias backward-compatible (ahora hace soft delete)
+export async function EliminarEmpresa(p) {
+  return DeshabilitarEmpresa(p);
+}
+
+

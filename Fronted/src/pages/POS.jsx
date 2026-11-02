@@ -1,4 +1,6 @@
 import { POSTemplate, SpinnerSecundario } from "../index";
+import { useEffect } from "react";
+import { useProductosStore } from "../store/ProductosStore";
 
 import { PantallaAperturaCaja } from "../components/organismos/POSDesign/CajaDesign/PantallaAperturaCaja";
 
@@ -6,6 +8,12 @@ import { useMostrarAperturasCajaPorUsuarioQuery } from "../tanstack/CierresCajaS
 import { useMostrarMetodosPagoQuery } from "../tanstack/MetodosPagoStack";
 
 export function POS() {
+  const { setBuscador } = useProductosStore();
+
+  // Limpiar el buscador de productos al entrar al POS
+  useEffect(() => {
+    setBuscador("");
+  }, []);
   const {isLoading: isLoadingMetodosPago} = useMostrarMetodosPagoQuery()
   const {data:dataCierreCaja, isLoading, error } = useMostrarAperturasCajaPorUsuarioQuery();
   // Mostrar spinner mientras alguna de las consultas está cargando

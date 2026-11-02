@@ -80,4 +80,15 @@ public class VentaController {
         System.out.println("✅ Detalle completo obtenido: " + detalle.getNombreComprobante());
         return ResponseEntity.ok(detalle);
     }
+    
+    @PutMapping("/{id}/numero-sunat")
+    public ResponseEntity<Void> actualizarNumeroSunat(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        String numeroSunat = body.get("numeroSunat");
+        ventaService.actualizarNumeroSunat(id, numeroSunat);
+        return ResponseEntity.ok().build();
+    }
+
+    
 }

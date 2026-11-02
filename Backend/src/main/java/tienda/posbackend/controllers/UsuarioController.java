@@ -3,9 +3,12 @@ package tienda.posbackend.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import tienda.posbackend.entities.Usuario;
 import tienda.posbackend.services.UsuarioService;
+import tienda.posbackend.services.EmpresaService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +22,21 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @Autowired
+    private EmpresaService empresaService;
+
+    /**
+     * Obtiene todos los usuarios del sistema
+     */
     @GetMapping
     public ResponseEntity<List<Usuario>> listarTodos() {
-        return ResponseEntity.ok(usuarioService.listarTodos());
+        try {
+            List<Usuario> usuarios = usuarioService.listarTodos();
+            return ResponseEntity.ok(usuarios);
+        } catch (Exception e) {
+            // En caso de error, retorna lista vacía
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/{id}")
@@ -35,9 +50,9 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody Usuario usuario) {
+    public ResponseEntity<?> crear(@RequestBody Usuario usuario, @RequestParam(required = false) Long id_sucursal) {
         try {
-            Usuario nuevoUsuario = usuarioService.crear(usuario);
+            Usuario nuevoUsuario = usuarioService.crear(usuario, id_sucursal);
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();

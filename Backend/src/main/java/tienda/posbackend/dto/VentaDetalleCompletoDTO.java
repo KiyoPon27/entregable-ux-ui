@@ -65,6 +65,7 @@ public class VentaDetalleCompletoDTO {
     public static class VentaDTO {
         private Long id;
         private String nroComprobante;
+        private String numeroSunat; // Número de comprobante SUNAT
         private LocalDateTime fecha;
         private BigDecimal montoTotal;
         private BigDecimal subTotal;
@@ -73,6 +74,10 @@ public class VentaDetalleCompletoDTO {
         private String tipoComprobante;
         private String estado;
         private UsuarioDTO usuario;
+        
+        // CAMPOS DE DESCUENTO
+        private BigDecimal porcentajeDescuento;
+        private BigDecimal montoDescuento;
     }
     
     @Data
@@ -95,7 +100,8 @@ public class VentaDetalleCompletoDTO {
     public static class ProductoSimpleDTO {
         private Long id;
         private String nombre;
-    }
+            private String imagen;
+        }
     
     @Data
     @Builder

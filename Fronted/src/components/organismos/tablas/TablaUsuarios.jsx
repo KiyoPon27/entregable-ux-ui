@@ -18,6 +18,7 @@ import {
 import { FaArrowsAltV } from "react-icons/fa";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEliminarUsuarioMutation } from "../../../tanstack/UsuariosStack";
+import { toast } from "sonner";
 
 export function TablaUsuarios({
   data,
@@ -25,7 +26,7 @@ export function TablaUsuarios({
   setdataSelect,
   setAccion,
 }) {
-  if (data == null || data.length === 0) return <div>No hay usuarios registrados</div>;
+  if (data == null || data.length === 0) return <EmptyState>No hay usuarios registrados</EmptyState>;
   
   const [pagina, setPagina] = useState(1);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -40,7 +41,7 @@ export function TablaUsuarios({
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Si, eliminar",
+      confirmButtonText: "Sí, eliminar",
     }).then(async (result) => {
       if (result.isConfirmed) {
         eliminarMutation.mutate({ id: p.id });
@@ -54,7 +55,23 @@ export function TablaUsuarios({
     setAccion("Editar");
   }
   
+  function esProtegido(usuario) {
+    const rolNombre = usuario.rol?.nombre?.toLowerCase?.();
+    return rolNombre === "superadmin" || rolNombre === "og";
+  }
+  
   const columns = [
+    {
+      accessorKey: "index",
+      header: "#",
+      enableSorting: false,
+      cell: (info) => (
+        <div data-title="#" className="ContentCell">
+          <span>{info.row.index + 1}</span>
+        </div>
+      ),
+      enableColumnFilter: false,
+    },
     {
       accessorKey: "nombres",
       header: "Nombres",
@@ -86,30 +103,35 @@ export function TablaUsuarios({
       cell: (info) => <span>{info.row.original.tipoDocumento?.nombre || "-"}</span>,
     },
     {
+      accessorKey: "empresaId",
+      header: "Empresa",
+      cell: (info) => <span>{info.getValue() || "-"}</span>,
+    },
+    {
       accessorKey: "estado",
       header: "Estado",
       cell: (info) => (
-        <span style={{ 
-          color: info.getValue() === "ACTIVO" ? "green" : "red",
-          fontWeight: "bold"
-        }}>
-          {info.getValue()}
-        </span>
+        <div className="estadoBadge" data-estado={info.getValue()}>
+          <span className="estadoText">
+            {info.getValue()}
+          </span>
+        </div>
       ),
     },
     {
       accessorKey: "acciones",
-      header: "",
+      header: "ACCIONES",
       enableSorting: false,
       cell: (info) => {
-        const esSuperAdmin = info.row.original.id === 1;
+        const protegido = esProtegido(info.row.original);
         return (
-          <td data-title="Acciones" className="ContentCell">
+          <div data-title="Acciones" className="ContentCell">
             <ContentAccionesTabla
-              funcionEditar={() => editar(info.row.original)}
-              funcionEliminar={esSuperAdmin ? null : () => eliminar(info.row.original)}
+              funcionEditar={protegido ? null : () => editar(info.row.original)}
+              funcionEliminar={protegido ? null : () => eliminar(info.row.original)}
+              esProtegido={protegido}
             />
-          </td>
+          </div>
         );
       },
     },
@@ -169,164 +191,121 @@ export function TablaUsuarios({
             ))}
           </tbody>
         </table>
+        <Paginacion
+          table={table}
+          variant="modern"
+          irinicio={() => table.setPageIndex(0)}
+          pagina={table.getState().pagination.pageIndex + 1}
+          setPagina={setPagina}
+          maximo={table.getPageCount()}
+        />
       </Container>
-      <Paginacion
-        table={table}
-        pagina={pagina}
-        setPagina={setPagina}
-        totalPaginas={table.getPageCount()}
-      />
     </>
   );
 }
 
+const EmptyState = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  font-size: 16px;
+  color: #6b7280;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 20px;
+  margin: 14px 0 0;
+  padding: 16px;
+`;
+
 const Container = styled.div`
   position: relative;
-  margin: 5% 3%;
-  
-  @media (min-width: ${v.bpbart}) {
-    margin: 2%;
-  }
-  @media (min-width: ${v.bphomer}) {
-    margin: 2em auto;
-  }
-  
+  margin: 14px 0 0;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  padding: 16px;
+  overflow: hidden;
+
   .responsive-table {
     width: 100%;
-    margin-bottom: 1.5em;
-    border-spacing: 0;
-    
-    @media (min-width: ${v.bpbart}) {
-      font-size: 0.9em;
+    min-width: 1000px;
+    margin-bottom: 1.1em;
+    border-collapse: collapse;
+    table-layout: fixed;
+
+    .ContentCell {
+      display: flex;
+      margin: auto;
+      justify-content: center;
+      align-items: center;
+      min-height: 36px;
+      border-bottom: none;
     }
-    @media (min-width: ${v.bpmarge}) {
-      font-size: 1em;
+
+    .estadoBadge {
+      min-width: 110px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s ease;
     }
-    
+
+    .estadoBadge[data-estado="ACTIVO"] {
+      background: rgba(22, 163, 74, 0.15);
+      color: #166534;
+      border: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+    .estadoBadge[data-estado="INACTIVO"] {
+      background: rgba(220, 38, 38, 0.15);
+      color: #991b1b;
+      border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
     thead {
-      position: absolute;
-      padding: 0;
-      border: 0;
-      height: 1px;
-      width: 1px;
-      overflow: hidden;
-      
-      @media (min-width: ${v.bpbart}) {
-        position: relative;
-        height: auto;
-        width: auto;
-        overflow: auto;
-      }
-      
+      background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
+
       th {
-        border-bottom: 2px solid ${({theme})=>theme.color2};
+        border-bottom: none;
+        padding: 13px 14px;
         font-weight: 700;
         text-align: center;
-        color: ${({ theme }) => theme.text};
-        &:first-of-type {
-          text-align: center;
+        color: #f8fafc;
+        font-size: 13px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+
+        span {
+          margin-left: 8px;
         }
-      }
-    }
-    
-    tbody,
-    tr,
-    th,
-    td {
-      display: block;
-      padding: 0;
-      text-align: left;
-      white-space: normal;
-    }
-    
-    tr {
-      @media (min-width: ${v.bpbart}) {
-        display: table-row;
       }
     }
 
-    th,
-    td {
-      padding: 0.5em;
-      vertical-align: middle;
-      
-      @media (min-width: ${v.bplisa}) {
-        padding: 0.75em 0.5em;
+    tbody tr {
+      border-bottom: 1px solid ${({ theme }) => theme.color2};
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: ${({ theme }) => theme.bg3_hover || "#f8fafc"};
       }
-      @media (min-width: ${v.bpbart}) {
-        display: table-cell;
-        padding: 0.5em;
-      }
-      @media (min-width: ${v.bpmarge}) {
-        padding: 0.75em 0.5em;
-      }
-      @media (min-width: ${v.bphomer}) {
-        padding: 0.75em;
+
+      td {
+        padding: 14px 12px;
+        text-align: center;
+        font-size: 13px;
+        color: #475569;
       }
     }
-    
-    tbody {
-      @media (min-width: ${v.bpbart}) {
-        display: table-row-group;
-      }
-      
-      tr {
-        margin-bottom: 1em;
-        &:nth-of-type(even) {
-          background-color: rgba(161, 161, 161, 0.1);
-        }
-        @media (min-width: ${v.bpbart}) {
-          display: table-row;
-          border-width: 1px;
-        }
-        &:last-of-type {
-          margin-bottom: 0;
-        }
-      }
-      
-      th[scope="row"] {
-        @media (min-width: ${v.bplisa}) {
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        }
-        @media (min-width: ${v.bpbart}) {
-          background-color: transparent;
-          text-align: center;
-          color: ${({ theme }) => theme.text};
-        }
-      }
-      
-      .ContentCell {
-        text-align: right;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 50px;
-        border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        
-        @media (min-width: ${v.bpbart}) {
-          justify-content: center;
-          border-bottom: none;
-        }
-      }
-      
-      td {
-        text-align: right;
-        @media (min-width: ${v.bpbart}) {
-          text-align: center;
-        }
-      }
-      
-      td[data-title]:before {
-        content: attr(data-title);
-        float: left;
-        font-size: 0.8em;
-        @media (min-width: ${v.bplisa}) {
-          font-size: 0.9em;
-        }
-        @media (min-width: ${v.bpbart}) {
-          content: none;
-        }
-      }
+
+    tbody tr:last-child {
+      border-bottom: none;
     }
   }
 `;

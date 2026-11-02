@@ -19,9 +19,10 @@ export function PantallaCobro() {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "Enter") {
-        event.preventDefault(); // Evita el comportamiento predeterminado de presionar Enter (como cerrar la vista)
+        event.preventDefault(); // Evita el comportamiento predeterminado de presionar Enter
         if (ingresoCobroRef.current) {
-          ingresoCobroRef.current.mutateAsync();
+          // Ahora llama a validarYCobrar() que incluye validación + cobro
+          ingresoCobroRef.current.validarYCobrar();
         }
       }
     };
@@ -32,6 +33,23 @@ export function PantallaCobro() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  // Listener para tecla ESC para volver
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setStatePantallaCobro({
+          data: datadetalleventa,
+          tipocobro: tipocobro,
+        });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setStatePantallaCobro, datadetalleventa, tipocobro]);
   return (
     <Container>
       <section className="contentingresocobro">

@@ -1,5 +1,12 @@
 import { create } from "zustand";
-import { MostrarMetodosPago,InsertarMetodosPago,EliminarMetodosPago,EditarMetodosPago } from "../api/crudMetodosPago";
+import {
+  MostrarMetodosPago,
+  InsertarMetodosPago,
+  EliminarMetodosPago,
+  EditarMetodosPago,
+  DeshabilitarMetodosPago,
+  HabilitarMetodosPago,
+} from "../api/crudMetodosPago";
 
 export const useMetodosPagoStore = create((set) => ({
   dataMetodosPago: null,
@@ -17,6 +24,12 @@ export const useMetodosPagoStore = create((set) => ({
   },
   eliminarMetodosPago: async (p) => {
     await EliminarMetodosPago(p);
+  },
+  deshabilitarMetodosPago: async (p) => {
+    await DeshabilitarMetodosPago(p);
+  },
+  habilitarMetodosPago: async (p) => {
+    await HabilitarMetodosPago(p);
   },
   editarMetodosPago: async (p, fileold, filenew) => {
     await EditarMetodosPago(p, fileold, filenew);

@@ -1,6 +1,10 @@
 import api from "../api/api";
 
 export async function MostrarMovStock(p) {
+  if (!p?.id_producto) {
+    return [];
+  }
+
   try {
     const response = await api.get(`/movimientos-stock/producto/${p.id_producto}`);
     return response.data || [];

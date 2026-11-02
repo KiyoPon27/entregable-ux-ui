@@ -1,7 +1,6 @@
 import styled from "styled-components";
 import {
   ContentAccionesTabla,
-  useCategoriasStore,
   Paginacion,ImagenContent, Icono
 } from "../../../index";
 import Swal from "sweetalert2";
@@ -19,60 +18,150 @@ import { FaArrowsAltV } from "react-icons/fa";
 import { useMetodosPagoStore } from "../../../store/MetodosPagoStore";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+
+const POS_METHODS = {
+  EFECTIVO: { icon: "💵", color: "#16a34a" },
+  TARJETA: { icon: "💳", color: "#0ea5e9" },
+  MIXTO: { icon: "🏦", color: "#f59e0b" },
+  YAPE: { icon: "📱", color: "#7c3aed" },
+};
+
+function normalizeName(value = "") {
+  return String(value).trim().toUpperCase();
+}
+
+function isHexColor(value = "") {
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(value));
+}
+
+function resolveMetodoIcono(metodo) {
+  const icono = metodo?.icono;
+  const nombre = normalizeName(metodo?.nombre);
+  if (icono && icono !== "-" && !isHexColor(icono)) {
+    return icono;
+  }
+  return POS_METHODS[nombre]?.icon || "💵";
+}
+
+function resolveMetodoColor(metodo) {
+  const nombre = normalizeName(metodo?.nombre);
+  const color = metodo?.color;
+  if (isHexColor(color)) {
+    return color;
+  }
+  return POS_METHODS[nombre]?.color || "#16a34a";
+}
 export function TablaMetodosPago({
   data,
   SetopenRegistro,
   setdataSelect,
   setAccion,
 }) {
-  if (data==null) return;
+  if (data == null) return null;
   const [pagina, setPagina] = useState(1);
   const [datas, setData] = useState(data);
   const [columnFilters, setColumnFilters] = useState([]);
 const queryClient = useQueryClient()
-  const { eliminarMetodosPago } = useMetodosPagoStore();
+  const { eliminarMetodosPago, deshabilitarMetodosPago, habilitarMetodosPago } = useMetodosPagoStore();
+
+  function esMetodoProtegido(p) {
+    const id = Number(p?.id);
+    return Number.isFinite(id) && id > 0 && id <= 4;
+  }
+
+  function estaDeshabilitado(p) {
+    if (p?.verNombre === false || p?.ver_nombre === false) return true;
+    if (p?.verNombre === true || p?.ver_nombre === true) return false;
+    return false;
+  }
   function eliminar(p) {
-    if (p.delete_update === false) {
-      toast.error("Oops... Este registro no se permite eliminar ya que es valor por defecto.")
-      return;
-    }
-    Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
-      text: "Una vez eliminado, ¡no podrá recuperar este registro!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Si, eliminar",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await eliminarMetodosPago({ id: p.id });
-        queryClient.invalidateQueries(["mostrar metodos pago"])
-      }
-    });
+    toast.error("No se pueden eliminar métodos de pago para evitar errores en ventas enlazadas.")
+    return;
   }
   function editar(data) {
-    if (data.delete_update === false) {
-      toast.error("Oops... Este registro no se permite modificar ya que es valor por defecto.")
+    if (esMetodoProtegido(data)) {
+      toast.error("Los métodos base del sistema no se pueden modificar.")
       return;
     }
     SetopenRegistro(true);
     setdataSelect(data);
     setAccion("Editar");
   }
+
+  function deshabilitar(p) {
+    if (esMetodoProtegido(p)) {
+      toast.error("Los métodos base del sistema no se pueden deshabilitar.")
+      return;
+    }
+    Swal.fire({
+      title: "¿Deshabilitar método de pago?",
+      text: "Al deshabilitarlo, dejará de mostrarse en el POS.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#f59e0b",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, deshabilitar",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await deshabilitarMetodosPago({ id: p.id });
+        queryClient.invalidateQueries(["mostrar metodos pago"])
+      }
+    });
+  }
+
+  function habilitar(p) {
+    Swal.fire({
+      title: "¿Habilitar método de pago?",
+      text: "Al habilitarlo, volverá a mostrarse en el POS.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#111111",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, habilitar",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await habilitarMetodosPago({ id: p.id });
+        queryClient.invalidateQueries(["mostrar metodos pago"])
+      }
+    });
+  }
+
+  function toggleEstado(p) {
+    if (esMetodoProtegido(p)) {
+      toast.error("Los métodos base del sistema no se pueden cambiar de estado.")
+      return;
+    }
+    if (estaDeshabilitado(p)) {
+      habilitar(p);
+      return;
+    }
+    deshabilitar(p);
+  }
   const columns = [
+    {
+      accessorKey: "index",
+      header: "#",
+      enableSorting: false,
+      cell: (info) => (
+        <div data-title="#" className="ContentCell">
+          <span>{info.row.index + 1}</span>
+        </div>
+      ),
+      enableColumnFilter: false,
+    },
     {
       accessorKey: "icono",
       header: "Icono", 
       enableSorting: false,
       cell: (info) => (
-        <div data-title="Color" className="ContentCell">
-          {
-            info.getValue()!="-"?(   <ImagenContent imagen={info.getValue()}/>):(<Icono>
-              {<v.iconoimagenvacia/>}
-            </Icono>)
-          }
-    
+        <div data-title="Icono" className="ContentCell">
+          <div className="iconBadge" style={{ backgroundColor: resolveMetodoColor(info.row.original) }}>
+            <span className="iconValue">
+              {resolveMetodoIcono(info.row.original)}
+            </span>
+          </div>
         </div>
       ),
 
@@ -99,13 +188,17 @@ const queryClient = useQueryClient()
   
     {
       accessorKey: "acciones",
-      header: "",
+      header: "ACCIONES",
       enableSorting: false,
       cell: (info) => (
         <div data-title="Acciones" className="ContentCell">
           <ContentAccionesTabla
             funcionEditar={() => editar(info.row.original)}
             funcionEliminar={() => eliminar(info.row.original)}
+            funcionDeshabilitar={() => deshabilitar(info.row.original)}
+            switchValue={!estaDeshabilitado(info.row.original)}
+            funcionToggleEstado={() => toggleEstado(info.row.original)}
+            esProtegido={esMetodoProtegido(info.row.original)}
           />
         </div>
       ),
@@ -199,6 +292,7 @@ const queryClient = useQueryClient()
         </table>
         <Paginacion
           table={table}
+          variant="modern"
           irinicio={() => table.setPageIndex(0)}
           pagina={table.getState().pagination.pageIndex + 1}
           setPagina={setPagina}
@@ -210,153 +304,128 @@ const queryClient = useQueryClient()
 }
 const Container = styled.div`
   position: relative;
+  margin: 14px 0 0;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  padding: 16px;
 
-  margin: 5% 3%;
-  @media (min-width: ${v.bpbart}) {
-    margin: 2%;
-  }
-  @media (min-width: ${v.bphomer}) {
-    margin: 2em auto;
-    /* max-width: ${v.bphomer}; */
-  }
   .responsive-table {
     width: 100%;
-    margin-bottom: 1.5em;
-    border-spacing: 0;
-    @media (min-width: ${v.bpbart}) {
-      font-size: 0.9em;
-    }
-    @media (min-width: ${v.bpmarge}) {
-      font-size: 1em;
-    }
-    thead {
-      
-      position: absolute;
+    min-width: 840px;
+    margin-bottom: 1.1em;
+    border-collapse: collapse;
+    table-layout: fixed;
 
-      padding: 0;
-      border: 0;
-      height: 1px;
-      width: 1px;
-      overflow: hidden;
-      
-      @media (min-width: ${v.bpbart}) {
-        position: relative;
-        height: auto;
-        width: auto;
-        overflow: auto;
-      }
-      th {
-        
-        border-bottom: 2px solid ${({theme})=>theme.color2};
-        font-weight:700;
-        text-align: center;
-        color: ${({ theme }) => theme.text};
-        &:first-of-type {
-          text-align: center;
+    .ContentCell {
+      display: flex;
+      margin: auto;
+      justify-content: center;
+      align-items: center;
+      min-height: 36px;
+      border-bottom: none;
+    }
+
+      .iconBadge {
+        min-width: 120px;
+        height: 44px;
+        padding: 0 14px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        gap: 10px;
+        font-size: 18px;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+        white-space: nowrap;
+        color: #fff;
+
+        .iconValue {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
         }
       }
+
+    thead {
+      background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
+
+      th {
+        border-bottom: none;
+        padding: 13px 14px;
+        font-weight: 700;
+        text-align: center;
+        color: #f8fafc;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+
+        &:first-of-type {
+          border-top-left-radius: 10px;
+        }
+
+        &:last-of-type {
+          border-top-right-radius: 10px;
+        }
+      }
+
+      th:nth-child(1) { width: 6%; }
+      th:nth-child(2) { width: 16%; }
+      th:nth-child(3) { width: 48%; }
+      th:nth-child(4) { width: 20%; }
+      th:nth-child(5) { width: 10%; }
     }
+
     tbody,
     tr,
     th,
     td {
-      
-      display: block;
-      padding: 0;
-      text-align: left;
       white-space: normal;
     }
-    tr {
-      
-      @media (min-width: ${v.bpbart}) {
-        display: table-row;
-      }
-    }
 
-    th,
-    td {
-      
-      padding: 0.5em;
-      vertical-align: middle;
-      @media (min-width: ${v.bplisa}) {
-        padding: 0.75em 0.5em;
-      }
-      @media (min-width: ${v.bpbart}) {
-        display: table-cell;
-        padding: 0.5em;
-      }
-      @media (min-width: ${v.bpmarge}) {
-        padding: 0.75em 0.5em;
-      }
-      @media (min-width: ${v.bphomer}) {
-        padding: 0.75em;
-      }
-    }
     tbody {
-      @media (min-width: ${v.bpbart}) {
-        display: table-row-group;
-      }
       tr {
-        margin-bottom: 1em;
-        &:nth-of-type(even) {
-          background-color: rgba(161, 161, 161, 0.1);
-        }
-        @media (min-width: ${v.bpbart}) {
-          display: table-row;
-          border-width: 1px;
-        }
-        &:last-of-type {
-          margin-bottom: 0;
-        }
-        &:nth-of-type(even) {
-          @media (min-width: ${v.bpbart}) {
-           
-          }
-        }
-      }
-      th[scope="row"] {
-        
-        @media (min-width: ${v.bplisa}) {
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        }
-        @media (min-width: ${v.bpbart}) {
-          background-color: transparent;
-          text-align: center;
-          color: ${({ theme }) => theme.text};
-        }
-      }
-      .ContentCell {
-        text-align: right;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 50px;
+        border-bottom: 1px solid ${({ theme }) => theme.color2};
+        transition: background 0.2s ease;
 
-        border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        @media (min-width: ${v.bpbart}) {
-          justify-content: center;
+        &:nth-of-type(even) {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.03)"
+              : "rgba(15, 23, 42, 0.035)"};
+        }
+
+        &:hover {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.12)"
+              : "rgba(15, 23, 42, 0.11)"};
+        }
+
+        &:last-child {
           border-bottom: none;
         }
       }
+
       td {
-        text-align: right;
+        padding: 14px;
+        text-align: center;
+        color: ${({ theme }) => theme.text};
+        font-size: 14px;
+
         @media (min-width: ${v.bpbart}) {
-          /* border-bottom: 1px solid rgba(161, 161, 161, 0.32); */
           text-align: center;
         }
       }
-      td[data-title]:before {
-        content: attr(data-title);
-        float: left;
-        font-size: 0.8em;
-        @media (min-width: ${v.bplisa}) {
-          font-size: 0.9em;
-        }
-        @media (min-width: ${v.bpbart}) {
-          content: none;
-        }
-      }
     }
+  }
+
+  @media (max-width: ${v.bpbart}) {
+    overflow-x: auto;
+    padding: 12px;
   }
 `;
 const Colorcontent = styled.div`

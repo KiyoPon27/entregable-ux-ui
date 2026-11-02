@@ -1,16 +1,13 @@
 import styled from "styled-components";
 import {
-  Btn1,
-  Buscador,
-  RegistrarCategorias,
+  BuscadorModerno,
+  ButtonUniverse,
   RegistrarClientesProveedores,
   Title,
-  useCategoriasStore,
   useClientesProveedoresStore,
 } from "../../index";
 import { v } from "../../styles/variables";
-import { TablaCategorias } from "../organismos/tablas/TablaCategorias";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ConfettiExplosion from "react-confetti-explosion";
 import { useLocation } from "react-router-dom";
 import { TablaClientesProveedores } from "../organismos/tablas/TablaClientesProveedores";
@@ -21,7 +18,15 @@ export function ClientesProveedoresTemplate() {
   const [accion, setAccion] = useState("");
   const [dataSelect, setdataSelect] = useState([]);
   const [isExploding, setIsExploding] = useState(false);
+  const [inputBusqueda, setInputBusqueda] = useState("");
+  const buscadorRef = useRef(null);
   const location = useLocation()
+
+  function handleSetBuscador(value) {
+    setInputBusqueda(value);
+    setBuscador(value);
+  }
+
   function nuevoRegistro() {
     const tipo= location.pathname==="/configuracion/clientes"?"CLIENTE":"PROVEEDOR"
     setTipo(tipo)
@@ -39,17 +44,17 @@ export function ClientesProveedoresTemplate() {
           accion={accion}
         />
       )}
-      <section className="area1">
+      <section className="header">
         <Title>{location.pathname==="/configuracion/clientes"?"Clientes":"Proveedores"}</Title>
-        <Btn1
-          funcion={nuevoRegistro}
-          bgcolor={v.colorPrincipal}
-          titulo="nuevo"
-          icono={<v.iconoagregar />}
-        />
       </section>
-      <section className="area2">
-        <Buscador setBuscador={setBuscador}/>
+      <section className="actions">
+        <BuscadorModerno ref={buscadorRef} setBuscador={handleSetBuscador} value={inputBusqueda} />
+        <ButtonUniverse
+          onClick={nuevoRegistro}
+          icon={<v.iconoagregar />}
+        >
+          nuevo
+        </ButtonUniverse>
       </section>
 
       <section className="main">
@@ -61,31 +66,47 @@ export function ClientesProveedoresTemplate() {
 }
 const Container = styled.div`
   height: calc(100vh - 80px);
-  
-   margin-top:50px;
-  padding: 15px;
+  margin-top: 50px;
+  padding: 0;
   display: grid;
   grid-template:
-    "area1" 60px
-    "area2" 60px
-    "main" auto;
-  .area1 {
-    grid-area: area1;
-    /* background-color: rgba(103, 93, 241, 0.14); */
+    "header" auto
+    "actions" auto
+    "main" 1fr;
+  overflow: hidden;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+
+  .header {
+    grid-area: header;
     display: flex;
-    justify-content: end;
     align-items: center;
+    justify-content: center;
+    padding: 20px 15px;
+  }
+
+  .actions {
+    grid-area: actions;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     gap: 15px;
+    padding: 0 15px 20px 15px;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+
+    > div:first-child {
+      flex: 1;
+    }
   }
-  .area2 {
-    grid-area: area2;
-    /* background-color: rgba(7, 237, 45, 0.14); */
-    display: flex;
-    justify-content: end;
-    align-items: center;
-  }
+
   .main {
     grid-area: main;
-    /* background-color: rgba(237, 7, 221, 0.14); */
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    padding: 0 15px;
   }
 `;

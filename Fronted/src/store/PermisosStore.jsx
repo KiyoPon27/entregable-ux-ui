@@ -12,9 +12,18 @@ import {
 export const usePermisosStore = create((set, get) => ({
   datapermisos: [],
   selectedModules: [],
-  setSelectedModules: (p) => set({ selectedModules: p }),
+  // Helper: Deduplicate array of module IDs
+  getUniqueModules: (modules) => [...new Set(modules)],
+
+  setSelectedModules: (p) => {
+    // Ensure no duplicates when setting modules
+    const { getUniqueModules } = get();
+    const uniqueModules = getUniqueModules(p);
+    set({ selectedModules: uniqueModules });
+  },
+
   toggleModule: (moduleId) => {
-    const { selectedModules, datapermisos } = get();
+    const { selectedModules, datapermisos, getUniqueModules } = get();
     let updatedModules;
     let updatedPermisos;
 
@@ -23,8 +32,8 @@ export const usePermisosStore = create((set, get) => ({
       updatedModules = selectedModules.filter((id) => id !== moduleId);
       updatedPermisos = datapermisos.filter((p) => p.idmodulo !== moduleId);
     } else {
-      // Marcar: agregar a ambos
-      updatedModules = [...selectedModules, moduleId];
+      // Marcar: agregar a ambos (con deduplicación)
+      updatedModules = getUniqueModules([...selectedModules, moduleId]);
       updatedPermisos = [...datapermisos, { idmodulo: moduleId }];
     }
 
@@ -40,7 +49,7 @@ export const usePermisosStore = create((set, get) => ({
     return response;
   },
   mostrarPermisosDefault: async () => {
-    const response = MostrarPermisosDefault();
+    const response = await MostrarPermisosDefault();
     return response;
   },
   eliminarPermisos: async (p) => {

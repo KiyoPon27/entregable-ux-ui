@@ -1,0 +1,63 @@
+{
+  "summary": "Cambios realizados por el asistente en esta sesión (imagen productos & migraciones)",
+  "modified": [
+    {
+      "file": "Backend/src/main/resources/db/migration/V018__agregar_imagen_a_productos.sql",
+      "desc": "Migración SQL agregada/actualizada para crear columna 'imagen' si no existe."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/entities/Producto.java",
+      "desc": "Se añadió la propiedad 'imagen' mapeada a la columna DB."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/controllers/ProductoController.java",
+      "desc": "Se actualizó para permitir persistir el campo 'imagen' en creación/edición."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/dto/DetalleVentaResponseDTO.java",
+      "desc": "DTO actualizado para incluir 'imagen' en el producto simplificado."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/dto/VentaDetalleCompletoDTO.java",
+      "desc": "DTO de venta actualizado para incluir 'imagen' en productos."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/services/DetalleVentaService.java",
+      "desc": "Se mapea y pasa la propiedad 'imagen' al construir DTOs."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/services/VentaService.java",
+      "desc": "Se mapea 'imagen' al construir DTOs de venta."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/controllers/UploadController.java",
+      "desc": "Nuevo endpoint POST /api/productos/{id}/imagen para subir y guardar la imagen localmente."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/config/WebConfig.java",
+      "desc": "Configuración para servir archivos estáticos desde uploads/products."
+    },
+    {
+      "file": "Fronted/src/components/organismos/POSDesign/HeaderPos.jsx",
+      "desc": "Se agregó soporte para mostrar imagen en el modal de coincidencias de productos."
+    },
+    {
+      "file": "Fronted/src/components/organismos/formularios/RegistrarProductos.jsx",
+      "desc": "Se añadió campo Imagen (URL) en el formulario de producto y se incluye en el payload."
+    },
+    {
+      "file": "Fronted/src/store/ProductosStore.jsx",
+      "desc": "Se añadió el mapeo de 'imagen' al crear/editar productos desde el frontend."
+    }
+  ],
+  "created": [
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/controllers/UploadController.java",
+      "desc": "Controlador creado para manejar la subida de imágenes (si no existía)."
+    },
+    {
+      "file": "Backend/src/main/java/tienda/posbackend/config/WebConfig.java",
+      "desc": "Clase creada para servir la carpeta uploads/products como recurso estático."
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { v } from "../../../styles/variables";
+import api from "../../../api/api";
 import {
   InputText,
   Btn1,
@@ -21,7 +22,6 @@ import { useFormattedDate } from "../../../hooks/useFormattedDate";
 import { useStockStore } from "../../../store/StockStore";
 import { RadioChecks } from "../../ui/toggles/RadioChecks";
 import { useGlobalStore } from "../../../store/GlobalStore";
-import { useBuscarProductosQuery } from "../../../tanstack/ProductosStack";
 import { useInsertarMovStockMutation } from "../../../tanstack/MovStockStack";
 import { useMostrarSucursalesQuery } from "../../../tanstack/SucursalesStack";
 import {
@@ -30,18 +30,62 @@ import {
 } from "../../../tanstack/AlmacenesStack";
 import { useMostrarStockXAlmacenYProductoQuery } from "../../../tanstack/StockStack";
 import { MessageComponent } from "../../ui/messages/MessageComponent";
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
+import { useBarcodeScanner } from "../../../hooks/useBarcodeScanner";
 export function RegistrarInventario() {
   const { setStateClose } = useGlobalStore();
+  const { dataempresa } = useEmpresaStore();
 
   const { tipo, setTipo } = useMovStockStore();
   const {
     selectProductos,
-    setBuscador,
     productosItemSelect,
-    dataProductos,
     resetProductosItemSelect,
   } = useProductosStore();
+
+  // --- Búsqueda debounced al backend para evitar cuelgues en listas grandes ---
+  const [inputBusqueda, setInputBusqueda] = useState("");
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState("");
+  const buscadorRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedBusqueda(inputBusqueda.trim());
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [inputBusqueda]);
+
+  const { data: productosFiltrados = [] } = useQuery({
+    queryKey: [
+      "buscar productos inventario registro",
+      dataempresa?.id,
+      debouncedBusqueda,
+    ],
+    queryFn: () =>
+      debouncedBusqueda.length > 0
+        ? api
+            .get(
+              `/productos/buscar/${dataempresa?.id}?q=${encodeURIComponent(
+                debouncedBusqueda
+              )}`
+            )
+            .then((r) => r.data || [])
+        : Promise.resolve([]),
+    enabled: !!dataempresa,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  function handleSetBuscador(value) {
+    setInputBusqueda(value);
+  }
+
+  const handleBarcode = useCallback((code) => {
+    setInputBusqueda(code);
+    setTimeout(() => buscadorRef.current?.focus(), 50);
+  }, []);
+  useBarcodeScanner(handleBarcode);
   const {
     register,
     formState: { errors },
@@ -63,7 +107,6 @@ export function RegistrarInventario() {
     }
   }, [productosItemSelect]);
 
-  useBuscarProductosQuery();
   const { selectSucursal, sucursalesItemSelect } = useSucursalesStore();
 
   const { data: dataSucursales, isLoading: isLoadingSucursal } =
@@ -114,9 +157,11 @@ export function RegistrarInventario() {
           </div>
           <section className="containerListas">
             <BuscadorList
-              data={dataProductos}
+              data={productosFiltrados}
               onSelect={selectProductos}
-              setBuscador={setBuscador}
+              setBuscador={handleSetBuscador}
+              externalValue={inputBusqueda}
+              inputRef={buscadorRef}
             />
             <span>
               Producto:{" "}
@@ -131,24 +176,26 @@ export function RegistrarInventario() {
               <strong>{dataStock?.stock ? dataStock?.stock : "-"} </strong>
             </span>
 
-            <ContainerSelector>
+            <InventarioSelectorContainer>
               <label>Sucursal:</label>
               <SelectList
+                appearance="product"
                 data={dataSucursales}
                 itemSelect={sucursalesItemSelect}
                 onSelect={selectSucursal}
                 displayField="nombre"
               />
-            </ContainerSelector>
-            <ContainerSelector>
+            </InventarioSelectorContainer>
+            <InventarioSelectorContainer>
               <label>Almacen:</label>
               <SelectList
+                appearance="product"
                 data={dataAlmacenes}
                 itemSelect={almacenSelectItem}
                 onSelect={setAlmacenSelectItem}
                 displayField="nombre"
               />
-            </ContainerSelector>
+            </InventarioSelectorContainer>
           </section>
           {productosItemSelect?.manejaInventarios ? (
             <form className="formulario" onSubmit={handleSubmit(mutate)}>
@@ -285,9 +332,39 @@ const Container = styled.div`
   }
 `;
 
-export const ContainerSelector = styled.div`
+export const InventarioSelectorContainer = styled.div`
   display: flex;
   gap: 10px;
   align-items: center;
   position: relative;
+
+  > label {
+    min-width: 78px;
+    font-size: 1rem;
+    color: ${({ theme }) => theme.text};
+  }
+
+  > div[data-appearance="product"] {
+    width: 100%;
+  }
+
+  > div[data-appearance="product"] button {
+    min-height: 46px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #111827;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  > div[data-appearance="product"] > div {
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  > div[data-appearance="product"] > div > div {
+    font-size: 16px;
+  }
 `;

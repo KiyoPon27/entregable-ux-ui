@@ -27,10 +27,17 @@ export function AreaTecladoPos() {
     setStatePantallaCobro({ data: datadetalleventa, tipocobro: p.nombre });
   };
 
+  const metodosActivos = (datametodospago || []).filter((item) => {
+    if (item?.verNombre === false || item?.ver_nombre === false) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <Container $stateMetodosPago={stateMetodosPago}>
       <section className="areatipopago">
-        {datametodospago?.map((item, index) => {
+        {metodosActivos?.map((item, index) => {
           const nombre = item.nombre || "";
           const colors = {
             Efectivo: { bg: "#16a34a", color: "#ffffff" },
@@ -39,6 +46,9 @@ export function AreaTecladoPos() {
             Mixto: { bg: "#f59e0b", color: "#ffffff" },
           };
           const def = colors[nombre] || { bg: "#ffffff", color: "#111111" };
+          const colorFondo = item.color && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(item.color)
+            ? item.color
+            : def.bg;
           return (
             <article className="box" key={index}>
               <Btn1
@@ -48,7 +58,7 @@ export function AreaTecladoPos() {
                 border="0"
                 height="70px"
                 width="100%"
-                bgcolor={def.bg}
+                bgcolor={colorFondo}
                 color={def.color}
               />
             </article>

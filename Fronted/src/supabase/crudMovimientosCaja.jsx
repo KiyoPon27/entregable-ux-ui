@@ -27,6 +27,17 @@ export async function MostrarVentasMetodoPagoMovCaja(p) {
     return [];
   }
 }
+
+export async function MostrarIngresosYSalidasCaja(p) {
+  try {
+    const response = await api.get(`/movimientos-caja/cierre-caja/${p._id_cierre_caja}`);
+    return response.data || [];
+  } catch (error) {
+    console.error("Error al obtener ingresos y salidas:", error);
+    return [];
+  }
+}
+
 export async function Mostrarmovimientoscajalive(p) {
   try {
     const response = await api.get(`/movimientos-caja/empresa/${p.idEmpresa}`);

@@ -9,6 +9,7 @@ import {
 } from "@react-pdf/renderer";
 import styled from "styled-components";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { useReportStore } from "../../../store/ReportStore";
 import { useSucursalesStore } from "../../../store/SucursalesStore";
 import { useDashboardStore } from "../../../store/DashboardStore";
@@ -37,9 +38,6 @@ const ReportVentas = () => {
     refetchOnWindowFocus: false,
   });
 
-  if (isLoading) return <div>Cargando...</div>;
-  if (error) return <span>Error {(error)?.message}</span>;
-
   // --------- helpers (JS puro) ----------
   const n = (v) =>
     new Intl.NumberFormat("es-PE", {
@@ -57,14 +55,43 @@ const ReportVentas = () => {
 
   const rows = Array.isArray(data) ? data : [];
 
-  const totalVentas = rows.reduce((a, x) => a + (x.montoTotal || 0), 0);
-  const totalImpuestos = rows.reduce((a, x) => a + (x.totalImpuestos || 0), 0);
-  const totalProductos = rows.reduce(
-    (a, x) => a + (x.cantidadProductos || 0),
-    0
-  );
+  // 🚀 OPTIMIZACIÓN: Memoizar cálculos de totales y paginación
+  const { totalVentas, totalImpuestos, totalProductos, pages } = useMemo(() => {
+    // Cálculos de totales
+    const calcTotalVentas = rows.reduce((a, x) => a + (x.montoTotal || 0), 0);
+    const calcTotalImpuestos = rows.reduce((a, x) => a + (x.totalImpuestos || 0), 0);
+    const calcTotalProductos = rows.reduce((a, x) => a + (x.cantidadProductos || 0), 0);
+
+    // Invertir orden para mostrar primero lo más reciente
+    const sortedRows = [...rows].reverse();
+
+    // Paginación: 50 filas por página
+    const ROWS_PER_PAGE = 50;
+    const pagesArray = [];
+    if (sortedRows.length === 0) {
+      pagesArray.push({ number: 1, data: [] });
+    } else {
+      for (let i = 0; i < sortedRows.length; i += ROWS_PER_PAGE) {
+        pagesArray.push({
+          number: pagesArray.length + 1,
+          data: sortedRows.slice(i, i + ROWS_PER_PAGE),
+        });
+      }
+    }
+
+    return {
+      totalVentas: calcTotalVentas,
+      totalImpuestos: calcTotalImpuestos,
+      totalProductos: calcTotalProductos,
+      pages: pagesArray,
+    };
+  }, [rows]);
 
   const generatedAt = new Date();
+
+  // Early returns DESPUÉS de todos los hooks
+  if (isLoading) return <div>Cargando...</div>;
+  if (error) return <span>Error {(error)?.message}</span>;
 
   // --------- styles ----------
   const C = {
@@ -187,105 +214,108 @@ const ReportVentas = () => {
     <Container>
       <PDFViewer style={styles.viewer}>
         <Document title="Reporte de Ventas">
-          <Page size="A4" orientation="portrait" style={styles.page}>
-            {/* Header */}
-            <View style={styles.headerWrap}>
-              <View style={styles.brandBar} />
-              <Text style={styles.title}>Reporte de Ventas</Text>
-              <Text style={styles.subtitle}>
-                Generado: {generatedAt.toLocaleString("es-PE", { hour12: false })}
-              </Text>
+          {pages.map((page) => (
+            <Page
+              key={`page-${page.number}`}
+              size="A4"
+              orientation="portrait"
+              style={styles.page}
+            >
+              {/* Header solo en primera página */}
+              {page.number === 1 && (
+                <View style={styles.headerWrap}>
+                  <View style={styles.brandBar} />
+                  <Text style={styles.title}>Reporte de Ventas</Text>
+                  <Text style={styles.subtitle}>
+                    Generado: {new Date().toLocaleString("es-PE", { hour12: false })}
+                  </Text>
 
-              <View style={styles.meta}>
-                <View style={styles.metaRow}>
-                  <View style={[styles.metaItem, styles.metaItemPad]}>
-                    <Text style={styles.metaLabel}>Sucursal</Text>
-                    <Text style={styles.metaValue}>
-                      {sucursalesItemSelect?.nombre || "Genérica"}
-                    </Text>
+                  <View style={styles.meta}>
+                    <View style={styles.metaRow}>
+                      <View style={[styles.metaItem, styles.metaItemPad]}>
+                        <Text style={styles.metaLabel}>Sucursal</Text>
+                        <Text style={styles.metaValue}>
+                          {sucursalesItemSelect?.nombre || "Genérica"}
+                        </Text>
+                      </View>
+                      <View style={[styles.metaItem, styles.metaItemPad]}>
+                        <Text style={styles.metaLabel}>Desde</Text>
+                        <Text style={styles.metaValue}>{d(fechaInicio)}</Text>
+                      </View>
+                      <View style={styles.metaItem}>
+                        <Text style={styles.metaLabel}>Hasta</Text>
+                        <Text style={styles.metaValue}>{d(fechaFin)}</Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={[styles.metaItem, styles.metaItemPad]}>
-                    <Text style={styles.metaLabel}>Desde</Text>
-                    <Text style={styles.metaValue}>{d(fechaInicio)}</Text>
-                  </View>
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Hasta</Text>
-                    <Text style={styles.metaValue}>{d(fechaFin)}</Text>
+
+                  {/* KPI cards */}
+                  <View style={styles.kpis}>
+                    <View style={styles.kpi}>
+                      <Text style={styles.kpiLabel}>Monto total de ventas</Text>
+                      <Text style={styles.kpiValue}>S/ {n(totalVentas)}</Text>
+                    </View>
+                    <View style={[styles.kpi, styles.kpiLast]}>
+                      <Text style={styles.kpiLabel}>Cantidad de productos</Text>
+                      <Text style={styles.kpiValue}>{totalProductos}</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
+              )}
 
-              {/* KPI cards */}
-              <View style={styles.kpis}>
-                <View style={styles.kpi}>
-                  <Text style={styles.kpiLabel}>Monto total de ventas</Text>
-                  <Text style={styles.kpiValue}>S/ {n(totalVentas)}</Text>
-                </View>
-                {/* <View style={styles.kpi}>
-                  <Text style={styles.kpiLabel}>Total impuestos</Text>
-                  <Text style={styles.kpiValue}>S/ {n(totalImpuestos)}</Text>
-                </View> */}
-                <View style={[styles.kpi, styles.kpiLast]}>
-                  <Text style={styles.kpiLabel}>Cantidad de productos</Text>
-                  <Text style={styles.kpiValue}>{totalProductos}</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Tabla */}
-            <View style={styles.table}>
-              <View style={styles.thead}>
+              {/* Tabla en cada página */}
+              <View style={styles.table}>
+                <View style={styles.thead}>
                   <Text style={[styles.th, cw(COL.id)]}>ID VENTA</Text>
                   <Text style={[styles.th, cw(COL.fecha)]}>FECHA</Text>
                   <Text style={[styles.th, cw(COL.total), styles.right]}>MONTO TOTAL</Text>
-                  {/* <Text style={[styles.th, cw(COL.imp), styles.right]}>IMPUESTOS</Text> */}
                   <Text style={[styles.th, cw(COL.sub), styles.right]}>SUBTOTAL</Text>
                   <Text style={[styles.th, cw(COL.cant), styles.center]}>CANT.</Text>
                   <Text style={[styles.th, cw(COL.cajero)]}>CAJERO</Text>
                   <Text style={[styles.th, cw(COL.estado)]}>ESTADO</Text>
                 </View>
 
-              {rows.length === 0 ? (
-                <Text style={styles.empty}>No hay ventas para el rango seleccionado.</Text>
-              ) : (
-                rows.map((r, i) => (
-                  <View key={r.idVenta || i} style={[styles.row, i % 2 === 1 && styles.zebra]}>
-                    <Text style={[styles.td, cw(COL.id)]}>{r.idVenta}</Text>
-                    <Text style={[styles.td, cw(COL.fecha)]}>{d(r.fecha)}</Text>
-                    <Text style={[styles.td, cw(COL.total), styles.right]}>{n(r.montoTotal)}</Text>
-                    {/* <Text style={[styles.td, cw(COL.imp), styles.right]}>{n(r.totalImpuestos)}</Text> */}
-                    <Text style={[styles.td, cw(COL.sub), styles.right]}>{n(r.subtotal)}</Text>
-                    <Text style={[styles.td, cw(COL.cant), styles.center]}>{r.cantidadProductos ?? 0}</Text>
-                    <Text style={[styles.td, cw(COL.cajero)]}>{r.cajero}</Text>
-                    <Text style={[styles.td, cw(COL.estado)]}>{r.estado}</Text>
+                {page.data.length === 0 ? (
+                  <Text style={styles.empty}>No hay ventas para el rango seleccionado.</Text>
+                ) : (
+                  page.data.map((r, i) => (
+                    <View key={r.idVenta || i} style={[styles.row, i % 2 === 1 && styles.zebra]}>
+                      <Text style={[styles.td, cw(COL.id)]}>{r.idVenta}</Text>
+                      <Text style={[styles.td, cw(COL.fecha)]}>{d(r.fecha)}</Text>
+                      <Text style={[styles.td, cw(COL.total), styles.right]}>{n(r.montoTotal)}</Text>
+                      <Text style={[styles.td, cw(COL.sub), styles.right]}>{n(r.subtotal)}</Text>
+                      <Text style={[styles.td, cw(COL.cant), styles.center]}>{r.cantidadProductos ?? 0}</Text>
+                      <Text style={[styles.td, cw(COL.cajero)]}>{r.cajero}</Text>
+                      <Text style={[styles.td, cw(COL.estado)]}>{r.estado}</Text>
+                    </View>
+                  ))
+                )}
+
+                {/* Totales solo en última página */}
+                {page.number === pages.length && rows.length > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={[styles.td, cw(COL.id), styles.totalText]}>TOTAL</Text>
+                    <Text style={[styles.td, cw(COL.fecha)]}></Text>
+                    <Text style={[styles.td, cw(COL.total), styles.right, styles.totalText]}>{n(totalVentas)}</Text>
+                    <Text style={[styles.td, cw(COL.sub)]}></Text>
+                    <Text style={[styles.td, cw(COL.cant), styles.center, styles.totalText]}>{totalProductos}</Text>
+                    <Text style={[styles.td, cw(COL.cajero)]}></Text>
+                    <Text style={[styles.td, cw(COL.estado)]}></Text>
                   </View>
-                ))
-              )}
+                )}
+              </View>
 
-              {rows.length > 0 && (
-                <View style={styles.totalRow}>
-                  <Text style={[styles.td, cw(COL.id), styles.totalText]}>TOTAL</Text>
-                  <Text style={[styles.td, cw(COL.fecha)]}></Text>
-                  <Text style={[styles.td, cw(COL.total), styles.right, styles.totalText]}>{n(totalVentas)}</Text>
-                  {/* <Text style={[styles.td, cw(COL.imp), styles.right, styles.totalText]}>{n(totalImpuestos)}</Text> */}
-                  <Text style={[styles.td, cw(COL.sub)]}></Text>
-                  <Text style={[styles.td, cw(COL.cant), styles.center, styles.totalText]}>{totalProductos}</Text>
-                  <Text style={[styles.td, cw(COL.cajero)]}></Text>
-                  <Text style={[styles.td, cw(COL.estado)]}></Text>
-                </View>
-              )}
-            </View>
-
-            {/* Footer: dos Text fijos */}
-            <Text style={styles.footerLeft} fixed>
-              {`Generado: ${generatedAt.toLocaleString("es-PE", { hour12: false })}`}
-            </Text>
-            <Text
-              style={styles.footerRight}
-              fixed
-              render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`}
-            />
-          </Page>
+              {/* Footer: dos Text fijos */}
+              <Text style={styles.footerLeft} fixed>
+                {`Generado: ${new Date().toLocaleString("es-PE", { hour12: false })}`}
+              </Text>
+              <Text
+                style={styles.footerRight}
+                fixed
+                render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`}
+              />
+            </Page>
+          ))}
         </Document>
       </PDFViewer>
     </Container>

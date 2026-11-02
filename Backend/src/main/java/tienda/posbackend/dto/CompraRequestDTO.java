@@ -17,5 +17,12 @@ public class CompraRequestDTO {
     private BigDecimal montoTotal;
     private Long idEmpresa;
     private Long idUsuario;
+    
+    // Campos de resumen
+    private BigDecimal resumenGravada;
+    private BigDecimal resumenIgv;
+    private BigDecimal resumenDescuentoTotal;
+    private BigDecimal resumenTotal;
+    
     private List<DetalleCompraDTO> detalles;
 }

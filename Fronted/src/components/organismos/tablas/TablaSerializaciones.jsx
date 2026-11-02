@@ -19,7 +19,7 @@ import { useGlobalStore } from "../../../store/GlobalStore";
 import { Check } from "../../ui/toggles/Check";
 import { useEditarSerializacionDefaultMutation } from "../../../tanstack/SerializacionStack";
 export function TablaSerializaciones({ data }) {
-  if (data == null) return;
+  if (data == null) return null;
   const [pagina, setPagina] = useState(1);
   const [datas, setData] = useState(data);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -37,6 +37,17 @@ export function TablaSerializaciones({ data }) {
     setAccion("Editar");
   }
   const columns = [
+    {
+      accessorKey: "index",
+      header: "#",
+      enableSorting: false,
+      cell: (info) => (
+        <div data-title="#" className="ContentCell">
+          <span>{info.row.index + 1}</span>
+        </div>
+      ),
+      enableColumnFilter: false,
+    },
     {
       accessorKey: "tipoComprobante.nombre",
       header: "Comprobante",
@@ -98,7 +109,7 @@ export function TablaSerializaciones({ data }) {
     },
     {
       accessorKey: "acciones",
-      header: "",
+      header: "ACCIONES",
       enableSorting: false,
       cell: (info) => (
         <div data-title="Acciones" className="ContentCell">
@@ -190,6 +201,7 @@ export function TablaSerializaciones({ data }) {
         </table>
         <Paginacion
           table={table}
+          variant="modern"
           irinicio={() => table.setPageIndex(0)}
           pagina={table.getState().pagination.pageIndex + 1}
           setPagina={setPagina}
@@ -201,74 +213,101 @@ export function TablaSerializaciones({ data }) {
 }
 const Container = styled.div`
   position: relative;
+  margin: 14px 0 0;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  padding: 16px;
 
-  margin: 5% 3%;
-  @media (min-width: ${v.bpbart}) {
-    margin: 2%;
-  }
-  @media (min-width: ${v.bphomer}) {
-    margin: 2em auto;
-    /* max-width: ${v.bphomer}; */
-  }
   .responsive-table {
     width: 100%;
-    margin-bottom: 1.5em;
-    border-spacing: 0;
-    font-size: 0.9em;
-.ContentCell{
-  display:flex;
-  margin:auto;
-  justify-content:center;
-}
-    @media (max-width: 768px) {
-      font-size: 0.8em;
-      transform: scale(0.9);
+    min-width: 940px;
+    margin-bottom: 1.1em;
+    border-collapse: collapse;
+    table-layout: fixed;
+
+    .ContentCell {
+      display: flex;
+      margin: auto;
+      justify-content: center;
+      align-items: center;
+      min-height: 36px;
     }
 
     thead {
-      position: relative;
-      padding: 0;
-      border: 0;
-      height: auto;
-      width: auto;
-      overflow: auto;
+      background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
 
       th {
-        border-bottom: 1px solid ${({ theme }) => theme.color2};
+        border-bottom: none;
+        padding: 13px 14px;
         font-weight: 700;
         text-align: center;
-        color: ${({ theme }) => theme.text};
+        color: #f8fafc;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+
         &:first-of-type {
-          text-align: center;
+          border-top-left-radius: 10px;
+        }
+
+        &:last-of-type {
+          border-top-right-radius: 10px;
         }
       }
+
+      th:nth-child(1) { width: 7%; }
+      th:nth-child(2) { width: 24%; }
+      th:nth-child(3) { width: 12%; }
+      th:nth-child(4) { width: 21%; }
+      th:nth-child(5) { width: 16%; }
+      th:nth-child(6) { width: 12%; }
+      th:nth-child(7) { width: 8%; }
     }
+
+    tbody,
+    tr,
+    th,
+    td {
+      white-space: normal;
+    }
+
     tbody {
       tr {
-        display: table-row;
-        margin-bottom: 0;
-        &:nth-of-type(even) {
-          background-color: rgba(161, 161, 161, 0.1);
-        }
-        td {
-          text-align: center;
-          padding: 0.5em;
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
+        border-bottom: 1px solid ${({ theme }) => theme.color2};
+        transition: background 0.2s ease;
 
-          @media (max-width: 768px) {
-            padding: 0.4em;
-          }
+        &:nth-of-type(even) {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.03)"
+              : "rgba(15, 23, 42, 0.035)"};
         }
+
+        &:hover {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.12)"
+              : "rgba(15, 23, 42, 0.11)"};
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      td {
+        text-align: center;
+        padding: 14px;
+        color: ${({ theme }) => theme.text};
+        font-size: 14px;
       }
     }
   }
-`;
-const Colorcontent = styled.div`
-  justify-content: center;
-  min-height: ${(props) => props.$alto};
-  width: ${(props) => props.$ancho};
-  display: flex;
-  background-color: ${(props) => props.color};
-  border-radius: 50%;
-  text-align: center;
+
+  @media (max-width: ${v.bpbart}) {
+    overflow-x: auto;
+    padding: 12px;
+  }
 `;

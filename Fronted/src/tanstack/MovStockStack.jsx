@@ -30,28 +30,17 @@ import { useGlobalStore } from "../store/GlobalStore";
 // };
 export const useInsertarMovStockMutation = () => {
   const queryClient = useQueryClient();
-  const {  productosItemSelect,resetProductosItemSelect } = useProductosStore();
- const { itemSelect ,setStateClose} = useGlobalStore();
-  const { tipo, insertarMovStock } = useMovStockStore();
-  const {  editarStock,dataStockXAlmacenYProducto:dataStock } = useStockStore();
-  const { almacenSelectItem } =
-    useAlmacenesStore();
-   
+  const { productosItemSelect, resetProductosItemSelect } = useProductosStore();
+  const { setStateClose } = useGlobalStore();
+  const { tipo } = useMovStockStore();
+  const { editarStock } = useStockStore();
+  const { almacenSelectItem } = useAlmacenesStore();
+
   const { editarPreciosProductos } = useProductosStore();
   const fechaActual = useFormattedDate();
-  console.log("dataStock",dataStock)
   return useMutation({
     mutationKey: ["insertar movimiento stock"],
     mutationFn: async (data) => {
-      const pMovimientoStock = {
-        id_almacen: almacenSelectItem?.id,
-        id_producto: productosItemSelect?.id,
-        tipo_movimiento: tipo,
-        cantidad: parseFloat(data.cantidad),
-        fecha: fechaActual,
-        detalle: "registro de inventario manual",
-        origen: "inventario",
-      };
       const pStock = {
         id_almacen: almacenSelectItem?.id,
         id_producto: productosItemSelect?.id,
@@ -74,12 +63,7 @@ export const useInsertarMovStockMutation = () => {
         categoria: productosItemSelect?.categoria ? { id: productosItemSelect.categoria.id } : null,
         empresa: productosItemSelect?.empresa ? { id: productosItemSelect.empresa.id } : null,
       };
-      console.log("pMovimientoStock",pMovimientoStock)
-      console.log("pStock",pStock)
-      console.log("pProductos",pProductos)
-      console.log("tipo",tipo)
-      
-      await insertarMovStock(pMovimientoStock);
+
        await editarStock(pStock, tipo);
        await editarPreciosProductos(pProductos);
     },

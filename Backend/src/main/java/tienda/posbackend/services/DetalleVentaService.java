@@ -32,13 +32,17 @@ public class DetalleVentaService {
         Producto producto = productoRepository.findById(dto.getIdProducto())
             .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
 
-        // Buscar si ya existe un detalle con el mismo producto y almacén en esta venta
+        // Buscar si ya existe un detalle con el mismo producto, almacén Y descripción en esta venta
+        // Esto permite que multiprecios (docena, caja, etc.) se registren como líneas separadas
         Optional<DetalleVenta> existing = detalleVentaRepository
                 .findByVentaId(dto.getIdVenta()).stream()
                 .filter(d -> d.getProducto().getId().equals(dto.getIdProducto()) &&
                              ((d.getAlmacen() == null && dto.getIdAlmacen() == null) ||
                               (d.getAlmacen() != null && dto.getIdAlmacen() != null &&
-                               d.getAlmacen().getId().equals(dto.getIdAlmacen()))))
+                               d.getAlmacen().getId().equals(dto.getIdAlmacen()))) &&
+                             // Comparar descripción para diferenciar multiprecios
+                             ((d.getDescripcion() == null && dto.getDescripcion() == null) ||
+                              (d.getDescripcion() != null && d.getDescripcion().equals(dto.getDescripcion()))))
                 .findFirst();
 
         BigDecimal cantidadNecesaria = dto.getCantidad();
@@ -121,6 +125,53 @@ public class DetalleVentaService {
 
         // 3️⃣ ACTUALIZAR TOTALES DE LA VENTA
         actualizarTotalesVenta(dto.getIdVenta());
+    }
+
+    @Transactional
+    public void cambiarMultiprecio(Long id, BigDecimal nuevaCantidad, BigDecimal nuevoPrecioVenta, String nuevaDescripcion) {
+        DetalleVenta detalle = detalleVentaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Detalle no encontrado"));
+
+        // 1️⃣ AJUSTAR STOCK SI EL PRODUCTO MANEJA INVENTARIOS
+        BigDecimal diferencia = nuevaCantidad.subtract(detalle.getCantidad());
+
+        if (diferencia.compareTo(BigDecimal.ZERO) != 0 &&
+            Boolean.TRUE.equals(detalle.getProducto().getManejaInventarios()) &&
+            detalle.getAlmacen() != null) {
+
+            Stock stock = stockRepository.findByProductoIdAndAlmacenId(
+                detalle.getProducto().getId(),
+                detalle.getAlmacen().getId()
+            );
+
+            if (stock != null) {
+                if (diferencia.compareTo(BigDecimal.ZERO) > 0) {
+                    // Necesita más stock
+                    if (stock.getStock().compareTo(diferencia) < 0) {
+                        throw new BusinessRuleException(
+                            "Stock insuficiente para '" + detalle.getProducto().getNombre() + "'. " +
+                            "Incremento solicitado: " + diferencia + ", " +
+                            "Disponible: " + stock.getStock()
+                        );
+                    }
+                    stock.setStock(stock.getStock().subtract(diferencia));
+                } else {
+                    // Devolver stock
+                    stock.setStock(stock.getStock().add(diferencia.abs()));
+                }
+                stockRepository.save(stock);
+            }
+        }
+
+        // 2️⃣ ACTUALIZAR DETALLE CON NUEVOS DATOS DE MULTIPRECIO
+        detalle.setCantidad(nuevaCantidad);
+        detalle.setPrecioVenta(nuevoPrecioVenta);
+        detalle.setDescripcion(nuevaDescripcion);
+        detalle.setTotal(nuevaCantidad.multiply(nuevoPrecioVenta));
+        detalleVentaRepository.save(detalle);
+
+        // 3️⃣ ACTUALIZAR TOTALES DE LA VENTA
+        actualizarTotalesVenta(detalle.getVenta().getId());
     }
 
     @Transactional
@@ -248,6 +299,7 @@ public class DetalleVentaService {
                 .codigoBarras(detalle.getProducto().getCodigoBarras())
                 .codigoInterno(detalle.getProducto().getCodigoInterno())
                 .tipoComprobante(detalle.getProducto().getTipoComprobante())
+                .imagen(detalle.getProducto().getImagen())
                 .build();
         }
         

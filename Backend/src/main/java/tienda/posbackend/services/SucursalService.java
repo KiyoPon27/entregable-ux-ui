@@ -148,6 +148,22 @@ public class SucursalService {
 
         Sucursal nuevaSucursal = sucursalRepository.save(sucursal);
         
+        // TRIGGER: Crear almacén predeterminado
+        Almacen almacenPrincipal = new Almacen();
+        almacenPrincipal.setNombre("Almacén Principal");
+        almacenPrincipal.setSucursal(nuevaSucursal);
+        almacenPrincipal.setDefecto(true);
+        almacenPrincipal.setEliminar(false); // No se puede eliminar
+        almacenRepository.save(almacenPrincipal);
+        
+        // TRIGGER: Crear caja predeterminada
+        Caja cajaPrincipal = new Caja();
+        cajaPrincipal.setDescripcion("Caja Principal");
+        cajaPrincipal.setSucursal(nuevaSucursal);
+        cajaPrincipal.setEliminar(false); // No se puede eliminar
+        cajaPrincipal.setImprimir(true);
+        cajaRepository.save(cajaPrincipal);
+        
         // TRIGGER: Crear automáticamente 5 serializaciones para la sucursal
         // ID 1: Factura, ID 2: Boleta, ID 3: Nota de Venta, ID 4: Nota de Crédito, ID 5: Nota de Débito
         String[] seriesDefault = {"F001", "B001", "NV001", "NC001", "ND001"};

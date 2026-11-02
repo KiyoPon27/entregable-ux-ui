@@ -18,9 +18,14 @@ public class VentaConfirmadaDTO {
     private String nroComprobante;
     private LocalDateTime fecha;
     private BigDecimal montoTotal;
+    private BigDecimal subTotal;
     private BigDecimal vuelto;
     private Long idUsuario;
     private Long idCliente;
     private Long idSucursal;
     private String pagoCon; // Nuevo campo para método de pago
+    
+    // CAMPOS DE DESCUENTO
+    private BigDecimal porcentajeDescuento;
+    private BigDecimal montoDescuento;
 }

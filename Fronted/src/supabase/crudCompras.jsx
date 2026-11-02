@@ -16,12 +16,17 @@ export async function InsertarCompra(p) {
       montoTotal: p.monto_total || 0,
       idEmpresa: p.id_empresa,
       idUsuario: p.id_usuario,
+      resumenGravada: p.resumen_gravada || 0,
+      resumenIgv: p.resumen_igv || 0,
+      resumenDescuentoTotal: p.resumen_descuento_total || 0,
+      resumenTotal: p.resumen_total || 0,
       detalles: (p.detalles || []).map(d => ({
         idProducto: d.id_producto,
-        cantidadEsperada: d.cantidad_esperada,
-        cantidadRecibida: d.cantidad_recibida,
-        precioCompra: d.precio_compra,
-        subtotal: d.subtotal
+        cantidad: d.cantidad ?? d.cantidad_esperada ?? 0,
+        unidadMedidaCompra: d.unidad_medida ?? "CJA",
+        factorCompra: d.factor_unidades ?? 1,
+        importe: d.importe ?? d.subtotal ?? 0,
+        valorUnitario: d.valor_unitario ?? d.precio_compra ?? 0
       }))
     };
 
@@ -115,12 +120,17 @@ export async function EditarCompra(p) {
       montoTotal: p.monto_total,
       idEmpresa: p.id_empresa,
       idUsuario: p.id_usuario,
+      resumenGravada: p.resumen_gravada || 0,
+      resumenIgv: p.resumen_igv || 0,
+      resumenDescuentoTotal: p.resumen_descuento_total || 0,
+      resumenTotal: p.resumen_total || 0,
       detalles: p.detalles.map(d => ({
         idProducto: d.id_producto,
-        cantidadEsperada: d.cantidad_esperada,
-        cantidadRecibida: d.cantidad_recibida,
-        precioCompra: d.precio_compra,
-        subtotal: d.subtotal
+        cantidad: d.cantidad ?? d.cantidad_esperada ?? 0,
+        unidadMedidaCompra: d.unidad_medida ?? "CJA",
+        factorCompra: d.factor_unidades ?? 1,
+        importe: d.importe ?? d.subtotal ?? 0,
+        valorUnitario: d.valor_unitario ?? d.precio_compra ?? 0
       }))
     };
 

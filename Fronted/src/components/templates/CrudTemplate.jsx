@@ -1,7 +1,7 @@
 import styled from "styled-components";
-import { Btn1, Buscador, Title } from "../../index";
+import { Buscador, BuscadorModerno, ButtonUniverse, Title } from "../../index";
 import { v } from "../../styles/variables";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ConfettiExplosion from "react-confetti-explosion";
 import { Toaster } from "sonner";
 import { BuscadorList } from "../ui/lists/BuscadorList";
@@ -18,7 +18,13 @@ export function CrudTemplate({
   setBuscadorList,stateBtnAdd,stateBuscador
 }) {
   const {stateClose,isExploding,setItemSelect,setAccion,setIsExploding,setStateClose} = useGlobalStore() 
+  const [inputBusqueda, setInputBusqueda] = useState("");
+  const buscadorRef = useRef(null);
 
+  function handleSetBuscador(value) {
+    setInputBusqueda(value);
+    if (setBuscador) setBuscador(value);
+  }
  
   function nuevoRegistro() {
     setStateClose(true);
@@ -33,20 +39,21 @@ export function CrudTemplate({
         <FormularioRegistro
         />
       )}
-      <section className="area1">
+      <section className="header">
         <Title>{title} </Title>
         {
-          stateBtnAdd &&   <Btn1
-          funcion={nuevoRegistro}
-          bgcolor={v.colorPrincipal}
-          titulo="nuevo"
-          icono={<v.iconoagregar />}
-        />
+          stateBtnAdd &&
+          <ButtonUniverse
+            onClick={nuevoRegistro}
+            icon={<v.iconoagregar />}
+          >
+            nuevo
+          </ButtonUniverse>
         }
-      
       </section>
       {
-          stateBuscador &&   <section className="area2">
+          stateBuscador &&
+          <section className="actions">
         
         {tipoBuscador === "list" ? (
           <BuscadorList
@@ -55,7 +62,11 @@ export function CrudTemplate({
             setBuscador={setBuscadorList}
           />
         ) : (
-          <Buscador setBuscador={setBuscador} />
+          <BuscadorModerno
+            ref={buscadorRef}
+            setBuscador={handleSetBuscador}
+            value={inputBusqueda}
+          />
         )}
       </section>
         }
@@ -70,31 +81,48 @@ export function CrudTemplate({
 }
 const Container = styled.div`
   height: calc(100vh - 80px);
-
   margin-top: 50px;
-  padding: 15px;
+  padding: 0;
   display: grid;
   grid-template:
-    "area1" 60px
-    "area2" 60px
-    "main" auto;
-  .area1 {
-    grid-area: area1;
-    /* background-color: rgba(103, 93, 241, 0.14); */
+    "header" auto
+    "actions" auto
+    "main" 1fr;
+  overflow: hidden;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+
+  .header {
+    grid-area: header;
     display: flex;
-    justify-content: end;
     align-items: center;
+    justify-content: center;
     gap: 15px;
+    padding: 20px 15px;
   }
-  .area2 {
-    grid-area: area2;
-    /* background-color: rgba(7, 237, 45, 0.14); */
+
+  .actions {
+    grid-area: actions;
     display: flex;
-    justify-content: end;
     align-items: center;
+    justify-content: flex-start;
+    gap: 15px;
+    padding: 0 15px 20px 15px;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+
+    > div:first-child {
+      flex: 1;
+    }
   }
+
   .main {
     grid-area: main;
-    /* background-color: rgba(237, 7, 221, 0.14); */
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    padding: 0 15px;
   }
 `;

@@ -22,6 +22,9 @@ public class MetodoPago {
     @Column(columnDefinition = "VARCHAR(255) DEFAULT '-'")
     private String icono;
 
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT '#F44336'")
+    private String color;
+
     @Column(name = "ver_nombre", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private Boolean verNombre;
 
@@ -31,6 +34,7 @@ public class MetodoPago {
     // Constructores
     public MetodoPago() {
         this.icono = "-";
+        this.color = "#F44336";
         this.verNombre = true;
         this.eliminarActualizar = false;
     }
@@ -66,6 +70,14 @@ public class MetodoPago {
 
     public void setIcono(String icono) {
         this.icono = icono;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
     public Boolean getVerNombre() {

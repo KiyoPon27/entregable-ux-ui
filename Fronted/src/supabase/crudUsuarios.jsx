@@ -46,7 +46,13 @@ export async function InsertarUsuarios(p) {
       tipoDocumento: p.id_tipodocumento ? { id: p.id_tipodocumento } : null
     };
     
-    const response = await api.post("/usuarios", usuario);
+    // Construir URL con id_sucursal si se proporciona
+    let url = "/usuarios";
+    if (p.id_sucursal) {
+      url = `/usuarios?id_sucursal=${p.id_sucursal}`;
+    }
+    
+    const response = await api.post(url, usuario);
     
     Swal.fire({
       icon: "success",

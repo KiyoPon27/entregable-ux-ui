@@ -1,18 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { useComprasStore } from "../store/ComprasStore";
 import { useEmpresaStore } from "../store/EmpresaStore";
 import { useClientesProveedoresStore } from "../store/ClientesProveedoresStore";
 import { v } from "../styles/variables";
 import { BsSearch, BsEye, BsDownload, BsPencil, BsTrash, BsFilter } from "react-icons/bs";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import { DatePicker, ConfigProvider } from "antd";
+import esES from "antd/locale/es_ES";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import api from "../api/api";
+
+// Configurar dayjs en español
+dayjs.locale('es');
+
+const { RangePicker, MonthPicker } = DatePicker;
 
 export function ReporteCompras() {
   const navigate = useNavigate();
   const { dataempresa } = useEmpresaStore();
-  const { dataCompras, mostrarCompras, buscarCompras, eliminarCompra, mostrarCompraDetalle } = useComprasStore();
+  const { eliminarCompra, mostrarCompraDetalle } = useComprasStore();
   const { dataclipro, mostrarCliPro } = useClientesProveedoresStore();
 
   const [buscador, setBuscador] = useState("");
@@ -22,39 +33,196 @@ export function ReporteCompras() {
   const [compraSeleccionada, setCompraSeleccionada] = useState(null);
   const [mostrarModalPDF, setMostrarModalPDF] = useState(false);
 
+  // Estados para filtro por fechas - exacto como ReporteFacturas + mes
+  const [filtroFecha, setFiltroFecha] = useState("30dias");
+  const [dates, setDates] = useState([null, null]);
+  const [singleDate, setSingleDate] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [activeRange, setActiveRange] = useState("30dias");
+
+  // Calcular fechas según el filtro - con soporte para mes
+  const { fechaInicio, fechaFin } = useMemo(() => {
+    // Si hay un rango de fechas seleccionado
+    if (dates && dates.length === 2 && dates[0] && dates[1]) {
+      return {
+        fechaInicio: dates[0].toDate(),
+        fechaFin: dates[1].toDate()
+      };
+    }
+    
+    // Si hay una fecha única seleccionada
+    if (singleDate) {
+      const start = singleDate.startOf('day').toDate();
+      const end = singleDate.endOf('day').toDate();
+      return { fechaInicio: start, fechaFin: end };
+    }
+
+    // Si hay un mes seleccionado
+    if (selectedMonth) {
+      const start = selectedMonth.startOf('month').toDate();
+      const end = selectedMonth.endOf('month').toDate();
+      return { fechaInicio: start, fechaFin: end };
+    }
+
+    // Rangos predefinidos
+    const hoy = dayjs();
+    let fechaInicio = dayjs();
+    let fechaFin = dayjs();
+
+    switch (filtroFecha) {
+      case "hoy":
+        fechaInicio = hoy.startOf('day');
+        fechaFin = hoy.endOf('day');
+        break;
+      case "7dias":
+        fechaInicio = hoy.subtract(7, 'day').startOf('day');
+        fechaFin = hoy.endOf('day');
+        break;
+      case "30dias":
+        fechaInicio = hoy.subtract(30, 'day').startOf('day');
+        fechaFin = hoy.endOf('day');
+        break;
+      case "12meses":
+        fechaInicio = hoy.subtract(12, 'month').startOf('day');
+        fechaFin = hoy.endOf('day');
+        break;
+      case "todo":
+        return { fechaInicio: null, fechaFin: null };
+      default:
+        fechaInicio = hoy.subtract(30, 'day').startOf('day');
+        fechaFin = hoy.endOf('day');
+    }
+
+    return { 
+      fechaInicio: fechaInicio.toDate(), 
+      fechaFin: fechaFin.toDate() 
+    };
+  }, [filtroFecha, dates, singleDate, selectedMonth]);
+
+  // Query para obtener compras filtradas - EXACTO como ReporteFacturas
+  const { data: comprasData, isLoading: loadingCompras, error: errorCompras } = useQuery({
+    queryKey: ["compras", dataempresa?.id, filtroEstado, filtroProveedor, fechaInicio, fechaFin, buscador],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        empresaId: dataempresa?.id,
+      });
+      
+      if (filtroEstado && filtroEstado !== "todos") params.append("estado", filtroEstado);
+      if (filtroProveedor) params.append("id_proveedor", filtroProveedor);
+      if (fechaInicio) params.append("fechaInicio", dayjs(fechaInicio).format('YYYY-MM-DD'));
+      if (fechaFin) params.append("fechaFin", dayjs(fechaFin).format('YYYY-MM-DD'));
+      if (buscador) params.append("buscador", buscador);
+
+      console.log('🔍 Parámetros de consulta compras:', Object.fromEntries(params));
+      console.log('📅 Rango de fechas:', { fechaInicio, fechaFin });
+      
+      const response = await api.get(`/compras?${params.toString()}`);
+      console.log('📄 Compras recibidas:', response.data?.length || 0);
+      return response.data;
+    },
+    enabled: !!dataempresa?.id,
+  });
+
+  // Procesar compras 
+  const dataCompras = useMemo(() => {
+    if (!comprasData) return [];
+    console.log('📊 Procesando compras:', comprasData.length);
+    return comprasData;
+  }, [comprasData]);
+
+  // Cargar proveedores
   useEffect(() => {
     if (dataempresa?.id) {
-      mostrarCompras({ id_empresa: dataempresa.id });
       mostrarCliPro({ id_empresa: dataempresa.id, tipo: 'PROVEEDOR' });
     }
   }, [dataempresa]);
 
-  const handleBuscar = async () => {
-    if (!dataempresa?.id) return;
-
-    const params = {
-      id_empresa: dataempresa.id,
-      buscador: buscador,
-    };
-
-    if (filtroEstado !== "todos") {
-      params.estado = filtroEstado;
-    }
-
-    if (filtroProveedor) {
-      params.id_proveedor = Number(filtroProveedor);
-    }
-
-    await buscarCompras(params);
+  // Funciones para manejo de filtros por fecha - EXACTO como ReporteFacturas
+  const setPresetRange = (range) => {
+    setActiveRange(range);
+    setFiltroFecha(range);
+    setDates([null, null]);
+    setSingleDate(null);
+    setSelectedMonth(null);
   };
 
-  const handleLimpiarFiltros = async () => {
+  const selectToday = () => setPresetRange("hoy");
+  const selectTodo = () => setPresetRange("todo");
+
+  const handleDateChange = (newDates) => {
+    setDates(newDates || [null, null]);
+    if (newDates && newDates[0] && newDates[1]) {
+      setFiltroFecha("rango");
+      setActiveRange("rango");
+    } else {
+      setFiltroFecha("todo");
+      setActiveRange("todo");
+    }
+    setSingleDate(null);
+    setSelectedMonth(null);
+  };
+
+  const handleSingleDateChange = (date) => {
+    setSingleDate(date);
+    if (date) {
+      setFiltroFecha("dia");
+      setActiveRange("dia");
+    } else {
+      setFiltroFecha("todo");
+      setActiveRange("todo");
+    }
+    setDates([null, null]);
+    setSelectedMonth(null);
+  };
+
+  const handleMonthChange = (month) => {
+    setSelectedMonth(month);
+    if (month) {
+      setFiltroFecha("mes");
+      setActiveRange("mes");
+    } else {
+      setFiltroFecha("todo");
+      setActiveRange("todo");
+    }
+    setDates([null, null]);
+    setSingleDate(null);
+  };
+
+  const limpiarFechasFiltro = () => {
+    setFiltroFecha("30dias");
+    setActiveRange("30dias");
+    setDates([null, null]);
+    setSingleDate(null);
+    setSelectedMonth(null);
+  };
+
+  const obtenerTextoPeriodo = () => {
+    if (filtroFecha === "todo") return "Todo el historial";
+    if (filtroFecha === "hoy") return "Hoy";
+    if (filtroFecha === "7dias") return "Últimos 7 días";
+    if (filtroFecha === "30dias") return "Últimos 30 días";
+    if (filtroFecha === "12meses") return "Últimos 12 meses";
+    if (filtroFecha === "dia" && singleDate) {
+      const fecha = singleDate.format("DD/MM/YYYY");
+      return `Día: ${fecha}`;
+    }
+    if (filtroFecha === "mes" && selectedMonth) {
+      const mes = selectedMonth.format("MMMM YYYY");
+      return `Mes: ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
+    }
+    if (filtroFecha === "rango" && dates[0] && dates[1]) {
+      const inicio = dates[0].format("DD/MM/YYYY");
+      const fin = dates[1].format("DD/MM/YYYY");
+      return `${inicio} - ${fin}`;
+    }
+    return "Todo el historial";
+  };
+
+  const handleLimpiarFiltros = () => {
     setBuscador("");
     setFiltroEstado("todos");
     setFiltroProveedor("");
-    if (dataempresa?.id) {
-      await mostrarCompras({ id_empresa: dataempresa.id });
-    }
+    limpiarFechasFiltro();
   };
 
   const handleVerPDF = async (compra) => {
@@ -102,7 +270,8 @@ export function ReporteCompras() {
   };
 
   return (
-    <Container>
+    <ConfigProvider locale={esES}>
+      <Container>
       <Header>
         <HeaderLeft>
           <Title>📊 Reporte de Compras</Title>
@@ -125,11 +294,10 @@ export function ReporteCompras() {
               placeholder="Buscar por número de factura, proveedor..."
               value={buscador}
               onChange={(e) => setBuscador(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleBuscar()}
             />
           </SearchInputWrapper>
-          <SearchButton onClick={handleBuscar}>
-            <BsSearch /> Buscar
+          <SearchButton disabled={loadingCompras}>
+            <BsSearch /> {loadingCompras ? 'Buscando...' : 'Buscar'}
           </SearchButton>
           <FilterButton onClick={() => setMostrarFiltros(!mostrarFiltros)}>
             <BsFilter /> Filtros
@@ -159,9 +327,119 @@ export function ReporteCompras() {
               </FilterSelect>
             </FilterGroup>
 
-            <ClearFiltersButton onClick={handleLimpiarFiltros}>
-              Limpiar Filtros
-            </ClearFiltersButton>
+            {/* FILTROS POR FECHA */}
+            <FilterGroup style={{ gridColumn: "1 / -1", marginTop: "15px" }}>
+              <FilterLabel>🗓️ Filtrar por Fechas - {obtenerTextoPeriodo()}:</FilterLabel>
+              
+              <DateFilterSection>
+                <DateButtonGroup>
+                  <DateRangeButton
+                    $isActive={activeRange === "todo"}
+                    onClick={selectTodo}
+                  >
+                    Todo
+                  </DateRangeButton>
+                  <DateRangeButton
+                    $isActive={activeRange === "hoy"}
+                    onClick={selectToday}
+                  >
+                    Hoy
+                  </DateRangeButton>
+                  <DateRangeButton
+                    $isActive={activeRange === "7dias"}
+                    onClick={() => setPresetRange("7dias")}
+                  >
+                    Últimos 7 días
+                  </DateRangeButton>
+                  <DateRangeButton
+                    $isActive={activeRange === "30dias"}
+                    onClick={() => setPresetRange("30dias")}
+                  >
+                    Últimos 30 días
+                  </DateRangeButton>
+                  <DateRangeButton
+                    $isActive={activeRange === "12meses"}
+                    onClick={() => setPresetRange("12meses")}
+                  >
+                    Últimos 12 meses
+                  </DateRangeButton>
+                  <DateRangeButton
+                    $isActive={activeRange === "dia"}
+                    onClick={() => {
+                      setActiveRange("dia");
+                      setFiltroFecha("dia");
+                      setDates([null, null]);
+                      setSelectedMonth(null);
+                      if (!singleDate) {
+                        setSingleDate(dayjs());
+                      }
+                    }}
+                  >
+                    Por Día
+                  </DateRangeButton>
+                  <DateRangeButton
+                    $isActive={activeRange === "mes"}
+                    onClick={() => {
+                      setActiveRange("mes");
+                      setFiltroFecha("mes");
+                      setDates([null, null]);
+                      setSingleDate(null);
+                      if (!selectedMonth) {
+                        setSelectedMonth(dayjs());
+                      }
+                    }}
+                  >
+                    Por Mes
+                  </DateRangeButton>
+                </DateButtonGroup>
+
+                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", width: "100%" }}>
+                  <div style={{ flex: "1", minWidth: "300px" }}>
+                    <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>
+                      📅 Rango de Fechas
+                    </label>
+                    <StyledRangePicker
+                      value={dates}
+                      onChange={handleDateChange}
+                      format="DD/MM/YYYY"
+                      placeholder={["Fecha inicio", "Fecha fin"]}
+                    />
+                  </div>
+
+                  <div style={{ flex: "1", minWidth: "250px" }}>
+                    <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>
+                      📅 Día Específico
+                    </label>
+                    <StyledDatePicker
+                      value={singleDate}
+                      onChange={handleSingleDateChange}
+                      format="DD/MM/YYYY"
+                      placeholder="Seleccionar día"
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+
+                  <div style={{ flex: "1", minWidth: "200px" }}>
+                    <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>
+                      📅 Mes Específico
+                    </label>
+                    <MonthPicker
+                      value={selectedMonth}
+                      onChange={handleMonthChange}
+                      format="MMMM YYYY"
+                      placeholder="Seleccionar mes"
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                </div>
+              </DateFilterSection>
+            </FilterGroup>
+
+            <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "center", marginTop: "10px" }}>
+              <ClearFiltersButton onClick={handleLimpiarFiltros}>
+                Limpiar Filtros
+              </ClearFiltersButton>
+            </div>
           </FiltersSection>
         )}
       </FilterContainer>
@@ -172,18 +450,6 @@ export function ReporteCompras() {
           <StatCard>
             <StatLabel>Total Compras</StatLabel>
             <StatValue>{(dataCompras || []).length}</StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>Completas</StatLabel>
-            <StatValue color="#4CAF50">
-              {(dataCompras || []).filter((c) => (c.estado || "").toUpperCase() === "COMPLETO").length}
-            </StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>Incompletas</StatLabel>
-            <StatValue color="#FFA500">
-              {(dataCompras || []).filter((c) => (c.estado || "").toUpperCase() === "INCOMPLETO").length}
-            </StatValue>
           </StatCard>
           <StatCard>
             <StatLabel>Monto Total</StatLabel>
@@ -207,7 +473,6 @@ export function ReporteCompras() {
                 <Th>N° Factura</Th>
                 <Th>Proveedor</Th>
                 <Th>Tipo</Th>
-                <Th>Estado</Th>
                 <Th>Monto Total</Th>
                 <Th>Acciones</Th>
               </tr>
@@ -217,9 +482,9 @@ export function ReporteCompras() {
                 <tr key={compra.id}>
                   <Td>
                     {compra.fechaEmision
-                      ? format(new Date(compra.fechaEmision), "dd/MM/yyyy")
+                      ? format(new Date(compra.fechaEmision + "T00:00:00"), "dd/MM/yyyy")
                       : compra.fecha_emision
-                      ? format(new Date(compra.fecha_emision), "dd/MM/yyyy")
+                      ? format(new Date(compra.fecha_emision + "T00:00:00"), "dd/MM/yyyy")
                       : "-"}
                   </Td>
                   <Td>
@@ -234,9 +499,8 @@ export function ReporteCompras() {
                     {compra.tipoComprobante?.nombre || 
                      (compra.id_tipo_comprobante === 1 ? "Factura" : "Boleta")}
                   </Td>
-                  <Td>{getEstadoBadge(compra.estado)}</Td>
                   <Td>
-                    <TotalAmount>S/ {(compra.montoTotal || compra.monto_total || 0).toFixed(2)}</TotalAmount>
+                    <TotalAmount>S/ {(compra.resumenTotal || compra.montoTotal || 0).toFixed(2)}</TotalAmount>
                   </Td>
                   <Td>
                     <ActionsContainer>
@@ -269,8 +533,8 @@ export function ReporteCompras() {
             <PDFPreview data-print-content>
               <PDFHeader>
                 <PDFTitle>{dataempresa?.nombre || "Mi Empresa"}</PDFTitle>
-                <PDFSubtitle>RUC: {dataempresa?.id_fiscal || "-"}</PDFSubtitle>
-                <PDFSubtitle>{dataempresa?.direccion_fiscal || ""}</PDFSubtitle>
+                <PDFSubtitle>RUC: {dataempresa?.idFiscal || "20611076321"}</PDFSubtitle>
+                <PDFSubtitle>{dataempresa?.direccionFiscal || ""}</PDFSubtitle>
               </PDFHeader>
 
               <PDFSection>
@@ -284,8 +548,8 @@ export function ReporteCompras() {
                     <PDFFieldLabel>Fecha Emisión:</PDFFieldLabel>
                     <PDFFieldValue>
                       {compraSeleccionada.fechaEmision 
-                        ? format(new Date(compraSeleccionada.fechaEmision), "dd/MM/yyyy")
-                        : format(new Date(compraSeleccionada.fecha_emision), "dd/MM/yyyy")}
+                        ? format(new Date(compraSeleccionada.fechaEmision + "T00:00:00"), "dd/MM/yyyy")
+                        : format(new Date(compraSeleccionada.fecha_emision + "T00:00:00"), "dd/MM/yyyy")}
                     </PDFFieldValue>
                   </PDFField>
                   <PDFField>
@@ -304,31 +568,57 @@ export function ReporteCompras() {
                 <PDFTable>
                   <thead>
                     <tr>
-                      <PDFTh>Producto</PDFTh>
-                      <PDFTh>Cant. Esperada</PDFTh>
-                      <PDFTh>Cant. Recibida</PDFTh>
-                      <PDFTh>P. Unit.</PDFTh>
-                      <PDFTh>Subtotal</PDFTh>
+                      <PDFTh style={{width: '30%'}}>Descripción</PDFTh>
+                      <PDFTh style={{width: '8%', textAlign: 'center'}}>Cant.</PDFTh>
+                      <PDFTh style={{width: '10%', textAlign: 'center'}}>Unidad</PDFTh>
+                      <PDFTh style={{width: '10%', textAlign: 'center'}}>Factor</PDFTh>
+                      <PDFTh style={{width: '12%', textAlign: 'right'}}>V. Unitario</PDFTh>
+                      <PDFTh style={{width: '15%', textAlign: 'right'}}>Importe</PDFTh>
                     </tr>
                   </thead>
                   <tbody>
                     {compraSeleccionada.detalles?.map((detalle, index) => (
                       <tr key={index}>
                         <PDFTd>{detalle.producto?.nombre || "Producto"}</PDFTd>
-                        <PDFTd>{detalle.cantidadEsperada || detalle.cantidad_esperada || "-"}</PDFTd>
-                        <PDFTd><strong>{detalle.cantidadRecibida || detalle.cantidad_recibida}</strong></PDFTd>
-                        <PDFTd>S/ {(detalle.precioCompra || detalle.precio_compra || 0).toFixed(2)}</PDFTd>
-                        <PDFTd><strong>S/ {(detalle.subtotal || 0).toFixed(2)}</strong></PDFTd>
+                        <PDFTd style={{textAlign: 'center'}}><strong>{detalle.cantidad || detalle.cantidadRecibida || 0}</strong></PDFTd>
+                        <PDFTd style={{textAlign: 'center'}}>{detalle.unidadMedidaCompra || "CJA"}</PDFTd>
+                        <PDFTd style={{textAlign: 'center'}}>{detalle.factorCompra || 1}</PDFTd>
+                        <PDFTd style={{textAlign: 'right'}}>S/ {(detalle.valorUnitario || (detalle.importe || detalle.subtotal || 0) / (detalle.cantidad || 1) || 0).toFixed(2)}</PDFTd>
+                        <PDFTd style={{textAlign: 'right'}}><strong>S/ {(detalle.importe || detalle.subtotal || 0).toFixed(2)}</strong></PDFTd>
                       </tr>
                     ))}
                   </tbody>
                 </PDFTable>
 
                 <PDFTotal>
-                  <span>Total:</span>
-                  <span>S/ {(compraSeleccionada.montoTotal || compraSeleccionada.monto_total || 0).toFixed(2)}</span>
+                  <span>Monto Total:</span>
+                  <span style={{fontSize: '18px', fontWeight: 'bold', color: '#667eea'}}>S/ {(compraSeleccionada.montoTotal || 0).toFixed(2)}</span>
                 </PDFTotal>
               </PDFSection>
+
+              {(compraSeleccionada.resumenGravada || compraSeleccionada.resumenIGV || compraSeleccionada.resumenDescuentoTotal || compraSeleccionada.resumenTotal) && (
+                <PDFSection>
+                  <PDFSectionTitle>Resumen</PDFSectionTitle>
+                  <PDFResumenContainer>
+                    <PDFResumenRow>
+                      <span>Gravada:</span>
+                      <span>S/ {(compraSeleccionada.resumenGravada || 0).toFixed(2)}</span>
+                    </PDFResumenRow>
+                    <PDFResumenRow>
+                      <span>IGV (18%):</span>
+                      <span>S/ {(compraSeleccionada.resumenIGV || 0).toFixed(2)}</span>
+                    </PDFResumenRow>
+                    <PDFResumenRow>
+                      <span>Descuento Total:</span>
+                      <span>S/ {(compraSeleccionada.resumenDescuentoTotal || 0).toFixed(2)}</span>
+                    </PDFResumenRow>
+                    <PDFResumenRow style={{fontWeight: 'bold', borderTop: '1px solid #e0e0e0', paddingTop: '8px', marginTop: '8px'}}>
+                      <span>Total:</span>
+                      <span>S/ {(compraSeleccionada.resumenTotal || 0).toFixed(2)}</span>
+                    </PDFResumenRow>
+                  </PDFResumenContainer>
+                </PDFSection>
+              )}
 
               {compraSeleccionada.observacion && (
                 <PDFSection>
@@ -346,6 +636,7 @@ export function ReporteCompras() {
         </ModalOverlay>
       )}
     </Container>
+    </ConfigProvider>
   );
 }
 
@@ -572,13 +863,13 @@ const FilterButton = styled.button`
 `;
 
 const FiltersSection = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
   margin-top: 20px;
   padding-top: 20px;
   border-top: 2px solid #f3f4f6;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: end;
 `;
 
 const FilterGroup = styled.div`
@@ -1002,33 +1293,45 @@ const PDFFieldValue = styled.span`
 const PDFTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  margin-top: 12px;
+  margin-top: 16px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 `;
 
 const PDFTh = styled.th`
   text-align: left;
-  padding: 8px;
-  background: #f5f5f5;
-  color: #333;
-  font-weight: 600;
-  font-size: 12px;
-  border: 1px solid #ddd;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
   
   @media print {
-    padding: 6px;
-    font-size: 11px;
+    padding: 10px 12px;
+    font-size: 12px;
+    background: #667eea;
   }
 `;
 
 const PDFTd = styled.td`
-  padding: 8px;
+  padding: 10px 16px;
   color: #333;
-  font-size: 12px;
-  border: 1px solid #ddd;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  
+  &:nth-child(2),
+  &:nth-child(3),
+  &:nth-child(4) {
+    text-align: right;
+  }
   
   @media print {
-    padding: 6px;
-    font-size: 11px;
+    padding: 8px 12px;
+    font-size: 12px;
   }
 `;
 
@@ -1036,21 +1339,54 @@ const PDFTotal = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 4px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 700;
-  color: #333;
+  color: white;
   width: 100%;
   box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   
   @media print {
-    margin-top: 8px;
-    padding: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
     font-size: 14px;
     page-break-inside: avoid;
+  }
+`;
+
+const PDFResumenContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+`;
+
+const PDFResumenRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #333;
+  
+  span:first-child {
+    font-weight: 500;
+  }
+  
+  span:last-child {
+    font-weight: 600;
+    color: #667eea;
+  }
+  
+  @media print {
+    font-size: 12px;
+    padding: 6px 0;
   }
 `;
 
@@ -1091,6 +1427,120 @@ const DownloadButton = styled.button`
   
   @media print {
     display: none;
+  }
+`;
+
+// Styled components para filtros de fecha
+const DateFilterSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 100%;
+  
+  @media (min-width: 768px) {
+    min-width: 600px;
+  }
+`;
+
+const DateButtonGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  width: 100%;
+`;
+
+const DateRangeButton = styled.button`
+  color: ${({ $isActive }) => ($isActive ? "white" : "#374151")};
+  background: ${({ $isActive }) =>
+    $isActive ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "white"};
+  border: 2px solid ${({ $isActive }) => ($isActive ? "#667eea" : "#e5e7eb")};
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: ${({ $isActive }) => ($isActive ? "700" : "500")};
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: ${({ $isActive }) =>
+    $isActive ? "0 4px 12px rgba(102, 126, 234, 0.3)" : "none"};
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+  }
+`;
+
+const StyledRangePicker = styled(RangePicker)`
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #667eea !important;
+  }
+
+  &.ant-picker-focused {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+  }
+
+  .ant-picker-input > input {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .ant-picker-input input::placeholder {
+    color: #9ca3af;
+  }
+
+  .ant-picker-suffix {
+    color: #667eea;
+  }
+
+  .ant-picker-separator {
+    color: #667eea;
+  }
+`;
+
+const StyledDatePicker = styled(DatePicker)`
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #667eea !important;
+  }
+
+  &.ant-picker-focused {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+  }
+
+  .ant-picker-input > input {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .ant-picker-input input::placeholder {
+    color: #9ca3af;
+  }
+
+  .ant-picker-suffix {
+    color: #667eea;
   }
 `;
 

@@ -4,13 +4,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import tienda.posbackend.dto.AuthResponse;
+import tienda.posbackend.dto.ForgotPasswordRequest;
 import tienda.posbackend.dto.LoginRequest;
+import tienda.posbackend.dto.ResetPasswordRequest;
+import tienda.posbackend.dto.VerifyResetCodeRequest;
 import tienda.posbackend.dto.UserContextDTO;
 import tienda.posbackend.entities.Usuario;
 import tienda.posbackend.repositories.UsuarioRepository;
@@ -18,8 +24,11 @@ import tienda.posbackend.repositories.EmpresaRepository;
 import tienda.posbackend.repositories.AsignacionSucursalRepository;
 import tienda.posbackend.repositories.PermisoRepository;
 import tienda.posbackend.security.JwtUtil;
+import tienda.posbackend.services.EmailService;
+import tienda.posbackend.services.PasswordResetCodeService;
 import java.util.stream.Collectors;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -44,30 +53,53 @@ public class AuthController {
     @Autowired
     private PermisoRepository permisoRepository;
 
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private PasswordResetCodeService passwordResetCodeService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest authRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(authRequest.getCorreo(), authRequest.getPassword())
-        );
+    public ResponseEntity<?> login(@RequestBody LoginRequest authRequest) {
+        try {
+            // Limpiar espacios del email
+            String correo = authRequest.getCorreo().trim();
 
-        if (authentication.isAuthenticated()) {
-            // Generar Token
-            String token = jwtService.generateToken(authRequest.getCorreo());
-            
-            // Buscar datos extra del usuario para la respuesta
-            Usuario usuario = usuarioRepository.findByCorreo(authRequest.getCorreo())
-                    .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado")); // No debería pasar si autenticó
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(correo, authRequest.getPassword())
+            );
 
-            String rolNombre = (usuario.getRol() != null) ? usuario.getRol().getNombre() : "SIN_ROL";
+            if (authentication.isAuthenticated()) {
+                // Generar Token
+                String token = jwtService.generateToken(correo);
 
-            return ResponseEntity.ok(new AuthResponse(
-                    token, 
-                    usuario.getId(), 
-                    usuario.getNombres(), 
-                    rolNombre
-            ));
-        } else {
-            throw new UsernameNotFoundException("Solicitud de acceso invalida");
+                // Buscar datos extra del usuario para la respuesta
+                Usuario usuario = usuarioRepository.findByCorreo(correo)
+                        .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado")); // No debería pasar si autenticó
+
+                String rolNombre = (usuario.getRol() != null) ? usuario.getRol().getNombre() : "SIN_ROL";
+
+                return ResponseEntity.ok(new AuthResponse(
+                        token,
+                        usuario.getId(),
+                        usuario.getNombres(),
+                        rolNombre
+                ));
+            } else {
+                return ResponseEntity.status(401).body(null);
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error en login: " + e.getMessage());
+            e.printStackTrace();
+            if (e instanceof DisabledException) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("message", e.getMessage()));
+            }
+            return ResponseEntity.status(401)
+                    .body(Map.of("message", "Credenciales invalidas"));
         }
     }
 
@@ -114,5 +146,72 @@ public class AuthController {
         context.setPermisos(permisosIds);
 
         return ResponseEntity.ok(context);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        String correo = request.getCorreo().trim().toLowerCase();
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElse(null);
+
+        if (usuario == null) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("message", "El correo no existe en el sistema"));
+        }
+
+        try {
+            String code = passwordResetCodeService.generateAndStoreCode(correo);
+            emailService.sendPasswordResetCode(correo, code);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Codigo enviado al correo correctamente",
+                    "correo", correo
+            ));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("message", "No se pudo enviar el correo. Revisa la configuracion SMTP de Gmail"));
+        }
+    }
+
+    @PostMapping("/verify-reset-code")
+    public ResponseEntity<?> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest request) {
+        String correo = request.getCorreo().trim().toLowerCase();
+        String codigo = request.getCodigo().trim();
+
+        boolean valido = passwordResetCodeService.isCodeValid(correo, codigo);
+        if (!valido) {
+            return ResponseEntity.status(400)
+                    .body(Map.of("message", "El codigo no es valido o ya expiro"));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Codigo valido",
+                "correo", correo
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        String correo = request.getCorreo().trim().toLowerCase();
+        String codigo = request.getCodigo().trim();
+        String nuevaContrasena = request.getNuevaContrasena();
+
+        boolean codigoConsumido = passwordResetCodeService.consumeCodeIfValid(correo, codigo);
+        if (!codigoConsumido) {
+            return ResponseEntity.status(400)
+                    .body(Map.of("message", "El codigo no es valido, ya fue usado o expiro"));
+        }
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
+        if (usuario == null) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("message", "El correo no existe en el sistema"));
+        }
+
+        usuario.setPassword(passwordEncoder.encode(nuevaContrasena));
+        usuarioRepository.save(usuario);
+
+        return ResponseEntity.ok(Map.of("message", "Contrasena actualizada correctamente"));
     }
 }

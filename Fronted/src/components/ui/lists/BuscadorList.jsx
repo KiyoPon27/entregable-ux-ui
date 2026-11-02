@@ -1,24 +1,39 @@
 import styled from "styled-components";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
+
+const MAX_DROPDOWN_ITEMS = 80;
+
 export function BuscadorList({
   setBuscador,
   data,
   onSelect,
   displayField = "nombre",
   itemSelect,
+  externalValue,
+  inputRef,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const safeData = Array.isArray(data) ? data : [];
+  const effectiveValue = externalValue !== undefined ? externalValue : inputValue;
+
+  useEffect(() => {
+    if (!effectiveValue) {
+      setIsOpen(false);
+    }
+  }, [effectiveValue]);
   const [selected, setSelected] = useState(
     itemSelect?.[displayField] || "Selecciona una opcion"
   );
 
   function buscar(e) {
     const value = e.target.value;
-    setInputValue(value);
+    if (externalValue === undefined) {
+      setInputValue(value);
+    }
     setBuscador(value);
-    setIsOpen(!!value); 
+    setIsOpen(!!value);
   }
   const handleSelect = (item) => {
     setSelected(item);
@@ -26,19 +41,23 @@ export function BuscadorList({
     onSelect(item);
   };
 
+  const visibleItems = safeData.slice(0, MAX_DROPDOWN_ITEMS);
+  const hasHiddenItems = safeData.length > MAX_DROPDOWN_ITEMS;
+
   return (
     <Container>
       <section className="content">
       <Icon icon="ic:outline-search" width="25" height="25" />
         <input
+          ref={inputRef}
           placeholder="...buscar"
-          value={inputValue}
+          value={effectiveValue}
           onChange={buscar}
-          onFocus={() => setIsOpen(!!inputValue && data?.length > 0)}
+          onFocus={() => setIsOpen(!!effectiveValue && safeData.length > 0)}
         />
         {isOpen && (
           <DropdownList>
-            {data?.map((item, index) => {
+            {visibleItems.map((item, index) => {
               return (
                 <DropdownItem
                   key={index}
@@ -50,6 +69,11 @@ export function BuscadorList({
                 </DropdownItem>
               );
             })}
+            {hasHiddenItems && (
+              <DropdownInfo>
+                Mostrando {MAX_DROPDOWN_ITEMS} de {safeData.length} resultados
+              </DropdownInfo>
+            )}
           </DropdownList>
         )}
       </section>
@@ -120,4 +144,11 @@ const DropdownItem = styled.div`
 const CheckMark = styled.span`
   color: ${({ theme }) => theme.text};
   font-size: 14px;
+`;
+
+const DropdownInfo = styled.div`
+  padding: 8px 12px;
+  font-size: 12px;
+  opacity: 0.8;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 `;

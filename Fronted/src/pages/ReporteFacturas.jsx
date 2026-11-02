@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useMetodosPagoStore } from "../store/MetodosPagoStore";
 import styled from "styled-components";
 import { Icon } from "@iconify/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEmpresaStore } from "../store/EmpresaStore";
 import { FormatearNumeroDinero } from "../utils/Conversiones";
 import { format } from "date-fns";
@@ -14,11 +14,13 @@ import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import TicketVenta from "../reports/TicketVenta";
 import { toast } from "sonner";
+import * as XLSX from 'xlsx';
 
 const { RangePicker } = DatePicker;
 
 export function ReporteFacturas() {
   const { dataempresa } = useEmpresaStore();
+  const queryClient = useQueryClient();
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroMetodoPago, setFiltroMetodoPago] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("7dias");
@@ -26,7 +28,14 @@ export function ReporteFacturas() {
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
   const [modalDetalle, setModalDetalle] = useState(false);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  // 🚀 OPTIMIZACIÓN: Add pagination state
+  const [paginaActual, setPaginaActual] = useState(1);
+  const ITEMS_POR_PAGINA = 50;
   const [descargandoPDF, setDescargandoPDF] = useState(false);
+  const [modalIGV, setModalIGV] = useState(false);
+  const [editandoSunat, setEditandoSunat] = useState(null); // ID de venta editando
+  const [numeroSunatTemp, setNumeroSunatTemp] = useState(""); // Valor temporal
+  const [modalExportExcel, setModalExportExcel] = useState(false);
 
   // Métodos de pago
   const { dataMetodosPago, mostrarMetodosPago } = useMetodosPagoStore();
@@ -95,12 +104,28 @@ export function ReporteFacturas() {
 
   // Query para obtener facturas filtradas
   const { data: facturasData, isLoading: loadingFacturas, error: errorFacturas } = useQuery({
-    queryKey: ["facturas", dataempresa?.id, filtroTipo, filtroMetodoPago, fechaInicio, fechaFin, buscador],
+    queryKey: ["facturas", dataempresa?.id, filtroTipo, filtroMetodoPago, fechaInicio, fechaFin, buscador, paginaActual],
     queryFn: async () => {
       const params = new URLSearchParams({
         empresaId: dataempresa?.id,
+        // 🚀 OPTIMIZACIÓN: Send pagination params to backend
+        page: paginaActual,
+        pageSize: ITEMS_POR_PAGINA,
       });
-      if (filtroTipo) params.append("tipo", filtroTipo);
+      
+      // Si el filtro es F-SUNAT o B-SUNAT, enviar al backend el tipo base (FACTURA o BOLETA)
+      // Si el filtro es CON-SUNAT, no enviar tipo para obtener todos y filtrar en frontend
+      // El filtrado por numeroSunat se hará en el frontend
+      let tipoParaBackend = filtroTipo;
+      if (filtroTipo === "F-SUNAT") {
+        tipoParaBackend = "FACTURA";
+      } else if (filtroTipo === "B-SUNAT") {
+        tipoParaBackend = "BOLETA";
+      } else if (filtroTipo === "CON-SUNAT") {
+        tipoParaBackend = "";  // No enviar tipo al backend, filtrar en frontend
+      }
+      
+      if (tipoParaBackend) params.append("tipo", tipoParaBackend);
       if (filtroMetodoPago) params.append("metodoPago", filtroMetodoPago);
       if (fechaInicio) params.append("fechaInicio", fechaInicio.toISOString());
       if (fechaFin) params.append("fechaFin", fechaFin.toISOString());
@@ -127,15 +152,99 @@ export function ReporteFacturas() {
 
   // Asegurar que facturas sea siempre un array
   const facturasRaw = Array.isArray(facturasData) ? facturasData : [];
-  // Aplicar filtro de tipo y método de pago en el frontend (por si el backend no filtra)
-  const facturas = facturasRaw.filter((venta) => {
-    // Filtro por tipo
-    const tipoOk = !filtroTipo || venta.tipoComprobante === filtroTipo;
-    // Filtro por método de pago
-    const metodoOk = !filtroMetodoPago || venta.metodoPago === filtroMetodoPago;
-    return tipoOk && metodoOk;
-  });
-  console.log("📊 Facturas procesadas para mostrar:", facturas);
+  
+  // Debug: mostrar datos crudos
+  if (process.env.NODE_ENV === 'development') {
+    console.log("🔍 Datos crudos (facturasRaw):", facturasRaw);
+    console.log("🔍 Filtro activo:", filtroTipo);
+  }
+  
+  // 🚀 OPTIMIZACIÓN: Wrap filter en useMemo para evitar re-filtrar en cada render
+  const facturas = useMemo(() => {
+    return facturasRaw.filter((venta) => {
+      // Debug: mostrar cada venta (solo en development)
+      if (process.env.NODE_ENV === 'development' && (filtroTipo === "F-SUNAT" || filtroTipo === "B-SUNAT" || filtroTipo === "CON-SUNAT")) {
+        console.log("🔍 Venta:", {
+          id: venta.id,
+          tipo: venta.tipoComprobante,
+          numeroSunat: venta.numeroSunat,
+          numeroSunatLength: venta.numeroSunat?.length,
+          numeroSunatTrimLength: venta.numeroSunat?.trim()?.length
+        });
+      }
+      
+      // Filtro por tipo
+      let tipoOk = true;
+      if (filtroTipo === "F-SUNAT") {
+        // Facturas con número SUNAT (debe existir y no estar vacío)
+        tipoOk = venta.tipoComprobante === "FACTURA" && 
+                 venta.numeroSunat !== null && 
+                 venta.numeroSunat !== undefined && 
+                 venta.numeroSunat.trim().length > 0;
+      } else if (filtroTipo === "B-SUNAT") {
+        // Boletas con número SUNAT (debe existir y no estar vacío)
+        tipoOk = venta.tipoComprobante === "BOLETA" && 
+                 venta.numeroSunat !== null && 
+                 venta.numeroSunat !== undefined && 
+                 venta.numeroSunat.trim().length > 0;
+      } else if (filtroTipo === "CON-SUNAT") {
+        // Cualquier venta con número SUNAT (debe existir y no estar vacío)
+        tipoOk = venta.numeroSunat !== null && 
+                 venta.numeroSunat !== undefined && 
+                 venta.numeroSunat.trim().length > 0;
+      } else if (filtroTipo) {
+        tipoOk = venta.tipoComprobante === filtroTipo;
+      }
+      
+      // Filtro por método de pago
+      const metodoOk = !filtroMetodoPago || venta.metodoPago === filtroMetodoPago;
+      return tipoOk && metodoOk;
+    });
+  }, [facturasRaw, filtroTipo, filtroMetodoPago]);
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log("📊 Facturas filtradas para mostrar:", facturas);
+    console.log("📊 Total de facturas después del filtro:", facturas.length);
+  }
+
+  // 🚀 OPTIMIZACIÓN: Pre-compute sorted Excel data to avoid expensive sort on export click
+  const datosExcelMemoizado = useMemo(() => {
+    if (!facturas || facturas.length === 0) {
+      return [];
+    }
+
+    // Ordenar por N° F-SUNAT numéricamente, luego por fecha
+    return facturas
+      .sort((a, b) => {
+        const numA = parseInt((a.numeroSunat?.trim() || "0").split('-').pop() || "0", 10);
+        const numB = parseInt((b.numeroSunat?.trim() || "0").split('-').pop() || "0", 10);
+        
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        
+        const fechaA = new Date(a.fecha).getTime();
+        const fechaB = new Date(b.fecha).getTime();
+        return fechaA - fechaB;
+      })
+      .map((venta) => {
+        const documento = venta.rucDni || "-";
+        const esDNI = documento.length === 8;
+        const esRUC = documento.length === 11;
+        
+        return {
+          "Fecha": venta.fecha
+            ? format(new Date(venta.fecha), "dd/MM/yyyy HH:mm", { locale: es })
+            : "-",
+          "N° Comprobante": venta.nroComprobante || "-",
+          "N° F-SUNAT": venta.numeroSunat || "-",
+          "Tipo": venta.tipoComprobante || venta.tipo || "-",
+          "DNI": esDNI ? documento : "-",
+          "RUC": esRUC ? documento : "-",
+          "Monto Total": `S/ ${venta.montoTotal?.toFixed(2) || "0.00"}`,
+        };
+      });
+  }, [facturas]);
 
   // Query para estadísticas
   const { data: estadisticas } = useQuery({
@@ -154,6 +263,11 @@ export function ReporteFacturas() {
     },
     enabled: !!dataempresa?.id,
   });
+
+  // 🚀 OPTIMIZACIÓN: Reset pagination when filters change
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [filtroTipo, filtroMetodoPago, fechaInicio, fechaFin, buscador]);
 
   // Funciones para manejar rangos de fechas
   const setPresetRange = (days, rangeName) => {
@@ -198,6 +312,97 @@ export function ReporteFacturas() {
     setSingleDate(null);
     setActiveRange("7 días");
     setFiltroFecha("7dias");
+  };
+
+  const obtenerTextoPeriodo = () => {
+    if (activeRange === "Todo") {
+      return "Todos los Períodos";
+    }
+    
+    if (activeRange === "Hoy") {
+      return format(new Date(), "dd/MM/yyyy", { locale: es });
+    }
+    
+    if (activeRange === "Por Día" && singleDate) {
+      return format(singleDate.toDate(), "dd/MM/yyyy", { locale: es });
+    }
+    
+    if (activeRange === "Rango" && dates && dates.length === 2) {
+      const inicio = format(dates[0].toDate(), "dd/MM/yyyy", { locale: es });
+      const fin = format(dates[1].toDate(), "dd/MM/yyyy", { locale: es });
+      return `${inicio} al ${fin}`;
+    }
+    
+    // Rangos predefinidos (7 días, 30 días, 12 meses)
+    if (fechaInicio && fechaFin) {
+      const inicio = format(fechaInicio, "dd/MM/yyyy", { locale: es });
+      const fin = format(fechaFin, "dd/MM/yyyy", { locale: es });
+      return `${inicio} al ${fin}`;
+    }
+    
+    return "Periodo no especificado";
+  };
+
+  const exportarAExcel = () => {
+    if (!datosExcelMemoizado || datosExcelMemoizado.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+
+    // Usar datos pre-computados (ya están sorteados y transformados)
+    const datosExcel = datosExcelMemoizado;
+
+    // Crear libro de trabajo
+    const ws = XLSX.utils.json_to_sheet(datosExcel, { origin: "A2" });
+    
+    // Agregar título en la primera fila
+    const textoPeriodo = obtenerTextoPeriodo();
+    XLSX.utils.sheet_add_aoa(ws, [[`Ventas Electrónicas Emitidas del Periodo: ${textoPeriodo}`]], { origin: "A1" });
+    
+    // Fusionar celdas para el título (A1:G1)
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
+    
+    // Calcular última fila de datos para la fórmula dinámica
+    const lastDataRow = 2 + datosExcel.length;
+    
+    // Solo agregar fila de total si hay datos
+    if (datosExcel.length > 0) {
+      const totalRow = lastDataRow + 1;
+      
+      // Agregar fila de total
+      XLSX.utils.sheet_add_aoa(ws, [["", "", "", "", "", "TOTAL", ""]], { origin: `A${totalRow}` });
+      
+      // Agregar fórmula dinámica en G{totalRow}
+      // Usar SUMPRODUCT con SUBSTITUTE en lugar de SUSTITUIR (sintaxis compatible con XLSX)
+      ws[`G${totalRow}`] = { 
+        t: 'f', 
+        f: `SUMPRODUCT(--SUBSTITUTE(G3:G${lastDataRow},"S/ ",""))`,
+        v: 0 
+      };
+    }
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reporte de Ventas");
+
+    // Ajustar anchos de columna
+    const colWidths = [
+      { wch: 18 }, // Fecha
+      { wch: 18 }, // N° Comprobante
+      { wch: 18 }, // N° F-SUNAT
+      { wch: 12 }, // Tipo
+      { wch: 15 }, // DNI
+      { wch: 15 }, // RUC
+      { wch: 15 }, // Monto Total
+    ];
+    ws["!cols"] = colWidths;
+
+    // Generar archivo con nombre personalizado
+    const fechaActual = format(new Date(), "dd-MM-yyyy_HH-mm", { locale: es });
+    const nombreArchivo = `Reporte_Ventas_${fechaActual}.xlsx`;
+    
+    XLSX.writeFile(wb, nombreArchivo);
+    toast.success(`Archivo "${nombreArchivo}" descargado exitosamente`);
+    setModalExportExcel(false);
   };
 
   const obtenerColorTipo = (tipo) => {
@@ -283,6 +488,46 @@ export function ReporteFacturas() {
     }
   };
 
+  // Funciones para editar número SUNAT
+  const handleEditarSunat = (venta) => {
+    setEditandoSunat(venta.id);
+    setNumeroSunatTemp(venta.numeroSunat || "");
+  };
+
+  const handleGuardarSunat = async (ventaId) => {
+    try {
+      await api.put(`/ventas/${ventaId}/numero-sunat`, {
+        numeroSunat: numeroSunatTemp
+      });
+      toast.success("Número SUNAT actualizado correctamente");
+      setEditandoSunat(null);
+      
+      // Actualizar los datos localmente en lugar de recargar la página
+      queryClient.setQueryData(
+        ["facturas", dataempresa?.id, filtroTipo, filtroMetodoPago, fechaInicio, fechaFin, buscador],
+        (oldData) => {
+          if (!oldData) return oldData;
+          return oldData.map(venta => 
+            venta.id === ventaId 
+              ? { ...venta, numeroSunat: numeroSunatTemp }
+              : venta
+          );
+        }
+      );
+      
+      // Refrescar estadísticas
+      queryClient.invalidateQueries(["estadisticas-facturas", dataempresa?.id, fechaInicio, fechaFin]);
+    } catch (error) {
+      console.error("Error al actualizar número SUNAT:", error);
+      toast.error("Error al actualizar: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleCancelarSunat = () => {
+    setEditandoSunat(null);
+    setNumeroSunatTemp("");
+  };
+
   return (
     <Container>
       <Header>
@@ -320,6 +565,9 @@ export function ReporteFacturas() {
                 <option value="FACTURA">Facturas</option>
                 <option value="BOLETA">Boletas</option>
                 <option value="TICKET">Tickets</option>
+                <option value="F-SUNAT">F-SUNAT (Facturas con N° SUNAT)</option>
+                <option value="B-SUNAT">B-SUNAT (Boletas con N° SUNAT)</option>
+                <option value="CON-SUNAT">CON-SUNAT (Cualquier venta con N° SUNAT)</option>
               </FilterSelect>
             </FilterGroup>
 
@@ -395,6 +643,10 @@ export function ReporteFacturas() {
               )}
             </DateFilterSection>
 
+            <ExportExcelButton onClick={() => setModalExportExcel(true)}>
+              <BsDownload /> Exportar a Excel
+            </ExportExcelButton>
+
             <ClearFiltersButton onClick={() => {
               setBuscador("");
               setFiltroTipo("");
@@ -449,6 +701,27 @@ export function ReporteFacturas() {
               )}
             </StatValue>
           </StatCard>
+          {/* Nuevos cuadros SUNAT */}
+          <StatCard>
+            <StatLabel>Comprobantes SUNAT ({estadisticas?.comprobantesSunat?.count || 0})</StatLabel>
+            <StatValue color="#ef4444">
+                  {FormatearNumeroDinero(
+                  estadisticas?.comprobantesSunat?.total || 0,
+                  dataempresa?.currency,
+                  dataempresa?.iso
+                )}            </StatValue>
+          </StatCard>
+          {/* TOTAL IGV SUNAT - Comentado temporalmente, descomentar si se necesita */}
+          {/* <StatCard>
+            <StatLabel>Total IGV (SUNAT)</StatLabel>
+            <StatValue color="#dc2626">
+              {FormatearNumeroDinero(
+                estadisticas?.comprobantesSunat?.totalIgv || 0,
+                dataempresa?.currency,
+                dataempresa?.iso
+              )}
+            </StatValue>
+          </StatCard> */}
           {/* Totales por método de pago */}
           {/* Calcular totales por método de pago usando el desglose de cada factura */}
           {dataMetodosPago && dataMetodosPago
@@ -508,20 +781,22 @@ export function ReporteFacturas() {
             <EmptySubtext>Comienza registrando tu primera venta</EmptySubtext>
           </EmptyState>
         ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>Fecha</Th>
-                <Th>N° Comprobante</Th>
-                <Th>Tipo</Th>
-                <Th>RUC / DNI</Th>
-                <Th>Método de Pago</Th>
-                <Th>Monto Total</Th>
-                <Th>Acciones</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {facturas.map((venta) => (
+          <>
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Fecha</Th>
+                  <Th>N° Comprobante</Th>
+                  <Th>N° F-SUNAT</Th>
+                  <Th>Tipo</Th>
+                  <Th>RUC / DNI</Th>
+                  <Th>Método de Pago</Th>
+                  <Th>Monto Total</Th>
+                  <Th>Acciones</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {facturas.map((venta) => (
                 <tr key={venta.id}>
                   <Td>
                     {venta.fecha
@@ -529,6 +804,76 @@ export function ReporteFacturas() {
                       : "-"}
                   </Td>
                   <Td><strong>{venta.nroComprobante || "-"}</strong></Td>
+                  <Td>
+                    {editandoSunat === venta.id ? (
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          value={numeroSunatTemp}
+                          onChange={(e) => setNumeroSunatTemp(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            border: '2px solid #667eea',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            width: '140px'
+                          }}
+                          placeholder="Ej: F001-00000123"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleGuardarSunat(venta.id)}
+                          style={{
+                            background: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={handleCancelarSunat}
+                          style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div 
+                        style={{ 
+                          display: 'flex', 
+                          gap: '8px', 
+                          alignItems: 'center',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => handleEditarSunat(venta)}
+                      >
+                        {venta.numeroSunat ? (
+                          <Badge color="#dc2626" style={{ fontWeight: '700' }}>
+                            {venta.numeroSunat}
+                          </Badge>
+                        ) : (
+                          <span style={{ color: '#999', fontSize: '13px' }}>
+                            Click para agregar
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </Td>
                   <Td>
                     <Badge color={obtenerColorTipo(venta.tipoComprobante)}>
                       {venta.tipoComprobante || "-"}
@@ -555,7 +900,30 @@ export function ReporteFacturas() {
                 </tr>
               ))}
             </tbody>
-          </Table>
+            </Table>
+            
+            {/* 🚀 OPTIMIZACIÓN: Pagination controls */}
+            <PaginationContainer>
+              <PaginationButton 
+                onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
+                disabled={paginaActual === 1}
+              >
+                ← Anterior
+              </PaginationButton>
+              
+              <PaginationInfo>
+                Página {paginaActual} de {Math.ceil(facturas.length / ITEMS_POR_PAGINA) || 1}
+              </PaginationInfo>
+              
+              <PaginationButton 
+                onClick={() => setPaginaActual(prev => prev + 1)}
+                disabled={paginaActual >= Math.ceil(facturas.length / ITEMS_POR_PAGINA)}
+                active={false}
+              >
+                Siguiente →
+              </PaginationButton>
+            </PaginationContainer>
+          </>
         )}
       </TableContainer>
 
@@ -574,6 +942,20 @@ export function ReporteFacturas() {
                   <label>N° Comprobante:</label>
                   <span>{ventaSeleccionada?.dataventas?.nroComprobante || ventaSeleccionada?.nroComprobante || "-"}</span>
                 </InfoItem>
+                <InfoItem>
+                  <label>
+                    {(ventaSeleccionada?.dataventas?.tipoComprobante || ventaSeleccionada?.nombreComprobante) === "FACTURA" 
+                      ? "N° FACTURA SUNAT:" 
+                      : (ventaSeleccionada?.dataventas?.tipoComprobante || ventaSeleccionada?.nombreComprobante) === "BOLETA"
+                      ? "N° BOLETA SUNAT:"
+                      : "N° SUNAT:"}
+                  </label>
+                  <span style={{ color: ventaSeleccionada?.dataventas?.numeroSunat ? '#dc2626' : '#999', fontWeight: '700' }}>
+                    {ventaSeleccionada?.dataventas?.numeroSunat || "No registrado"}
+                  </span>
+                </InfoItem>
+              </InfoGroup>
+              <InfoGroup>
                 <InfoItem>
                   <label>Tipo:</label>
                   <Badge color={obtenerColorTipo(ventaSeleccionada?.nombreComprobante || ventaSeleccionada?.dataventas?.tipoComprobante)}>
@@ -646,8 +1028,216 @@ export function ReporteFacturas() {
               <DownloadButton onClick={handleDescargarPDF} disabled={descargandoPDF}>
                 <BsDownload /> {descargandoPDF ? "Generando..." : "Descargar PDF"}
               </DownloadButton>
+              <DownloadButton onClick={() => { setModalDetalle(false); setModalIGV(true); }} style={{background: "linear-gradient(135deg, #10b981 0%, #059669 100%)"}}>
+                <BsDownload /> Descargar IGV
+              </DownloadButton>
               <button className="btn-secondary" onClick={() => setModalDetalle(false)}>
                 Cerrar
+              </button>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* MODAL IGV */}
+      {modalIGV && ventaSeleccionada && (
+        <ModalOverlay onClick={() => setModalIGV(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()} style={{maxWidth: '1000px'}}>
+            <ModalHeader>
+              <h2>Detalle de Venta con IGV</h2>
+              <button onClick={() => setModalIGV(false)}>
+                <Icon icon="mdi:close" />
+              </button>
+            </ModalHeader>
+            <PDFPreview data-print-content>
+              <PDFHeader>
+                <PDFTitle>{dataempresa?.nombre || "Mi Empresa"}</PDFTitle>
+                <PDFSubtitle>RUC: {dataempresa?.id_fiscal || "-"}</PDFSubtitle>
+              </PDFHeader>
+
+              <PDFSection>
+                <PDFSectionTitle>Información de la Venta</PDFSectionTitle>
+                <PDFGrid>
+                  <PDFField>
+                    <PDFFieldLabel>N° {ventaSeleccionada?.dataventas?.tipoComprobante || "Comprobante"}:</PDFFieldLabel>
+                    <PDFFieldValue>{ventaSeleccionada?.dataventas?.nroComprobante || ventaSeleccionada?.nroComprobante || "-"}</PDFFieldValue>
+                  </PDFField>
+                  {ventaSeleccionada?.dataventas?.numeroSunat && (
+                    <PDFField>
+                      <PDFFieldLabel>
+                        {ventaSeleccionada?.dataventas?.tipoComprobante === "FACTURA" 
+                          ? "N° FACTURA SUNAT:" 
+                          : ventaSeleccionada?.dataventas?.tipoComprobante === "BOLETA"
+                          ? "N° BOLETA SUNAT:"
+                          : "N° SUNAT:"}
+                      </PDFFieldLabel>
+                      <PDFFieldValue style={{ color: '#dc2626', fontWeight: '800' }}>
+                        {ventaSeleccionada.dataventas.numeroSunat}
+                      </PDFFieldValue>
+                    </PDFField>
+                  )}
+                  <PDFField>
+                    <PDFFieldLabel>Fecha Emisión:</PDFFieldLabel>
+                    <PDFFieldValue>
+                      {ventaSeleccionada?.dataventas?.fecha
+                        ? format(new Date(ventaSeleccionada.dataventas.fecha), "dd/MM/yyyy HH:mm", { locale: es })
+                        : "-"}
+                    </PDFFieldValue>
+                  </PDFField>
+                  <PDFField>
+                    <PDFFieldLabel>Cajero:</PDFFieldLabel>
+                    <PDFFieldValue>{ventaSeleccionada?.dataventas?.usuario?.nombres || ventaSeleccionada?.nombrecajero || "-"}</PDFFieldValue>
+                  </PDFField>
+                  <PDFField>
+                    <PDFFieldLabel>RUC/DNI:</PDFFieldLabel>
+                    <PDFFieldValue>{ventaSeleccionada?.dataventas?.rucDni || ventaSeleccionada?.rucDni || "-"}</PDFFieldValue>
+                  </PDFField>
+                </PDFGrid>
+              </PDFSection>
+
+              <PDFSection>
+                <PDFSectionTitle>Productos</PDFSectionTitle>
+                <PDFTable>
+                  <thead>
+                    <tr>
+                      <PDFTh>Cant.</PDFTh>
+                      <PDFTh>Producto</PDFTh>
+                      <PDFTh>Precio</PDFTh>
+                      <PDFTh>Cálculo</PDFTh>
+                      <PDFTh>IGV</PDFTh>
+                      <PDFTh>Total</PDFTh>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ventaSeleccionada?.productos?.map((producto, index) => {
+                      const precioVenta = Number(producto.precio_venta || 0);
+                      const cantidad = Number(producto.cantidad || 1);
+                      const total = Number(producto.total || precioVenta * cantidad);
+                      const calculoUnitario = precioVenta / 1.18;
+                      const igvTotal = total - (total / 1.18);
+                      
+                      return (
+                        <tr key={index}>
+                          <PDFTd>{cantidad}</PDFTd>
+                          <PDFTd>{producto.productos?.nombre || producto.descripcion || "Producto"}</PDFTd>
+                          <PDFTd>S/ {precioVenta.toFixed(2)}</PDFTd>
+                          <PDFTd>S/ {calculoUnitario.toFixed(5)}</PDFTd>
+                          <PDFTd>S/ {igvTotal.toFixed(2)}</PDFTd>
+                          <PDFTd><strong>S/ {total.toFixed(2)}</strong></PDFTd>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </PDFTable>
+
+                <PDFTotalsContainer>
+                  <PDFTotalRow>
+                    <span>SUBTOTAL:</span>
+                    {/* ✅ Usar subTotal (sin descuento) si existe para cálculos correctos */}
+                    <span>S/ {(Number(ventaSeleccionada?.dataventas?.subTotal || ventaSeleccionada?.dataventas?.montoTotal || 0)).toFixed(2)}</span>
+                  </PDFTotalRow>
+                  <PDFTotalRow>
+                    <span>IGV (18%):</span>
+                    {/* ✅ Calcular IGV basado en subTotal */}
+                    <span>S/ {(Number(ventaSeleccionada?.dataventas?.subTotal || ventaSeleccionada?.dataventas?.montoTotal || 0) * 0.18).toFixed(2)}</span>
+                  </PDFTotalRow>
+                  <PDFTotalRow style={{fontSize: '18px', fontWeight: '800', borderTop: '2px solid #333', paddingTop: '10px'}}>
+                    <span>TOTAL:</span>
+                    {/* ✅ Total es el monto final cobrado (ya con descuento aplicado si corresponde) */}
+                    <span>S/ {(ventaSeleccionada?.dataventas?.montoTotal || 0).toFixed(2)}</span>
+                  </PDFTotalRow>
+                </PDFTotalsContainer>
+              </PDFSection>
+            </PDFPreview>
+            <ModalFooter>
+              <DownloadButton onClick={() => window.print()} style={{background: "linear-gradient(135deg, #10b981 0%, #059669 100%)"}}>
+                <BsDownload /> Descargar PDF
+              </DownloadButton>
+              <button className="btn-secondary" onClick={() => setModalIGV(false)}>
+                Cerrar
+              </button>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Modal de Exportación a Excel */}
+      {modalExportExcel && (
+        <ModalOverlay onClick={() => setModalExportExcel(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px' }}>
+            <ModalHeader>
+              <h2>Exportar a Excel</h2>
+              <button onClick={() => setModalExportExcel(false)}>
+                <Icon icon="mdi:close" />
+              </button>
+            </ModalHeader>
+            <ModalBody>
+              <div style={{ marginBottom: '20px', color: '#6b7280', fontSize: '14px' }}>
+                Se exportarán <strong>{facturas.length}</strong> registros al archivo Excel
+              </div>
+              
+              <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                <Table style={{ margin: 0 }}>
+                  <thead>
+                    <tr style={{ background: '#f3f4f6' }}>
+                      <Th colSpan={7} style={{ textAlign: 'center', padding: '12px', fontSize: '15px', fontWeight: '700', color: '#1f2937', background: '#f3f4f6' }}>
+                        Ventas Electrónicas Emitidas del Periodo: {obtenerTextoPeriodo()}
+                      </Th>
+                    </tr>
+                    <tr>
+                      <Th>Fecha</Th>
+                      <Th>N° Comprobante</Th>
+                      <Th>N° F-SUNAT</Th>
+                      <Th>Tipo</Th>
+                      <Th>DNI</Th>
+                      <Th>RUC</Th>
+                      <Th>Monto Total</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {facturas.slice(0, 10).map((venta) => {
+                      const documento = venta.rucDni || "-";
+                      const esDNI = documento.length === 8;
+                      const esRUC = documento.length === 11;
+                      
+                      return (
+                        <tr key={venta.id}>
+                          <Td>
+                            {venta.fecha
+                              ? format(new Date(venta.fecha), "dd/MM/yyyy HH:mm", { locale: es })
+                              : "-"}
+                          </Td>
+                          <Td><strong>{venta.nroComprobante || "-"}</strong></Td>
+                          <Td>{venta.numeroSunat || "-"}</Td>
+                          <Td>
+                            <Badge color={obtenerColorTipo(venta.tipoComprobante || venta.tipo)}>
+                              {venta.tipoComprobante || venta.tipo || "-"}
+                            </Badge>
+                          </Td>
+                          <Td>{esDNI ? documento : "-"}</Td>
+                          <Td>{esRUC ? documento : "-"}</Td>
+                          <Td style={{ fontWeight: "700", color: "#059669" }}>
+                            S/ {venta.montoTotal?.toFixed(2) || "0.00"}
+                          </Td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              </div>
+              
+              {facturas.length > 10 && (
+                <div style={{ marginTop: '10px', color: '#9ca3af', fontSize: '13px', textAlign: 'center' }}>
+                  Mostrando primeros 10 registros. Se exportarán todos los {facturas.length} registros.
+                </div>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <DownloadButton onClick={exportarAExcel} style={{background: "linear-gradient(135deg, #10b981 0%, #059669 100%)"}}>
+                <BsDownload /> Descargar Excel
+              </DownloadButton>
+              <button className="btn-secondary" onClick={() => setModalExportExcel(false)}>
+                Cancelar
               </button>
             </ModalFooter>
           </ModalContent>
@@ -884,6 +1474,34 @@ const FilterSelect = styled.select`
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  }
+`;
+
+const ExportExcelButton = styled.button`
+  padding: 12px 24px;
+  background: #dcfce7;
+  color: #16a34a;
+  border: 2px solid #86efac;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: #16a34a;
+    color: white;
+    border-color: #16a34a;
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
   }
 `;
 
@@ -1363,6 +1981,189 @@ const DownloadButton = styled.button`
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+`;
+
+// Estilos para el modal IGV
+const PDFPreview = styled.div`
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  background: white;
+  color: #333;
+  max-height: 60vh;
+  
+  @media print {
+    max-height: none;
+    overflow: visible;
+    padding: 10px;
+  }
+`;
+
+const PDFHeader = styled.div`
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #eee;
+  
+  @media print {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+`;
+
+const PDFTitle = styled.h1`
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 6px;
+  
+  @media print {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+`;
+
+const PDFSubtitle = styled.p`
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0;
+`;
+
+const PDFSection = styled.div`
+  margin-bottom: 16px;
+  
+  @media print {
+    margin-bottom: 10px;
+  }
+`;
+
+const PDFSectionTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+`;
+
+const PDFGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+`;
+
+const PDFField = styled.div``;
+
+const PDFFieldLabel = styled.span`
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+`;
+
+const PDFFieldValue = styled.span`
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+  margin-left: 8px;
+`;
+
+const PDFTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+`;
+
+const PDFTh = styled.th`
+  text-align: left;
+  padding: 8px;
+  background: #f5f5f5;
+  color: #333;
+  font-weight: 600;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  
+  @media print {
+    padding: 6px;
+    font-size: 11px;
+  }
+`;
+
+const PDFTd = styled.td`
+  padding: 8px;
+  color: #333;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  
+  @media print {
+    padding: 6px;
+    font-size: 11px;
+  }
+`;
+
+// 🚀 OPTIMIZACIÓN: Pagination styles
+const PaginationContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  background: white;
+  border-top: 1px solid #f3f4f6;
+  flex-wrap: wrap;
+`;
+
+const PaginationButton = styled.button`
+  padding: 10px 16px;
+  background: ${(props) => props.active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white'};
+  color: ${(props) => props.active ? 'white' : '#667eea'};
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: ${(props) => props.disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${(props) => props.disabled ? '0.5' : '1'};
+  transition: all 0.3s ease;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+`;
+
+const PaginationInfo = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+`;
+
+const PDFTotalsContainer = styled.div`
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+`;
+
+const PDFTotalRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  min-width: 300px;
+  padding: 8px 12px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  
+  span:last-child {
+    text-align: right;
+    min-width: 100px;
+  }
+  
+  @media print {
+    padding: 6px 10px;
+    font-size: 13px;
   }
 `;
 

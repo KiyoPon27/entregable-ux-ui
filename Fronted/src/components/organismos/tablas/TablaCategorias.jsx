@@ -21,6 +21,7 @@ export function TablaCategorias({
   SetopenRegistro,
   setdataSelect,
   setAccion,
+  productosPorCategoria = {},
 }) {
   if (data==null) return;
   const [pagina, setPagina] = useState(1);
@@ -89,6 +90,17 @@ export function TablaCategorias({
         return filterStatuses.includes(status?.id);
       },
     },
+    {
+      accessorKey: "nroProductos",
+      header: "N° PROD",
+      enableSorting: false,
+      cell: (info) => {
+        const categoriaId = info.row.original?.id;
+        const total = productosPorCategoria[String(categoriaId)] || 0;
+        return <span>{total}</span>;
+      },
+      enableColumnFilter: false,
+    },
 
     {
       accessorKey: "color",
@@ -109,7 +121,7 @@ export function TablaCategorias({
     },
     {
       accessorKey: "acciones",
-      header: "",
+      header: "ACCIONES",
       enableSorting: false,
       cell: (info) => (
         <div data-title="Acciones" className="ContentCell">
@@ -209,6 +221,7 @@ export function TablaCategorias({
         </table>
         <Paginacion
           table={table}
+          variant="modern"
           irinicio={() => table.setPageIndex(0)}
           pagina={table.getState().pagination.pageIndex + 1}
           setPagina={setPagina}
@@ -220,161 +233,140 @@ export function TablaCategorias({
 }
 const Container = styled.div`
   position: relative;
+  margin: 14px 0 0;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid ${({ theme }) => theme.color2};
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  padding: 16px;
 
-  margin: 5% 3%;
-  @media (min-width: ${v.bpbart}) {
-    margin: 2%;
-  }
-  @media (min-width: ${v.bphomer}) {
-    margin: 2em auto;
-    /* max-width: ${v.bphomer}; */
-  }
   .responsive-table {
     width: 100%;
-    margin-bottom: 1.5em;
-    border-spacing: 0;
-    @media (min-width: ${v.bpbart}) {
-      font-size: 0.9em;
-    }
-    @media (min-width: ${v.bpmarge}) {
-      font-size: 1em;
-    }
-    thead {
-      
-      position: absolute;
+    min-width: 760px;
+    margin-bottom: 1.1em;
+    border-collapse: collapse;
+    table-layout: fixed;
 
-      padding: 0;
-      border: 0;
-      height: 1px;
-      width: 1px;
-      overflow: hidden;
-      
-      @media (min-width: ${v.bpbart}) {
-        position: relative;
-        height: auto;
-        width: auto;
-        overflow: auto;
-      }
+    thead {
+      background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
+
       th {
-        
-        border-bottom: 2px solid ${({theme})=>theme.color2};
-        font-weight:700;
+        border-bottom: none;
+        padding: 13px 14px;
+        font-weight: 700;
         text-align: center;
-        color: ${({ theme }) => theme.text};
+        color: #f8fafc;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+
         &:first-of-type {
-          text-align: center;
+          border-top-left-radius: 10px;
+        }
+
+        &:last-of-type {
+          border-top-right-radius: 10px;
         }
       }
+
+      th:nth-child(3) {
+        text-align: center;
+      }
+
+      th:nth-child(4) {
+        text-align: center;
+      }
+
+      th:nth-child(1) {
+        text-align: center;
+      }
+
+      th:nth-child(5) {
+        text-align: center;
+      }
+
+      th:nth-child(1) { width: 8%; }
+      th:nth-child(2) { width: 38%; }
+      th:nth-child(3) { width: 14%; }
+      th:nth-child(4) { width: 18%; }
+      th:nth-child(5) { width: 22%; }
     }
+
     tbody,
     tr,
     th,
     td {
-      
-      display: block;
-      padding: 0;
-      text-align: left;
       white-space: normal;
     }
-    tr {
-      
-      @media (min-width: ${v.bpbart}) {
-        display: table-row;
-      }
-    }
 
-    th,
-    td {
-      
-      padding: 0.5em;
-      vertical-align: middle;
-      @media (min-width: ${v.bplisa}) {
-        padding: 0.75em 0.5em;
-      }
-      @media (min-width: ${v.bpbart}) {
-        display: table-cell;
-        padding: 0.5em;
-      }
-      @media (min-width: ${v.bpmarge}) {
-        padding: 0.75em 0.5em;
-      }
-      @media (min-width: ${v.bphomer}) {
-        padding: 0.75em;
-      }
-    }
     tbody {
-      @media (min-width: ${v.bpbart}) {
-        display: table-row-group;
-      }
       tr {
-        margin-bottom: 1em;
-        &:nth-of-type(even) {
-          background-color: rgba(161, 161, 161, 0.1);
-        }
-        @media (min-width: ${v.bpbart}) {
-          display: table-row;
-          border-width: 1px;
-        }
-        &:last-of-type {
-          margin-bottom: 0;
-        }
-        &:nth-of-type(even) {
-          @media (min-width: ${v.bpbart}) {
-           
-          }
-        }
-      }
-      th[scope="row"] {
-        
-        @media (min-width: ${v.bplisa}) {
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        }
-        @media (min-width: ${v.bpbart}) {
-          background-color: transparent;
-          text-align: center;
-          color: ${({ theme }) => theme.text};
-        }
-      }
-      .ContentCell {
-        text-align: right;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 50px;
+        border-bottom: 1px solid ${({ theme }) => theme.color2};
+        transition: background 0.2s ease;
 
-        border-bottom: 1px solid rgba(161, 161, 161, 0.32);
-        @media (min-width: ${v.bpbart}) {
-          justify-content: center;
+        &:nth-of-type(even) {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.03)"
+              : "rgba(15, 23, 42, 0.035)"};
+        }
+
+        &:hover {
+          background: ${({ theme }) =>
+            theme.bodyRgba === "15,20,25"
+              ? "rgba(255, 255, 255, 0.12)"
+              : "rgba(15, 23, 42, 0.11)"};
+        }
+
+        &:last-child {
           border-bottom: none;
         }
       }
-      td {
-        text-align: right;
-        @media (min-width: ${v.bpbart}) {
-          /* border-bottom: 1px solid rgba(161, 161, 161, 0.32); */
-          text-align: center;
-        }
+
+      .ContentCell {
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 36px;
+        border-bottom: none;
       }
-      td[data-title]:before {
-        content: attr(data-title);
-        float: left;
-        font-size: 0.8em;
-        @media (min-width: ${v.bplisa}) {
-          font-size: 0.9em;
-        }
-        @media (min-width: ${v.bpbart}) {
-          content: none;
-        }
+
+      td {
+        padding: 14px;
+        text-align: center;
+        color: ${({ theme }) => theme.text};
+        font-size: 14px;
+      }
+
+      td:nth-child(3),
+      td:nth-child(4) {
+        text-align: center;
+      }
+
+      td:nth-child(1) {
+        text-align: center;
+      }
+
+      td:nth-child(5) {
+        text-align: center;
       }
     }
+  }
+
+  @media (max-width: ${v.bpbart}) {
+    overflow-x: auto;
+    padding: 12px;
   }
 `;
 const Colorcontent = styled.div`
   justify-content: center;
-  min-height: ${(props) => props.$alto};
-  width: ${(props) => props.$ancho};
+  min-height: ${(props) => props.$alto || "24px"};
+  width: ${(props) => props.$ancho || "24px"};
   display: flex;
   background-color: ${(props) => props.color};
   border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
   text-align: center;
 `;

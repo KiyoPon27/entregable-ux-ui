@@ -11,7 +11,7 @@ import { toast, Toaster } from "sonner";
 import { useUsuariosStore } from "../../store/UsuariosStore";
 import { useState } from "react";
 import ticket from "../../reports/TicketPrueba";
-import {HeaderImpresoras} from "../organismos/ImpresorasDesign/HeaderImpresoras"
+import { Title } from "../atomos/Title";
 import { useMostrarImpresorasPorUsuarioQuery } from "../../tanstack/ImpresorasStack";
 
 export const ImpresorasTemplate = () => {
@@ -140,144 +140,339 @@ export const ImpresorasTemplate = () => {
   return (
     <Container>
       <Toaster />
-      {dataPcLocal ? (
-        <SubContainer>
-          <HeaderImpresoras/>
-          <Title>IMPRESORAS</Title>
-          <ContentSwich>
-            <SubTitle>Imprimir directo</SubTitle>
-            <Switch
-              setState={() => {
-                setStatePrintDirecto();
-                doEditar();
-              }}
-              state={statePrintDirecto}
-            />
-          </ContentSwich>
+      <section className="header">
+        <Title>Impresoras</Title>
+      </section>
 
-          <Avatar $bg="#d70e79">
-            {statePrintDirecto ? (
-              <>
-                <Btn1 funcion={probarTicket} bgcolor={"#d70e79"} color={"#fff"} titulo={"probar"} />
-                <SelectList
-                  itemSelect={selectImpresora}
-                  onSelect={setSelectImpresora}
-                  data={dataImpresorasLocales}
-                  displayField="name"
-                />
-                <Btn1
-                  funcion={doEditar}
-                  disabled={isPending}
-                  bgcolor={"#fff"}
-                  titulo={"Guardar"}
-                />
-              </>
-            ) : (
-              <span className="anuncio">
-                {" "}
-                se mostrara un cuadro de diálogo al momento de imprimir
-              </span>
-            )}
-          </Avatar>
-        </SubContainer>
-      ) : (
-        <SubContainer>
-          <Title>IMPRESORAS</Title>
-          <SubTitle>Descargue e instale el servidor</SubTitle>
-          <Avatar $bg="#1424a0">
-            <Btn1
-              funcion={() =>
-                descargarArchivo(
-                  "https://drive.google.com/file/d/1v5Q632tEWx8yTlfnC4HYT6SsGKnORduw/view?usp=sharing"
-                )
-              }
-              titulo={"descargar"}
-            />
-            <span className="nombre">ver tutorial</span>
-          </Avatar>
-          <span className="descripcion">
-            servicio para imprimir directo a impresoras térmicas
-          </span>
-          <br></br>
-          <section className="advertencia">
-            <Icon className="icono" icon="meteocons:barometer" />
-            <span>si ya instalo, actualice esta pagina.</span>
-          </section>
-        </SubContainer>
-      )}
+      <section className="main">
+        <Card>
+          {dataPcLocal ? (
+            <>
+              <CardHeader>
+                <CardTitle>Configuración de Impresoras</CardTitle>
+                <UserInfo>
+                  <span><strong>Usuario:</strong> {datausuarios?.nombres}</span>
+                  <span><strong>PC:</strong> {dataPcLocal?.machineName || "-"}</span>
+                </UserInfo>
+              </CardHeader>
+
+              <CardBody>
+                <ConfigSection>
+                  <SectionHeader>
+                    <SectionTitle>Imprimir directo</SectionTitle>
+                    <Switch
+                      setState={() => {
+                        setStatePrintDirecto();
+                        doEditar();
+                      }}
+                      state={statePrintDirecto}
+                    />
+                  </SectionHeader>
+                  <SuccessMessage>
+                    ✓ Tu configuración de impresora se guarda automáticamente y está disponible en todas las cajas
+                  </SuccessMessage>
+                </ConfigSection>
+
+                {statePrintDirecto ? (
+                  <ControlsSection>
+                    <Btn1
+                      funcion={probarTicket}
+                      bgcolor={"#d70e79"}
+                      color={"#fff"}
+                      titulo={"Probar"}
+                    />
+                    
+                    <SelectListWrapper>
+                      <SelectList
+                        itemSelect={selectImpresora}
+                        onSelect={setSelectImpresora}
+                        data={dataImpresorasLocales}
+                        displayField="name"
+                      />
+                    </SelectListWrapper>
+
+                    <ButtonGroup>
+                      <Btn1
+                        funcion={doEditar}
+                        disabled={isPending}
+                        bgcolor={"#fff"}
+                        color={"#111"}
+                        titulo={"Guardar"}
+                      />
+                    </ButtonGroup>
+                  </ControlsSection>
+                ) : (
+                  <DisabledMessage>
+                    Se mostrará un cuadro de diálogo al momento de imprimir
+                  </DisabledMessage>
+                )}
+              </CardBody>
+            </>
+          ) : (
+            <>
+              <CardHeader>
+                <CardTitle>Servidor de Impresión No Detectado</CardTitle>
+              </CardHeader>
+
+              <CardBody>
+                <InfoSection>
+                  <SectionTitle>Descargue e instale el servidor</SectionTitle>
+                  <Description>
+                    Servicio para imprimir directo a impresoras térmicas
+                  </Description>
+
+                  <DownloadSection>
+                    <Btn1
+                      funcion={() =>
+                        descargarArchivo(
+                          "https://drive.google.com/file/d/1v5Q632tEWx8yTlfnC4HYT6SsGKnORduw/view?usp=sharing"
+                        )
+                      }
+                      bgcolor={"#1424a0"}
+                      color={"#fff"}
+                      titulo={"Descargar"}
+                    />
+                    <TutorialLink href="#">Ver tutorial</TutorialLink>
+                  </DownloadSection>
+
+                  <WarningSection>
+                    <WarningIcon>
+                      <Icon icon="meteocons:barometer" />
+                    </WarningIcon>
+                    <span>Si ya instaló el servidor, actualice esta página.</span>
+                  </WarningSection>
+                </InfoSection>
+              </CardBody>
+            </>
+          )}
+        </Card>
+      </section>
     </Container>
   );
 };
-const ContentSwich = styled.section`
-  display: flex;
-  gap: 15px;
-  margin-bottom: 10px;
-`;
+
 const Container = styled.div`
-  max-width: 400px;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  margin: auto;
+  height: calc(100vh - 80px);
+  margin-top: 50px;
+  padding: 0;
+  display: grid;
+  grid-template:
+    "header" auto
+    "main" 1fr;
+  overflow: hidden;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+
+  .header {
+    grid-area: header;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 15px;
+  }
+
+  .main {
+    grid-area: main;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    padding: 0 15px 15px 15px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+`;
+
+const Card = styled.div`
+  width: 100%;
+  max-width: 600px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  overflow: visible;
+  margin-top: 10px;
   position: relative;
 `;
-const SubContainer = styled.div`
-  width: 100%;
+
+const CardHeader = styled.div`
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+`;
+
+const CardTitle = styled.h2`
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+`;
+
+const UserInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  .advertencia {
-    background-color: rgba(237, 95, 6, 0.2);
-    border-radius: 10px;
-    margin-top: 10px;
-    margin: auto;
-    height: 70px;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+
+  span {
     display: flex;
-    color: #f75510;
-    width: 100%;
-    align-items: center;
-    .icono {
-      font-size: 100px;
+    gap: 8px;
+
+    strong {
+      color: #111827;
     }
   }
 `;
-const Title = styled.span`
-  font-size: 44px;
-  margin-bottom: 20px;
-  font-weight: bold;
-  position: absolute;
-  top: 50px;
-  right: 0;
-  left: 0;
-  text-align: center;
+
+const CardBody = styled.div`
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 `;
-const SubTitle = styled.span`
-  font-size: 20px;
+
+const ConfigSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
-const Avatar = styled.div`
+
+const SectionHeader = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  position: relative;
-  border-radius: 10px;
-  height: 200px;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const SectionTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+`;
+
+const SuccessMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 500;
+`;
+
+const ControlsSection = styled.div`
+  display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 10px;
-
-  .nombre {
-    font-size: 30px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .anuncio {
-    text-align: center;
-    font-weight: bold;
-    color: #fff;
-  }
-  background-color: ${(props) => props.$bg};
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 120 120'%3E%3Cpolygon fill='%23000' fill-opacity='0.19' points='120 0 120 60 90 30 60 0 0 0 0 0 60 60 0 120 60 120 90 90 120 60 120 0'/%3E%3C/svg%3E");
-
+  gap: 14px;
+  padding: 32px 24px 24px 24px;
+  background-color: #d70e79;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 120 120'%3E%3Cpolygon fill='%23000' fill-opacity='0.15' points='120 0 120 60 90 30 60 0 0 0 0 0 60 60 0 120 60 120 90 90 120 60 120 0'/%3E%3C/svg%3E");
   background-size: 60px 60px;
-  animation: ${slideBackground} 10s linear infinite;
+  background-position: 0 0;
+  animation: ${slideBackground} 8s linear infinite;
+  border-radius: 12px;
+  position: relative;
+  overflow: visible;
+  z-index: 10;
+
+  button {
+    width: 100%;
+  }
+`;
+
+const ControlsLabel = styled.span`
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+`;
+
+const SelectListWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+
+  button {
+    flex: 1;
+  }
+`;
+
+const DisabledMessage = styled.div`
+  padding: 16px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+  color: #92400e;
+  font-weight: 500;
+`;
+
+const InfoSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const Description = styled.p`
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+`;
+
+const DownloadSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  button {
+    width: 100%;
+  }
+`;
+
+const TutorialLink = styled.a`
+  text-align: center;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const WarningSection = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(237, 95, 6, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #f97316;
+  font-size: 14px;
+  color: #92400e;
+  font-weight: 500;
+`;
+
+const WarningIcon = styled.div`
+  font-size: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 `;

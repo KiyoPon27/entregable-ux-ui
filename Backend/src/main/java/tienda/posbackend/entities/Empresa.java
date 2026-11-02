@@ -48,6 +48,9 @@ public class Empresa {
 
     private String correo;
 
+    @Column(columnDefinition = "TINYINT(1) DEFAULT 1")
+    private Boolean habilitada = true;
+
     @Column(name = "pie_pagina_ticket")
     private String piePaginaTicket;
 }

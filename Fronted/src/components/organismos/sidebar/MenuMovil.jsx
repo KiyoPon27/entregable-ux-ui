@@ -1,15 +1,22 @@
 import styled from "styled-components";
 import { useState } from "react";
 import {
-  LinksArray,
-  SecondarylinksArray,
   ToggleTema,
+  useUsuariosStore,
 } from "../../../index";
 import { v } from "../../../styles/variables";
 import { NavLink } from "react-router-dom";
 import { Icon } from "@iconify/react";
+import { useMenuDinamico } from "../../../utils/menuPorRol";
+
 export const MenuMovil = ({ setState }) => {
   const [state, setstate] = useState(true);
+  const { datausuarios } = useUsuariosStore();
+
+  // Obtener rol del usuario y los menús dinámicos
+  // Pasar el objeto rol completo, no solo el nombre
+  const userRole = datausuarios?.rol;
+  const { primaryLinks, secondaryLinks } = useMenuDinamico(userRole);
 
   return (
     <Container>
@@ -22,7 +29,7 @@ export const MenuMovil = ({ setState }) => {
             </div>
             <h2>L'T' Sanchez</h2>
           </div>
-          {LinksArray.map(({ icon, label, to }) => (
+          {primaryLinks.map(({ icon, label, to }) => (
             <div
               onClick={setState}
               className={state ? "LinkContainer active" : "LinkContainer"}
@@ -44,7 +51,7 @@ export const MenuMovil = ({ setState }) => {
             </div>
           ))}
           <Divider />
-          {SecondarylinksArray.map(({ icon, label, to, color }) => (
+          {secondaryLinks.map(({ icon, label, to, color }) => (
             <div
               className={state ? "LinkContainer active" : "LinkContainer"}
               key={label}

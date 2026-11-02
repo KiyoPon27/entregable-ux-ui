@@ -5,6 +5,7 @@ import { ReporteFacturas } from "../pages/ReporteFacturas";
 import {
   Categorias,
   Configuraciones,
+  AdministrarEmpresas,
   Home,
   Login,
   Productos,
@@ -51,6 +52,16 @@ export function MyRoutes() {
           <Layout>
             <ProtectedRoute accessBy="authenticated">
               <Configuraciones />
+            </ProtectedRoute>
+          </Layout>
+        }
+      />
+      <Route
+        path="/configuracion/administrar-empresas"
+        element={
+          <Layout>
+            <ProtectedRoute accessBy="authenticated" allowedRoles={["OG"]}>
+              <AdministrarEmpresas />
             </ProtectedRoute>
           </Layout>
         }

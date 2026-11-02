@@ -22,6 +22,10 @@ public class MetodoPagoService {
     @Autowired
     private EmpresaRepository empresaRepository;
 
+    private boolean esMetodoProtegido(Long id) {
+        return id != null && id > 0L && id <= 4L;
+    }
+
     public List<MetodoPago> listarPorEmpresa(Long empresaId) {
         return metodoPagoRepository.findByEmpresaId(empresaId);
     }
@@ -70,6 +74,10 @@ public class MetodoPagoService {
         MetodoPago metodoPago = metodoPagoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Método de pago no encontrado con ID: " + id));
 
+        if (esMetodoProtegido(id)) {
+            throw new IllegalStateException("Los métodos base del sistema no se pueden modificar");
+        }
+
         Long empresaId = metodoPago.getEmpresa().getId();
 
         // Validar duplicados: nombre + empresa (excluyendo el método actual)
@@ -85,6 +93,10 @@ public class MetodoPagoService {
         
         if (metodoPagoDetails.getIcono() != null) {
             metodoPago.setIcono(metodoPagoDetails.getIcono());
+        }
+
+        if (metodoPagoDetails.getColor() != null) {
+            metodoPago.setColor(metodoPagoDetails.getColor());
         }
         
         if (metodoPagoDetails.getVerNombre() != null) {
@@ -105,12 +117,35 @@ public class MetodoPagoService {
         MetodoPago metodoPago = metodoPagoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Método de pago no encontrado con ID: " + id));
         
-        // Validar que no sea un método protegido (eliminarActualizar = false)
-        if (metodoPago.getEliminarActualizar() != null && !metodoPago.getEliminarActualizar()) {
-            throw new IllegalStateException("Este método de pago es del sistema y no se puede eliminar");
+        // No permitir eliminar NINGÚN método de pago para evitar errores en ventas enlazadas
+        throw new IllegalStateException("No se pueden eliminar métodos de pago para evitar errores en ventas enlazadas");
+    }
+
+    @Transactional
+    @SuppressWarnings("null")
+    public MetodoPago deshabilitar(Long id) {
+        MetodoPago metodoPago = metodoPagoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Método de pago no encontrado con ID: " + id));
+
+        if (esMetodoProtegido(id)) {
+            throw new IllegalStateException("Los métodos base del sistema no se pueden deshabilitar");
         }
-        
-        
-        metodoPagoRepository.deleteById(id);
+
+        metodoPago.setVerNombre(false);
+        return metodoPagoRepository.save(metodoPago);
+    }
+
+    @Transactional
+    @SuppressWarnings("null")
+    public MetodoPago habilitar(Long id) {
+        MetodoPago metodoPago = metodoPagoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Método de pago no encontrado con ID: " + id));
+
+        if (esMetodoProtegido(id)) {
+            throw new IllegalStateException("Los métodos base del sistema no se pueden cambiar de estado");
+        }
+
+        metodoPago.setVerNombre(true);
+        return metodoPagoRepository.save(metodoPago);
     }
 }

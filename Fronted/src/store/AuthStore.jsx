@@ -5,7 +5,7 @@ export const useAuthStore = create((set) => ({
   loginGoogle: async () => {
     // Redirect to backend OAuth endpoint (backend must implement OAuth flow)
     try {
-      window.location.href = `http://localhost:8080/api/auth/oauth/google`;
+      window.location.href = `http://localhost:8081/api/auth/oauth/google`;
     } catch (e) {
       throw new Error("No se pudo iniciar login con Google");
     }
@@ -26,7 +26,7 @@ export const useAuthStore = create((set) => ({
     try {
       // Ajuste para coincidir con el DTO LoginRequest del backend (correo, password)
       const resp = await api.post(`/auth/login`, {
-        correo: p.email,
+        correo: p.email.trim(),
         password: p.password,
       });
 
@@ -45,14 +45,8 @@ export const useAuthStore = create((set) => ({
       window.location.href = "/";
       return resp.data;
     } catch (err) {
-      const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        throw new Error("Correo o contraseña incorrectos");
-      }
-      if (status === 500) {
-        throw new Error("Error del servidor. Intente más tarde.");
-      }
-      throw new Error(err.message || "Error al iniciar sesión");
+      // Reenviar el error HTTP real para que el formulario decida el mensaje a mostrar
+      throw err;
     }
   },
   crearUserYLogin:async(p)=>{

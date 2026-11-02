@@ -20,6 +20,20 @@ export function VisorTicketVenta({setState}) {
   useEffect(()=>{
     onGenerateTicket("b64")
   },[])
+
+  // Listener para tecla ESC para cerrar el visor del ticket
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setState?.();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setState]);
   return (
     <Container>
       <ContentTicket>

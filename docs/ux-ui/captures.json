@@ -1,0 +1,543 @@
+{
+  "generatedAt": "2026-11-02T01:38:19.692Z",
+  "baseUrl": "http://127.0.0.1:5173",
+  "entries": [
+    {
+      "index": 1,
+      "name": "login",
+      "path": "/login",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/login-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/login",
+      "heading": "Bienvenido",
+      "textSample": "Bienvenido Inicia sesion para continuar Usuario Contraseña Recordarme Olvidaste tu contraseña? Iniciar sesion TANSTACK React Query v5 Queries Mutations Fresh 1 Fetching 0 Paused 0 Stale 0 Inactive 0 Sort by status Sort by query hash Sort by",
+      "note": null,
+      "errors": []
+    },
+    {
+      "index": 2,
+      "name": "home",
+      "path": "/",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/home-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/",
+      "heading": "¡Bienvenido de vuelta!",
+      "textSample": "U ¡Bienvenido de vuelta! Usuario Demo UXUI Domingo, 1 De Noviembre De 2026 20 Horas : 38 Minutos : 28 Segundos Dashboard Visualiza tu negocio en tiempo real con reportes y gráficos completos Post de Venta Gestiona directamente tus ventas y ",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "dashboard",
+      "path": "/dashboard",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/dashboard-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
+      "heading": "Dashboard",
+      "textSample": "U Dashboard TodoÚltimos días 7 diasÚltimos 30 díasÚltimos 12 mesesHoyPor DíaLimpiar filtro Ventas 0% al periodo anterior Cant. Productos vendidos Ganancias Total ventas 0% al periodo anterior TOP 5 Productos por cantidad vendida Movimientos",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 4,
+      "name": "pos",
+      "path": "/pos",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/pos-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/pos",
+      "heading": null,
+      "textSample": "U SUCURSAL: Sucursal Principal | CAJA: Caja 1 Usuario Demo UXUI 8:38:39:PM domingo 1 noviembre del 2026 x Factura SUNAT Eliminar venta Cerrar caja Ingresar dinero Retirar dinero TANSTACK React Query v5 Queries Mutations Fresh 3 Fetching 0 P",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 5,
+      "name": "inventario",
+      "path": "/inventario",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/inventario-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/inventario",
+      "heading": "Inventario",
+      "textSample": "U Inventario Sistema de Almacén POS REGISTRAR Movimientos de Inventario PRODUCTO INICIAL 0 ENTRADAS 0 SALIDAS 0 VALOR INVENTARIO S/. 0.00 TANSTACK React Query v5 Queries Mutations Fresh 3 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by statu",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 6,
+      "name": "movimientos-stock",
+      "path": "/movimientos-stock",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/movimientos-stock-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/movimientos-stock",
+      "heading": "🔍 Filtros de Búsqueda",
+      "textSample": "U Movimientos de Stock (Kardex) 🔍 Filtros de Búsqueda Producto: Todos los productos Almacén: Todos los almacenes Tipo de Movimiento: Todos los tipos ENTRADA SALIDA AJUSTE ENTRADA AJUSTE SALIDA AJUSTE SIN CAMBIO COMPRA VENTA Fecha Inicio: F",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 7,
+      "name": "compras",
+      "path": "/compras",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/compras-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/compras",
+      "heading": "📦 Registro de Compras",
+      "textSample": "U 📦 Registro de Compras Registra las facturas de compra y controla tu inventario Ver Reporte 1. Información de la Compra Número de Factura * Fecha de Emisión * Tipo de Comprobante * Factura Boleta Método de Pago * Seleccionar... 2. Datos d",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 8,
+      "name": "reporte-compras",
+      "path": "/reporte-compras",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/reporte-compras-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/reporte-compras",
+      "heading": "📊 Reporte de Compras",
+      "textSample": "U 📊 Reporte de Compras Historial y gestión de todas las compras realizadas + Nueva Compra Buscar Filtros TOTAL COMPRAS 0 MONTO TOTAL S/ 0.00 📦 No hay compras registradas Comienza registrando tu primera compra TANSTACK React Query v5 Queri",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 9,
+      "name": "facturas",
+      "path": "/facturas",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/facturas-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/facturas",
+      "heading": "📄 Reporte de Facturas / Boletas",
+      "textSample": "U 📄 Reporte de Facturas / Boletas Historial y gestión de comprobantes de venta Filtros TOTAL VENTAS FACTURAS (0) BOLETAS (0) TICKETS (0) COMPROBANTES SUNAT (0) 📄 No hay comprobantes registrados Comienza registrando tu primera venta TANSTA",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 10,
+      "name": "reportes",
+      "path": "/reportes",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/reportes-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/reportes",
+      "heading": "Reportes",
+      "textSample": "U Reportes Inventario valorado Productos con Stock Bajo Reporte de Ventas Sucursal Seleccionar Almacen Seleccionar TANSTACK React Query v5 Queries Mutations Fresh 2 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash So",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173",
+        "console: Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent c"
+      ]
+    },
+    {
+      "index": 11,
+      "name": "reporte-inventario-valorado",
+      "path": "/reportes/inventario_valorado",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/reportes-inventario-valorado-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/reportes/inventario_valorado",
+      "heading": "Reportes",
+      "textSample": "U Reportes Inventario valorado Productos con Stock Bajo Reporte de Ventas Sucursal Seleccionar Almacen Seleccionar TANSTACK React Query v5 Queries Mutations Fresh 3 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash So",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173",
+        "console: Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent c",
+        "pageerror: Cannot read properties of null (reading 'setItem')"
+      ]
+    },
+    {
+      "index": 12,
+      "name": "reporte-ventas",
+      "path": "/reportes/report_ventas",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/reportes-report-ventas-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/reportes/report_ventas",
+      "heading": "Reportes",
+      "textSample": "U Reportes Inventario valorado Productos con Stock Bajo Reporte de Ventas Sucursal Seleccionar Almacen Seleccionar Dashboard TodoÚltimos días 7 diasÚltimos 30 díasÚltimos 12 mesesHoyPor DíaLimpiar filtro TANSTACK React Query v5 Queries Muta",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173",
+        "console: Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent c",
+        "pageerror: Cannot read properties of null (reading 'setItem')"
+      ]
+    },
+    {
+      "index": 13,
+      "name": "reporte-stock-bajo-minimo",
+      "path": "/reportes/report_stock_bajo_minimo",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/reportes-report-stock-bajo-minimo-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/reportes/report_stock_bajo_minimo",
+      "heading": "Reportes",
+      "textSample": "U Reportes Inventario valorado Productos con Stock Bajo Reporte de Ventas Sucursal Seleccionar Almacen Seleccionar sin datos TANSTACK React Query v5 Queries Mutations Fresh 3 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by que",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173",
+        "console: Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent c"
+      ]
+    },
+    {
+      "index": 14,
+      "name": "configuracion",
+      "path": "/configuracion",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion",
+      "heading": "Configuración",
+      "textSample": "U Configuración Administra todos los aspectos de tu sistema Categorías de Productos Organiza tus productos Productos Gestiona tu inventario Empresa Datos de tu empresa Clientes Administra clientes Proveedores Gestiona proveedores Métodos de",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 15,
+      "name": "admin-empresas",
+      "path": "/configuracion/administrar-empresas",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-administrar-empresas-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/administrar-empresas",
+      "heading": "Administrar Empresas",
+      "textSample": "U Administrar Empresas Panel global para gestionar empresas, administradores y usuarios de todo el ecosistema. Control centralizado y seguro. MODERNO CLÁSICO Actualizar EMPRESAS ACTIVAS 1 ↑ Operativas EMPRESAS INACTIVAS 0 ↓ Deshabilitadas S",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173",
+        "console: Warning: Received `%s` for a non-boolean attribute `%s`.\n\nIf you want to write it to the DOM, pass a string instead: %s=\"%s\" or %s={value.toString()}.%s true active active true active \n    at button\n    at y2 (http://127",
+        "console: Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent c",
+        "console: Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent c",
+        "console: Warning: Received `%s` for a non-boolean attribute `%s`.\n\nIf you want to write it to the DOM, pass a string instead: %s=\"%s\" or %s={value.toString()}.%s true delete delete true delete \n    at button\n    at y2 (http://127"
+      ]
+    },
+    {
+      "index": 16,
+      "name": "categorias",
+      "path": "/configuracion/categorias",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-categorias-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/categorias",
+      "heading": null,
+      "textSample": "U Categorias NUEVO # CATEGORÍA N° PROD COLOR ACCIONES 1 de 0 TANSTACK React Query v5 Queries Mutations Fresh 3 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated Asc 1 [\"mostrar categorias\",null] d",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 17,
+      "name": "serializacion",
+      "path": "/configuracion/serializacion",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-serializacion-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/serializacion",
+      "heading": null,
+      "textSample": "U Comprobantes TANSTACK React Query v5 Queries Mutations Fresh 1 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated Asc 1 [\"mostrar serializaciones empresa\",null] disabled 1 [\"mostrar permisos glob",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 18,
+      "name": "ticket",
+      "path": "/configuracion/ticket",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-ticket-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/ticket",
+      "heading": "Logo de tu empresa",
+      "textSample": "U CONFIGURACIÓN DE TICKET Personaliza cómo se verá tu comprobante de pago Logo de tu empresa Este logo aparecerá en todos tus comprobantes Click para seleccionar o arrastra y suelta aquí Información de la empresa (solo lectura) Estos datos ",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 19,
+      "name": "productos",
+      "path": "/configuracion/productos",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-productos-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/productos",
+      "heading": null,
+      "textSample": "U Productos NUEVO # DESCRIPCION P. VENTA P. COMPRA SE VENDE POR TIPO INVENTARIOS STOCK ACCIONES -10 de 0 +10 TANSTACK React Query v5 Queries Mutations Fresh 5 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by ",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 20,
+      "name": "empresa-basicos",
+      "path": "/configuracion/empresa/empresabasicos",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-empresa-empresabasicos-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/empresa/empresabasicos",
+      "heading": "Básico",
+      "textSample": "U EMPRESAS Básico Moneda Básico Configura los datos principales de la empresa. LOGO Click para seleccionar o arrastra y suelta aquí Los cambios del logo se reflejan en el lapso de unos segundos. Nombre RUC / ID Fiscal Dirección Correo Impue",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 21,
+      "name": "empresa-monedas",
+      "path": "/configuracion/empresa/monedaconfig",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-empresa-monedaconfig-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/empresa/monedaconfig",
+      "heading": "Moneda",
+      "textSample": "U EMPRESAS Básico Moneda Moneda Busca el país y actualiza la moneda de la empresa. Moneda actual TANSTACK React Query v5 Queries Mutations Fresh 0 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 22,
+      "name": "clientes",
+      "path": "/configuracion/clientes",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-clientes-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/clientes",
+      "heading": null,
+      "textSample": "U Clientes NUEVO # DESCRIPCION DIRECCION CIUDAD RUC ESTADO ACCIONES 1 de 0 TANSTACK React Query v5 Queries Mutations Fresh 2 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated Asc 1 [\"mostrar clien",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 23,
+      "name": "proveedores",
+      "path": "/configuracion/proveedores",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-proveedores-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/proveedores",
+      "heading": null,
+      "textSample": "U Proveedores NUEVO # DESCRIPCION DIRECCION CIUDAD RUC ESTADO ACCIONES 1 de 0 TANSTACK React Query v5 Queries Mutations Fresh 2 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated Asc 1 [\"mostrar cl",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 24,
+      "name": "metodos-pago",
+      "path": "/configuracion/metodospago",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-metodospago-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/metodospago",
+      "heading": null,
+      "textSample": "U Métodos de pago NUEVO TANSTACK React Query v5 Queries Mutations Fresh 1 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated Asc 1 [\"mostrar metodos pago\"] disabled 1 [\"mostrar permisos globales\",2",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 25,
+      "name": "sucursales-caja",
+      "path": "/configuracion/sucursalcaja",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-sucursalcaja-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/sucursalcaja",
+      "heading": "Cajas por sucursal",
+      "textSample": "U Cajas por sucursal gestiona tus sucursales y cajas agregar sucursal TANSTACK React Query v5 Queries Mutations Fresh 1 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated Asc 1 [\"mostrar Cajas XSuc",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 26,
+      "name": "impresoras",
+      "path": "/configuracion/impresoras",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-impresoras-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/impresoras",
+      "heading": "Servidor de Impresión No Detectado",
+      "textSample": "U Impresoras Servidor de Impresión No Detectado Descargue e instale el servidor Servicio para imprimir directo a impresoras térmicas Descargar Ver tutorial Si ya instaló el servidor, actualice esta página. TANSTACK React Query v5 Queries Mu",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173",
+        "console: Failed to load resource: net::ERR_CONNECTION_REFUSED"
+      ]
+    },
+    {
+      "index": 27,
+      "name": "usuarios",
+      "path": "/configuracion/usuarios",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-usuarios-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/usuarios",
+      "heading": null,
+      "textSample": "U Usuarios NUEVO # NOMBRES CORREO N° DOCUMENTO TELÉFONO ROL TIPO DOC EMPRESA ESTADO ACCIONES 1 Laura Sanchez itsanchezadm@gmail.com 40438437 962510490 superadmin DNI 1 ACTIVO 2 Usuario Demo UXUI uxui.super@ltsanchez.test - - superadmin DNI ",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 28,
+      "name": "almacenes",
+      "path": "/configuracion/almacenes",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/configuracion-almacenes-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/configuracion/almacenes",
+      "heading": "Almacenes por sucursal",
+      "textSample": "U Almacenes por sucursal gestiona tus almacenes por sucursal TANSTACK React Query v5 Queries Mutations Fresh 1 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated Asc 1 [\"mostrar almacenes X empresa",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 29,
+      "name": "mi-perfil",
+      "path": "/miperfil",
+      "theme": "light",
+      "viewport": "desktop",
+      "file": "img/miperfil-light-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/miperfil",
+      "heading": "Usuario Demo UXUI",
+      "textSample": "U U Usuario Demo UXUI uxui.super@ltsanchez.test SUPERADMIN IDENTIDAD - TELÉFONO - EDITAR PERFIL TANSTACK React Query v5 Queries Mutations Fresh 0 Fetching 0 Paused 0 Stale 2 Inactive 2 Sort by status Sort by query hash Sort by last updated ",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ]
+    },
+    {
+      "index": 30,
+      "name": "home",
+      "path": "/",
+      "theme": "dark",
+      "viewport": "desktop",
+      "file": "img/home-dark-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/",
+      "heading": "¡Bienvenido de vuelta!",
+      "textSample": "U ¡Bienvenido de vuelta! Usuario Demo UXUI Domingo, 1 De Noviembre De 2026 20 Horas : 40 Minutos : 47 Segundos Dashboard Visualiza tu negocio en tiempo real con reportes y gráficos completos Post de Venta Gestiona directamente tus ventas y ",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ],
+      "error": "toggle de tema no encontrado"
+    },
+    {
+      "index": 31,
+      "name": "dashboard",
+      "path": "/dashboard",
+      "theme": "dark",
+      "viewport": "desktop",
+      "file": "img/dashboard-dark-desktop.jpg",
+      "ok": true,
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
+      "heading": "Dashboard",
+      "textSample": "U Dashboard TodoÚltimos días 7 diasÚltimos 30 díasÚltimos 12 mesesHoyPor DíaLimpiar filtro Ventas 0% al periodo anterior Cant. Productos vendidos Ganancias Total ventas 0% al periodo anterior TOP 5 Productos por cantidad vendida Movimientos",
+      "note": null,
+      "errors": [
+        "console: Failed to load resource: the server responded with a status of 404 ()",
+        "console: ❌ Error al obtener empresa: AxiosError: Request failed with status code 404\n    at settle (http://127.0.0.1:5173/node_modules/.vite/deps/axios.js?v=be0f5501:1884:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:5173"
+      ],
+      "error": "toggle de tema no encontrado"
+    }
+  ]
+}

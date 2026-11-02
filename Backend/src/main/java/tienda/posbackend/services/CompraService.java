@@ -120,6 +120,12 @@ public class CompraService {
         compra.setMontoTotal(dto.getMontoTotal());
         compra.setEmpresa(empresa);
         compra.setUsuario(usuario);
+        
+        // Campos de resumen
+        compra.setResumenGravada(dto.getResumenGravada());
+        compra.setResumenIGV(dto.getResumenIgv());
+        compra.setResumenDescuentoTotal(dto.getResumenDescuentoTotal());
+        compra.setResumenTotal(dto.getResumenTotal());
 
         // Guardar compra
         Compra compraSaved = compraRepository.save(compra);
@@ -133,6 +139,15 @@ public class CompraService {
             DetalleCompra detalle = new DetalleCompra();
             detalle.setCompra(compraSaved);
             detalle.setProducto(producto);
+            
+            // Campos nuevos
+            detalle.setCantidad(detalleDTO.getCantidad());
+            detalle.setUnidadMedidaCompra(detalleDTO.getUnidadMedidaCompra());
+            detalle.setFactorCompra(detalleDTO.getFactorCompra());
+            detalle.setImporte(detalleDTO.getImporte());
+            detalle.setValorUnitario(detalleDTO.getValorUnitario());
+            
+            // Campos antiguos (por compatibilidad)
             detalle.setCantidadEsperada(detalleDTO.getCantidadEsperada());
             detalle.setCantidadRecibida(detalleDTO.getCantidadRecibida());
             detalle.setPrecioCompra(detalleDTO.getPrecioCompra());
@@ -161,6 +176,12 @@ public class CompraService {
         compraExistente.setObservacion(dto.getObservacion());
         compraExistente.setEstado(dto.getEstado());
         compraExistente.setMontoTotal(dto.getMontoTotal());
+        
+        // Actualizar campos de resumen
+        compraExistente.setResumenGravada(dto.getResumenGravada());
+        compraExistente.setResumenIGV(dto.getResumenIgv());
+        compraExistente.setResumenDescuentoTotal(dto.getResumenDescuentoTotal());
+        compraExistente.setResumenTotal(dto.getResumenTotal());
         
         // Actualizar relaciones si han cambiado
         if (dto.getIdProveedor() != null) {
@@ -195,6 +216,15 @@ public class CompraService {
                 DetalleCompra detalle = new DetalleCompra();
                 detalle.setCompra(compraExistente);
                 detalle.setProducto(producto);
+                
+                // Campos nuevos
+                detalle.setCantidad(detalleDTO.getCantidad());
+                detalle.setUnidadMedidaCompra(detalleDTO.getUnidadMedidaCompra());
+                detalle.setFactorCompra(detalleDTO.getFactorCompra());
+                detalle.setImporte(detalleDTO.getImporte());
+                detalle.setValorUnitario(detalleDTO.getValorUnitario());
+                
+                // Campos antiguos (por compatibilidad)
                 detalle.setCantidadEsperada(detalleDTO.getCantidadEsperada());
                 detalle.setCantidadRecibida(detalleDTO.getCantidadRecibida());
                 detalle.setPrecioCompra(detalleDTO.getPrecioCompra());
@@ -205,6 +235,12 @@ public class CompraService {
         }
         
         return compraRepository.save(compraExistente);
+    }
+
+    // Filtrar compras con múltiples criterios (por fechaEmision)
+    @Transactional(readOnly = true)
+    public List<Compra> filtrarCompras(Long empresaId, String estado, Long idProveedor, LocalDate fechaInicio, LocalDate fechaFin, String buscador) {
+        return compraRepository.findComprasConFiltros(empresaId, estado, idProveedor, fechaInicio, fechaFin, buscador);
     }
 
     // Actualizar estado de compra

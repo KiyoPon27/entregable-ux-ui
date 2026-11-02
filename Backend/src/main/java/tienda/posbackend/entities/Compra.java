@@ -46,6 +46,19 @@ public class Compra {
     @Column(name = "monto_total", nullable = false, precision = 12, scale = 2)
     private BigDecimal montoTotal;
 
+    // Campos de resumen
+    @Column(name = "resumen_gravada", precision = 12, scale = 2, columnDefinition = "DECIMAL(12,2) DEFAULT 0")
+    private BigDecimal resumenGravada = BigDecimal.ZERO;
+
+    @Column(name = "resumen_igv", precision = 12, scale = 2, columnDefinition = "DECIMAL(12,2) DEFAULT 0")
+    private BigDecimal resumenIGV = BigDecimal.ZERO;
+
+    @Column(name = "resumen_descuento_total", precision = 12, scale = 2, columnDefinition = "DECIMAL(12,2) DEFAULT 0")
+    private BigDecimal resumenDescuentoTotal = BigDecimal.ZERO;
+
+    @Column(name = "resumen_total", precision = 12, scale = 2, columnDefinition = "DECIMAL(12,2) DEFAULT 0")
+    private BigDecimal resumenTotal = BigDecimal.ZERO;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_empresa", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

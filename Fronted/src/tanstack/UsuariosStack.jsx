@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useThemeStore, useUsuariosStore } from "..";
+import { useGlobalStore } from "../store/GlobalStore";
 import { toast } from "sonner";
 import { Dark, Light } from "../styles/themes";
 import { MostrarUsuarios } from "../supabase/crudUsuarios";
@@ -82,7 +83,8 @@ export const useCambiarPasswordMutation = () => {
 
 export const useEditarPerfilMutation = () => {
   const queryClient = useQueryClient();
-  const { editarUsuarios, datausuarios } = useUsuariosStore();
+  const { editarUsuarios, datausuarios, setUsuario } = useUsuariosStore();
+  const { file, setFile } = useGlobalStore();
 
   return useMutation({
     mutationKey: ["editar perfil"],
@@ -92,15 +94,28 @@ export const useEditarPerfilMutation = () => {
         nombres: data.nombres,
         nro_doc: data.nro_doc,
         telefono: data.telefono,
+        avatar: data.avatar, // Incluir avatar
       };
       await editarUsuarios(p);
+      
+      // Limpiar archivo seleccionado después de guardar
+      if (setFile) setFile(null);
+      
+      return p;
     },
     onError: (error) => {
       toast.error("Error al editar mi perfil: " + error.message);
     },
-    onSuccess: () => {
+    onSuccess: (p) => {
+      // Actualización optimista: actualizar el store inmediatamente
+      setUsuario({
+        ...datausuarios,
+        nombres: p.nombres,
+        nroDoc: p.nro_doc,
+        telefono: p.telefono,
+        avatar: p.avatar,
+      });
       toast.success("Datos guardados");
-      queryClient.invalidateQueries(["mostrar usuarios"]);
     },
   });
 };

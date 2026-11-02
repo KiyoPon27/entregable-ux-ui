@@ -1,0 +1,20 @@
+{
+  "name": "ux-ui-deliverable",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Herramientas para generar el entregable de Diseno UX/UI final y componentes",
+  "scripts": {
+    "seed": "node seed-user.mjs",
+    "capture": "node capture.mjs",
+    "diagrams": "node diagrams.mjs",
+    "build:docx": "node build-docx.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "docx": "^9.0.0",
+    "mermaid": "^11.0.0",
+    "mysql2": "^3.11.0",
+    "playwright-core": "^1.48.0"
+  }
+}

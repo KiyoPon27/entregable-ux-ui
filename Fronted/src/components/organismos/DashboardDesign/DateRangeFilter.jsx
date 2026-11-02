@@ -59,7 +59,8 @@ export const DateRangeFilter = () => {
     setActiveRange("Hoy");
   };
   useEffect(() => {
-    setSiempreRange()
+    // ✅ ESTADO INICIAL: "Hoy" en lugar de "Todo"
+    selectToday();
   }, [])
 
   return (
